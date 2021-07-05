@@ -1,0 +1,11 @@
+module github.com/hultan/softimdb
+
+go 1.14
+
+require (
+	github.com/PuerkitoBio/goquery v1.5.1
+	github.com/gotk3/gotk3 v0.6.0
+	github.com/hirochachacha/go-smb2 v1.0.10
+	gorm.io/driver/mysql v1.1.1
+	gorm.io/gorm v1.21.11
+)
