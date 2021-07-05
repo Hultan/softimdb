@@ -41,7 +41,6 @@ func (l *ListHelper) GetMovieCard(movie *data.Movie) *gtk.Frame {
 <span font="Sans Regular 10" foreground="#967c61">` + fmt.Sprintf("%v", movie.Year) + ` - ` + fmt.Sprintf("Imdb : %v", movie.ImdbRating) + `</span>`	)
 	nameBox.PackStart(titleLabel, true, false, 5)
 	box.PackStart(nameBox, false, false, 5)
-	fmt.Println(cleanString(movie.Title))
 
 	// Image
 	pixBuf, err := gdk.PixbufNewFromBytesOnly(*movie.Image)

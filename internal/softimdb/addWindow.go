@@ -8,9 +8,10 @@ import (
 )
 
 type AddWindow struct {
-	Window    *gtk.Window
-	list      *gtk.ListBox
-	imdbEntry *gtk.Entry
+	Window         *gtk.Window
+	list           *gtk.ListBox
+	imdbUrlEntry   *gtk.Entry
+	moviePathEntry *gtk.Entry
 }
 
 func AddWindowNew() *AddWindow {
@@ -46,7 +47,9 @@ func (a *AddWindow) OpenForm(builder *SoftBuilder) {
 
 		// IMDB Url entry
 		entry := builder.getObject("imdbEntry").(*gtk.Entry)
-		a.imdbEntry = entry
+		a.imdbUrlEntry = entry
+		entry = builder.getObject("moviePathEntry").(*gtk.Entry)
+		a.moviePathEntry = entry
 
 		a.Window = addWindow
 	}
@@ -58,8 +61,9 @@ func (a *AddWindow) OpenForm(builder *SoftBuilder) {
 	// Paths list
 	list := builder.getObject("pathsList").(*gtk.ListBox)
 	//_ = button.Connect("clicked", a.closeWindow)
-	a.fillList(list, *moviePaths)
 	a.list = list
+	a.clearList()
+	a.fillList(list, *moviePaths)
 
 	// Show the window
 	a.Window.ShowAll()
@@ -108,16 +112,14 @@ func (a *AddWindow) ignorePathButtonClicked() {
 }
 
 func (a *AddWindow) addMovieButtonClicked() {
-	url, err := a.imdbEntry.GetText()
-	if err != nil {
-		panic(err)
-	}
-	if url=="" {
+	url := a.getEntryText(a.imdbUrlEntry)
+	if url == "" {
 		return
 	}
+	moviePath := a.getEntryText(a.moviePathEntry)
 	imdb := imdb2.ManagerNew()
-	movie := data.Movie{ImdbUrl: url}
-	err = imdb.GetMovieInfo(&movie)
+	movie := data.Movie{ImdbUrl: url, MoviePath: moviePath}
+	err := imdb.GetMovieInfo(&movie)
 	if err != nil {
 		panic(err)
 	}
@@ -128,4 +130,35 @@ func (a *AddWindow) addMovieButtonClicked() {
 		panic(err)
 	}
 	db.CloseDatabase()
+
+	// Get selected row and remove it
+	row := a.list.GetSelectedRow()
+	if row == nil {
+		return
+	}
+
+	a.list.Remove(row)
+	a.imdbUrlEntry.SetText("")
+	a.moviePathEntry.SetText("")
+}
+
+func (a *AddWindow) getEntryText(entry *gtk.Entry) string {
+	text, err := entry.GetText()
+	if err != nil {
+		return ""
+	}
+	return text
+}
+
+func (a *AddWindow) clearList() {
+	children := a.list.GetChildren()
+	if children==nil {
+		return
+	}
+	var i uint = 0
+	for ;i<children.Length(); {
+		widget, _ := children.NthData(i).(*gtk.Widget)
+		a.list.Remove(widget)
+		i++
+	}
 }
