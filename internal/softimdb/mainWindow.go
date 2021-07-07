@@ -10,26 +10,22 @@ import (
 	"strconv"
 )
 
-const applicationTitle = "SoftImdb"
-const applicationVersion = "v 1.10"
-const applicationCopyRight = "©SoftTeam AB, 2020"
-const listMargin = 3
-const listSpacing = 0
-
 type MainWindow struct {
-	Window         *gtk.ApplicationWindow
 	builder        *SoftBuilder
-	AboutDialog    *gtk.AboutDialog
-	AddWindow      *gtk.Window
-	MovieList      *gtk.FlowBox
-	Movies         map[int]*data.Movie
-	StoryLineLabel *gtk.Label
+
+	window         *gtk.ApplicationWindow
+	aboutDialog    *gtk.AboutDialog
+	addWindow      *gtk.Window
+	movieList      *gtk.FlowBox
+	storyLineLabel *gtk.Label
+
+	movies         map[int]*data.Movie
 }
 
 // NewMainWindow : Creates a new MainWindow object
 func NewMainWindow() *MainWindow {
 	mainForm := new(MainWindow)
-	mainForm.Movies = make(map[int]*data.Movie, 500)
+	mainForm.movies = make(map[int]*data.Movie, 500)
 	return mainForm
 }
 
@@ -42,44 +38,61 @@ func (m *MainWindow) OpenMainWindow(app *gtk.Application) {
 	m.builder = SoftBuilderNew("main.glade")
 
 	// Get the main window from the glade file
-	m.Window = m.builder.getObject("mainWindow").(*gtk.ApplicationWindow)
+	m.window = m.builder.getObject("mainWindow").(*gtk.ApplicationWindow)
 
 	// Set up main window
-	m.Window.SetApplication(app)
-	m.Window.SetTitle(fmt.Sprintf("%s - %s", applicationTitle, applicationVersion))
+	m.window.SetApplication(app)
+	m.window.SetTitle(fmt.Sprintf("%s - %s", applicationTitle, applicationVersion))
 
 	// Hook up the destroy event
-	_ = m.Window.Connect("destroy", m.Window.Close)
+	_ = m.window.Connect("destroy", m.closeMainWindow)
 
 	// StoryLine label
-	m.StoryLineLabel = m.builder.getObject("storyLineLabel").(*gtk.Label)
+	m.storyLineLabel = m.builder.getObject("storyLineLabel").(*gtk.Label)
 
 	// Toolbar
 	m.setupToolBar()
 
 	// Menu
-	m.setupMenu(m.Window)
+	m.setupMenu(m.window)
 
 	// MovieList
-	m.MovieList = m.builder.getObject("movieList").(*gtk.FlowBox)
-	m.MovieList.SetSelectionMode(gtk.SELECTION_SINGLE)
-	m.MovieList.SetRowSpacing(listSpacing)
-	m.MovieList.SetColumnSpacing(listSpacing)
-	m.MovieList.SetMarginTop(listMargin)
-	m.MovieList.SetMarginBottom(listMargin)
-	m.MovieList.SetMarginStart(listMargin)
-	m.MovieList.SetMarginEnd(listMargin)
-	m.MovieList.SetActivateOnSingleClick(false)
-	_ = m.MovieList.Connect("selected-children-changed", m.selectionChanged)
-	_ = m.MovieList.Connect("child-activated", m.movieClicked)
-	m.FillMovieList()
+	m.movieList = m.builder.getObject("movieList").(*gtk.FlowBox)
+	m.movieList.SetSelectionMode(gtk.SELECTION_SINGLE)
+	m.movieList.SetRowSpacing(listSpacing)
+	m.movieList.SetColumnSpacing(listSpacing)
+	m.movieList.SetMarginTop(listMargin)
+	m.movieList.SetMarginBottom(listMargin)
+	m.movieList.SetMarginStart(listMargin)
+	m.movieList.SetMarginEnd(listMargin)
+	m.movieList.SetActivateOnSingleClick(false)
+	_ = m.movieList.Connect("selected-children-changed", m.selectionChanged)
+	_ = m.movieList.Connect("child-activated", m.movieClicked)
+	m.fillMovieList()
 
 	//// Status bar
 	//statusBar := m.builder.getObject("main_window_status_bar").(*gtk.Statusbar)
 	//statusBar.Push(statusBar.GetContextId("gtk-startup"), "gtk-startup : version 0.1.0")
 
 	// Show the main window
-	m.Window.ShowAll()
+	m.window.ShowAll()
+}
+
+func (m *MainWindow) closeMainWindow() {
+	m.window.Close()
+	if m.addWindow != nil {
+		m.addWindow.Close()
+	}
+	if m.aboutDialog != nil {
+		m.aboutDialog.Close()
+	}
+
+	m.movieList = nil
+	m.storyLineLabel = nil
+	m.addWindow = nil
+	m.aboutDialog = nil
+	m.window = nil
+	m.builder = nil
 }
 
 func (m *MainWindow) setupMenu(window *gtk.ApplicationWindow) {
@@ -90,7 +103,7 @@ func (m *MainWindow) setupMenu(window *gtk.ApplicationWindow) {
 	_ = menuHelpAbout.Connect("activate", m.openAboutDialog)
 }
 
-func (m *MainWindow) FillMovieList() {
+func (m *MainWindow) fillMovieList() {
 	db := data.DatabaseNew(false)
 	defer db.CloseDatabase()
 
@@ -103,9 +116,9 @@ func (m *MainWindow) FillMovieList() {
 
 	for i := range movies {
 		movie := movies[i]
-		m.Movies[movie.Id] = movie
+		m.movies[movie.Id] = movie
 		frame := listHelper.GetMovieCard(movie)
-		m.MovieList.Add(frame)
+		m.movieList.Add(frame)
 		frame.SetName("frame_" + strconv.Itoa(movie.Id))
 	}
 }
@@ -113,7 +126,7 @@ func (m *MainWindow) FillMovieList() {
 func (m *MainWindow) selectionChanged(_ *gtk.FlowBox) {
 	movie := m.getSelectedMovie()
 	story := `<span font="Sans Regular 10" foreground="#d49c6b">` + cleanString(movie.StoryLine) + `</span>`
-	m.StoryLineLabel.SetMarkup(story)
+	m.storyLineLabel.SetMarkup(story)
 }
 
 func (m *MainWindow) movieClicked(_ *gtk.FlowBox) {
@@ -122,7 +135,7 @@ func (m *MainWindow) movieClicked(_ *gtk.FlowBox) {
 }
 
 func (m *MainWindow) getSelectedMovie() *data.Movie {
-	selected := m.MovieList.GetSelectedChildren()[0]
+	selected := m.movieList.GetSelectedChildren()[0]
 	frameObj, err := selected.GetChild()
 	if err != nil {
 		return nil
@@ -142,7 +155,7 @@ func (m *MainWindow) getSelectedMovie() *data.Movie {
 	if err != nil {
 		return nil
 	}
-	return m.Movies[id]
+	return m.movies[id]
 }
 
 func (m *MainWindow) openMovieDirectoryInNemo(movie *data.Movie) {
@@ -154,7 +167,7 @@ func (m *MainWindow) openMovieDirectoryInNemo(movie *data.Movie) {
 func (m *MainWindow) setupToolBar() {
 	// Quit button
 	button := m.builder.getObject("quitButton").(*gtk.ToolButton)
-	_ = button.Connect("clicked", m.Window.Close)
+	_ = button.Connect("clicked", m.window.Close)
 
 	// Add button
 	button = m.builder.getObject("addButton").(*gtk.ToolButton)
@@ -162,11 +175,11 @@ func (m *MainWindow) setupToolBar() {
 }
 
 func (m *MainWindow) openAboutDialog() {
-	if m.AboutDialog == nil {
+	if m.aboutDialog == nil {
 		about := m.builder.getObject("aboutDialog").(*gtk.AboutDialog)
 
 		about.SetDestroyWithParent(true)
-		about.SetTransientFor(m.Window)
+		about.SetTransientFor(m.window)
 		about.SetProgramName(applicationTitle)
 		about.SetComments("An application...")
 		about.SetVersion(applicationVersion)
@@ -187,10 +200,10 @@ func (m *MainWindow) openAboutDialog() {
 			}
 		})
 
-		m.AboutDialog = about
+		m.aboutDialog = about
 	}
 
-	m.AboutDialog.Present()
+	m.aboutDialog.ShowAll()
 }
 
 func (m *MainWindow) openAddWindow() {

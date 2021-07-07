@@ -45,7 +45,7 @@ func (a *AddWindow) OpenForm(builder *SoftBuilder) {
 		addMovieButton := builder.getObject("addMovieButton").(*gtk.Button)
 		_ = addMovieButton.Connect("clicked", a.addMovieButtonClicked)
 
-		// IMDB Url entry
+		// IMDB Url and Movie Path entry
 		entry := builder.getObject("imdbEntry").(*gtk.Entry)
 		a.imdbUrlEntry = entry
 		entry = builder.getObject("moviePathEntry").(*gtk.Entry)
