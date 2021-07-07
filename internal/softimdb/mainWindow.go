@@ -11,7 +11,7 @@ import (
 )
 
 type MainWindow struct {
-	builder        *SoftBuilder
+	builder *SoftBuilder
 
 	window         *gtk.ApplicationWindow
 	aboutDialog    *gtk.AboutDialog
@@ -19,7 +19,9 @@ type MainWindow struct {
 	movieList      *gtk.FlowBox
 	storyLineLabel *gtk.Label
 
-	movies         map[int]*data.Movie
+	database *data.Database
+
+	movies map[int]*data.Movie
 }
 
 // NewMainWindow : Creates a new MainWindow object
@@ -68,17 +70,23 @@ func (m *MainWindow) OpenMainWindow(app *gtk.Application) {
 	m.movieList.SetActivateOnSingleClick(false)
 	_ = m.movieList.Connect("selected-children-changed", m.selectionChanged)
 	_ = m.movieList.Connect("child-activated", m.movieClicked)
-	m.fillMovieList()
 
 	//// Status bar
 	//statusBar := m.builder.getObject("main_window_status_bar").(*gtk.Statusbar)
 	//statusBar.Push(statusBar.GetContextId("gtk-startup"), "gtk-startup : version 0.1.0")
+
+	// Open database
+	m.database = data.DatabaseNew(false)
+
+	// Fill movie list box
+	m.refreshButtonClicked()
 
 	// Show the main window
 	m.window.ShowAll()
 }
 
 func (m *MainWindow) closeMainWindow() {
+	m.database.CloseDatabase()
 	m.window.Close()
 	if m.addWindow != nil {
 		m.addWindow.Close()
@@ -104,15 +112,13 @@ func (m *MainWindow) setupMenu(window *gtk.ApplicationWindow) {
 }
 
 func (m *MainWindow) fillMovieList() {
-	db := data.DatabaseNew(false)
-	defer db.CloseDatabase()
-
-	movies, err := db.GetAllMovies()
+	movies, err := m.database.GetAllMovies()
 	if err != nil {
 		panic(err)
 	}
 
 	listHelper := ListHelperNew()
+	m.clearList()
 
 	for i := range movies {
 		movie := movies[i]
@@ -120,6 +126,19 @@ func (m *MainWindow) fillMovieList() {
 		frame := listHelper.GetMovieCard(movie)
 		m.movieList.Add(frame)
 		frame.SetName("frame_" + strconv.Itoa(movie.Id))
+	}
+}
+
+func (m *MainWindow) clearList() {
+	children := m.movieList.GetChildren()
+	if children == nil {
+		return
+	}
+	var i uint = 0
+	for ; i < children.Length(); {
+		widget, _ := children.NthData(i).(*gtk.Widget)
+		m.movieList.Remove(widget)
+		i++
 	}
 }
 
@@ -169,9 +188,13 @@ func (m *MainWindow) setupToolBar() {
 	button := m.builder.getObject("quitButton").(*gtk.ToolButton)
 	_ = button.Connect("clicked", m.window.Close)
 
+	// Refresh button
+	button = m.builder.getObject("refreshButton").(*gtk.ToolButton)
+	_ = button.Connect("clicked", m.refreshButtonClicked)
+
 	// Add button
 	button = m.builder.getObject("addButton").(*gtk.ToolButton)
-	_ = button.Connect("clicked", m.openAddWindow)
+	_ = button.Connect("clicked", m.openAddWindowClicked)
 }
 
 func (m *MainWindow) openAboutDialog() {
@@ -206,7 +229,12 @@ func (m *MainWindow) openAboutDialog() {
 	m.aboutDialog.ShowAll()
 }
 
-func (m *MainWindow) openAddWindow() {
+func (m *MainWindow) openAddWindowClicked() {
 	addWindow := AddWindowNew()
-	addWindow.OpenForm(m.builder)
+	addWindow.OpenForm(m.builder, m.database)
+}
+
+func (m *MainWindow) refreshButtonClicked() {
+	m.fillMovieList()
+	m.movieList.ShowAll()
 }

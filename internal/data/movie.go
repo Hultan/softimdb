@@ -65,7 +65,14 @@ func (d *Database) GetAllMovies() ([]*Movie, error) {
 	for i := range movies {
 		movie := movies[i]
 
-		// Check cache
+		// Load genres (tags)
+		tags, err := d.GetTagsForMovie(movie)
+		if err != nil {
+			return nil, err
+		}
+		movie.Tags = tags
+
+		// Check cache for image
 		image := d.cache.Load(movie.Id)
 		if image != nil {
 			movie.Image = image
@@ -76,12 +83,6 @@ func (d *Database) GetAllMovies() ([]*Movie, error) {
 		// and store it in cache
 		d.getMovieImage(movie)
 		d.cache.Save(movie.Id,movie.Image)
-
-		tags, err := d.GetTagsForMovie(movie)
-		if err != nil {
-			return nil, err
-		}
-		movie.Tags = tags
 	}
 
 	return movies, nil

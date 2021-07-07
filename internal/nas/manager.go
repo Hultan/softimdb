@@ -9,10 +9,17 @@ import (
 )
 
 type Manager struct {
+	database *data.Database
 }
 
-func ManagerNew() *Manager {
-	return new(Manager)
+func ManagerNew(database *data.Database) *Manager {
+	manager := new(Manager)
+	manager.database = database
+	return manager
+}
+
+func (m Manager) Disconnect() {
+	m.database = nil
 }
 
 func (m Manager) GetMovies() *[]string {

@@ -12,13 +12,14 @@ type AddWindow struct {
 	list           *gtk.ListBox
 	imdbUrlEntry   *gtk.Entry
 	moviePathEntry *gtk.Entry
+	database       *data.Database
 }
 
 func AddWindowNew() *AddWindow {
 	return new(AddWindow)
 }
 
-func (a *AddWindow) OpenForm(builder *SoftBuilder) {
+func (a *AddWindow) OpenForm(builder *SoftBuilder, database *data.Database) {
 	if a.Window == nil {
 		// Get the extra window from glade
 		addWindow := builder.getObject("addWindow").(*gtk.Window)
@@ -51,12 +52,16 @@ func (a *AddWindow) OpenForm(builder *SoftBuilder) {
 		entry = builder.getObject("moviePathEntry").(*gtk.Entry)
 		a.moviePathEntry = entry
 
+		// Store reference to database and window
+		a.database = database
 		a.Window = addWindow
 	}
 
 	// Paths on NAS
-	nasManager := nas.ManagerNew()
+	nasManager := nas.ManagerNew(a.database)
 	moviePaths := nasManager.GetMovies()
+	nasManager.Disconnect()
+
 
 	// Paths list
 	list := builder.getObject("pathsList").(*gtk.ListBox)
@@ -99,13 +104,11 @@ func (a *AddWindow) ignorePathButtonClicked() {
 		if err != nil {
 			return
 		}
-		db := data.DatabaseNew(false)
 		ignorePath := data.IgnoredPath{Path: path}
-		err = db.InsertIgnorePath(&ignorePath)
+		err = a.database.InsertIgnorePath(&ignorePath)
 		if err != nil {
 			return
 		}
-		db.CloseDatabase()
 
 		a.list.Remove(row)
 	}
@@ -124,12 +127,10 @@ func (a *AddWindow) addMovieButtonClicked() {
 		panic(err)
 	}
 
-	db := data.DatabaseNew(false)
-	err = db.InsertMovie(&movie)
+	err = a.database.InsertMovie(&movie)
 	if err != nil {
 		panic(err)
 	}
-	db.CloseDatabase()
 
 	// Get selected row and remove it
 	row := a.list.GetSelectedRow()
@@ -152,11 +153,11 @@ func (a *AddWindow) getEntryText(entry *gtk.Entry) string {
 
 func (a *AddWindow) clearList() {
 	children := a.list.GetChildren()
-	if children==nil {
+	if children == nil {
 		return
 	}
 	var i uint = 0
-	for ;i<children.Length(); {
+	for ; i < children.Length(); {
 		widget, _ := children.NthData(i).(*gtk.Widget)
 		a.list.Remove(widget)
 		i++

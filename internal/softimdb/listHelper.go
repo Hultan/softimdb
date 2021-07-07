@@ -45,11 +45,11 @@ func (l *ListHelper) GetMovieCard(movie *data.Movie) *gtk.Frame {
 	// Image
 	pixBuf, err := gdk.PixbufNewFromBytesOnly(*movie.Image)
 	if err != nil {
-		return nil
+		panic(err)
 	}
 	image, err := gtk.ImageNewFromPixbuf(pixBuf)
 	if err != nil {
-		return nil
+		panic(err)
 	}
 	box.Add(image)
 
