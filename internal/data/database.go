@@ -1,9 +1,12 @@
 package data
 
 import (
+	"bufio"
 	"fmt"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
+	"log"
+	"os"
 )
 
 type Database struct {
@@ -11,6 +14,13 @@ type Database struct {
 	cache           *ImageCache
 	UseTestDatabase bool
 }
+
+const (
+	userName        = "per"
+	credentialsFile = "/home/per/.config/softteam/softimdb/.credentials"
+	serverIP        = "192.168.1.3"
+	portNumber      = 3306
+)
 
 func DatabaseNew(useTestDB bool) *Database {
 	database := new(Database)
@@ -31,7 +41,10 @@ func (d *Database) getDatabase() (*gorm.DB, error) {
 }
 
 func (d *Database) OpenDatabase() (*gorm.DB, error) {
-	var connectionString = fmt.Sprintf("per:KnaskimGjwQ6M!@tcp(192.168.1.3:3306)/%s?parseTime=True", constDatabaseName)
+
+	var connectionString = fmt.Sprintf("%s:%s@tcp(%s:%v)/%s?parseTime=True",
+		userName, d.getPassword(), serverIP, portNumber, constDatabaseName)
+
 	db, err := gorm.Open(mysql.New(mysql.Config{
 		DriverName: "mysql",
 		DSN:        connectionString,
@@ -61,4 +74,27 @@ func (d *Database) CloseDatabase() {
 	d.db = nil
 
 	return
+}
+
+func (d *Database) getPassword() string {
+	file, err := os.Open(credentialsFile)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer func() {
+		if err = file.Close(); err != nil {
+			log.Fatal(err)
+		}
+	}()
+
+	// Create a new scanner
+	scanner := bufio.NewScanner(file)
+	// Split by lines
+	scanner.Split(bufio.ScanLines)
+	// Scan the file
+	scanner.Scan()
+	// Read the first line (this is a single line file)
+	password := scanner.Text()
+
+	return password
 }

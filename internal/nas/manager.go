@@ -1,16 +1,21 @@
 package nas
 
 import (
+	"bufio"
 	"fmt"
 	"github.com/hirochachacha/go-smb2"
 	"github.com/hultan/softimdb/internal/data"
+	"log"
 	"net"
+	"os"
 	"path"
 )
 
 type Manager struct {
 	database *data.Database
 }
+
+const credentialsFile = "/home/per/.config/softteam/softimdb/.credentials"
 
 func ManagerNew(database *data.Database) *Manager {
 	manager := new(Manager)
@@ -25,7 +30,7 @@ func (m Manager) Disconnect() {
 func (m Manager) GetMovies() *[]string {
 	session := make(map[string]string)
 	session["Username"] = "per"
-	session["Password"] = "KnaskimGjwQ6M!"
+	session["Password"] = m.getPassword()
 	session["Domain"] = ""
 
 	client := connectClient("192.168.1.100", "Videos", session)
@@ -73,6 +78,29 @@ func (m Manager) removeMoviePaths(dirs *[]string, moviePaths *[]string) *[]strin
 	}
 
 	return result
+}
+
+func (m Manager) getPassword() string {
+	file, err := os.Open(credentialsFile)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer func() {
+		if err = file.Close(); err != nil {
+			log.Fatal(err)
+		}
+	}()
+
+	// Create a new scanner
+	scanner := bufio.NewScanner(file)
+	// Split by lines
+	scanner.Split(bufio.ScanLines)
+	// Scan the file
+	scanner.Scan()
+	// Read the first line (this is a single line file)
+	password := scanner.Text()
+
+	return password
 }
 
 func readDirectoryEx(fs *smb2.Share, pathName string, ignoredPaths []*data.IgnoredPath, dirs *[]string) {
