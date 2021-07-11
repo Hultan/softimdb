@@ -65,7 +65,7 @@ func (a *AddWindow) OpenForm(builder *SoftBuilder, database *data.Database) {
 
 	// Paths list
 	list := builder.getObject("pathsList").(*gtk.ListBox)
-	//_ = button.Connect("clicked", a.closeWindow)
+	_ = list.Connect("row-activated", a.rowActivated)
 	a.list = list
 	a.clearList()
 	a.fillList(list, *moviePaths)
@@ -81,6 +81,7 @@ func (a *AddWindow) closeWindow() {
 func (a *AddWindow) fillList(list *gtk.ListBox, paths []string) {
 	for i := range paths {
 		label, err := gtk.LabelNew(paths[i])
+		label.SetHAlign(gtk.ALIGN_START)
 		if err != nil {
 			panic(err)
 		}
@@ -162,4 +163,18 @@ func (a *AddWindow) clearList() {
 		a.list.Remove(widget)
 		i++
 	}
+}
+
+func (a *AddWindow) rowActivated() {
+	row := a.list.GetSelectedRow()
+	labelObj, err := row.GetChild()
+	if err != nil {
+		return
+	}
+	label := labelObj.(*gtk.Label)
+	path, err := label.GetText()
+	if err != nil {
+		return
+	}
+	a.moviePathEntry.SetText(path)
 }

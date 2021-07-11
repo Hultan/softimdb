@@ -1,5 +1,7 @@
 package data
 
+import "gorm.io/gorm"
+
 type Movie struct {
 	Id         int     `gorm:"column:id;primary_key"`
 	Title      string  `gorm:"column:title;size:100"`
@@ -50,17 +52,27 @@ func (d *Database) GetMovie(id int) (*Movie, error) {
 	return &movie, nil
 }
 
-func (d *Database) GetAllMovies() ([]*Movie, error) {
+func (d *Database) GetAllMovies(searchFor string) ([]*Movie, error) {
 	db, err := d.getDatabase()
 	if err != nil {
 		return nil, err
 	}
-	var movies []*Movie
-	//if result := db.Limit(10).Find(&movies); result.Error != nil {
-	if result := db.Order("title asc").Find(&movies); result.Error != nil {
-		return nil, result.Error
-	}
 
+	var movies []*Movie
+
+	var result *gorm.DB
+	if searchFor=="" {
+		if result = db.Order("title asc").Find(&movies); result.Error != nil {
+			return nil, result.Error
+		}
+	}else {
+		s := "%" + searchFor + "%"
+		if result = db.Where("title like ? OR sub_title like ? OR year like ? OR story_line like ?", s, s, s, s).
+			Order("title asc").
+			Find(&movies); result.Error != nil {
+			return nil, result.Error
+		}
+	}
 	// Get images for movies
 	for i := range movies {
 		movie := movies[i]

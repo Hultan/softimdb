@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"strconv"
+	"strings"
 )
 
 type MainWindow struct {
@@ -18,6 +19,8 @@ type MainWindow struct {
 	addWindow      *gtk.Window
 	movieList      *gtk.FlowBox
 	storyLineLabel *gtk.Label
+	searchEntry    *gtk.Entry
+	searchButton   *gtk.ToolButton
 
 	database *data.Database
 
@@ -48,6 +51,7 @@ func (m *MainWindow) OpenMainWindow(app *gtk.Application) {
 
 	// Hook up the destroy event
 	_ = m.window.Connect("destroy", m.closeMainWindow)
+	_ = m.window.Connect("key-press-event", m.keyPressEvent)
 
 	// StoryLine label
 	m.storyLineLabel = m.builder.getObject("storyLineLabel").(*gtk.Label)
@@ -111,8 +115,8 @@ func (m *MainWindow) setupMenu(window *gtk.ApplicationWindow) {
 	_ = menuHelpAbout.Connect("activate", m.openAboutDialog)
 }
 
-func (m *MainWindow) fillMovieList() {
-	movies, err := m.database.GetAllMovies()
+func (m *MainWindow) fillMovieList(searchFor string) {
+	movies, err := m.database.GetAllMovies(searchFor)
 	if err != nil {
 		panic(err)
 	}
@@ -144,17 +148,27 @@ func (m *MainWindow) clearList() {
 
 func (m *MainWindow) selectionChanged(_ *gtk.FlowBox) {
 	movie := m.getSelectedMovie()
+	if movie == nil {
+		return
+	}
 	story := `<span font="Sans Regular 10" foreground="#d49c6b">` + cleanString(movie.StoryLine) + `</span>`
 	m.storyLineLabel.SetMarkup(story)
 }
 
 func (m *MainWindow) movieClicked(_ *gtk.FlowBox) {
 	movie := m.getSelectedMovie()
+	if movie == nil {
+		return
+	}
 	m.openMovieDirectoryInNemo(movie)
 }
 
 func (m *MainWindow) getSelectedMovie() *data.Movie {
-	selected := m.movieList.GetSelectedChildren()[0]
+	children := m.movieList.GetSelectedChildren()
+	if children == nil {
+		return nil
+	}
+	selected := children[0]
 	frameObj, err := selected.GetChild()
 	if err != nil {
 		return nil
@@ -195,6 +209,14 @@ func (m *MainWindow) setupToolBar() {
 	// Add button
 	button = m.builder.getObject("addButton").(*gtk.ToolButton)
 	_ = button.Connect("clicked", m.openAddWindowClicked)
+
+	// Search button
+	m.searchButton = m.builder.getObject("searchButton").(*gtk.ToolButton)
+	_ = m.searchButton.Connect("clicked", m.searchButtonClicked)
+
+	// Search entry
+	m.searchEntry = m.builder.getObject("searchEntry").(*gtk.Entry)
+	_ = m.searchEntry.Connect("activate", m.searchButtonClicked)
 }
 
 func (m *MainWindow) openAboutDialog() {
@@ -235,6 +257,33 @@ func (m *MainWindow) openAddWindowClicked() {
 }
 
 func (m *MainWindow) refreshButtonClicked() {
-	m.fillMovieList()
+	m.refresh("")
+}
+
+func (m *MainWindow) refresh(searchFor string) {
+	m.fillMovieList(searchFor)
 	m.movieList.ShowAll()
+	if searchFor=="" {
+		m.searchEntry.SetText("")
+	}
+}
+
+func (m *MainWindow) searchButtonClicked() {
+	searchFor, err := m.searchEntry.GetText()
+	if err != nil {
+		panic(err)
+	}
+	searchFor = strings.Trim(searchFor, " ")
+	m.refresh(searchFor)
+}
+
+func (m *MainWindow) keyPressEvent(_ *gtk.ApplicationWindow, event *gdk.Event) {
+	keyEvent := gdk.EventKeyNewFromEvent(event)
+
+	ctrl := (keyEvent.State() & gdk.CONTROL_MASK) > 0
+
+	// Catch CTRL + s
+	if keyEvent.KeyVal() == gdk.KEY_s && ctrl {
+		m.searchEntry.GrabFocus()
+	}
 }
