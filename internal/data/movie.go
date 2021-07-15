@@ -17,6 +17,7 @@ type Movie struct {
 	Image     *[]byte `gorm:"-"`
 	ImageId   int     `gorm:"column:image_id;"`
 	ImagePath string  `gorm:"column:image_path;size:1024"`
+	ToWatch   bool    `gorm:"column:to_watch"`
 }
 
 func (m *Movie) TableName() string {
@@ -61,11 +62,11 @@ func (d *Database) GetAllMovies(searchFor string) ([]*Movie, error) {
 	var movies []*Movie
 
 	var result *gorm.DB
-	if searchFor=="" {
+	if searchFor == "" {
 		if result = db.Order("title asc").Find(&movies); result.Error != nil {
 			return nil, result.Error
 		}
-	}else {
+	} else {
 		s := "%" + searchFor + "%"
 		if result = db.Where("title like ? OR sub_title like ? OR year like ? OR story_line like ?", s, s, s, s).
 			Order("title asc").
@@ -94,7 +95,7 @@ func (d *Database) GetAllMovies(searchFor string) ([]*Movie, error) {
 		// Image is not in cache, so load it from database
 		// and store it in cache
 		d.getMovieImage(movie)
-		d.cache.Save(movie.Id,movie.Image)
+		d.cache.Save(movie.Id, movie.Image)
 	}
 
 	return movies, nil
@@ -112,7 +113,7 @@ func (d *Database) GetAllMoviePaths() (*[]string, error) {
 	}
 
 	var paths = &[]string{}
-	for i:= range movies {
+	for i := range movies {
 		*paths = append(*paths, movies[i].MoviePath)
 	}
 	return paths, nil
