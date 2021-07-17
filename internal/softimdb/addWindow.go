@@ -9,19 +9,22 @@ import (
 )
 
 type AddWindow struct {
-	Window         *gtk.Window
+	framework      *framework.Framework
+	window         *gtk.Window
 	list           *gtk.ListBox
 	imdbUrlEntry   *gtk.Entry
 	moviePathEntry *gtk.Entry
 	database       *data.Database
 }
 
-func AddWindowNew() *AddWindow {
-	return new(AddWindow)
+func AddWindowNew(framework *framework.Framework) *AddWindow {
+	a := new(AddWindow)
+	a.framework = framework
+	return a
 }
 
-func (a *AddWindow) OpenForm(builder *framework.Builder, database *data.Database) {
-	if a.Window == nil {
+func (a *AddWindow) OpenForm(builder *framework.GtkBuilder,  database *data.Database) {
+	if a.window == nil {
 		// Get the extra window from glade
 		addWindow := builder.GetObject("addWindow").(*gtk.Window)
 
@@ -55,7 +58,7 @@ func (a *AddWindow) OpenForm(builder *framework.Builder, database *data.Database
 
 		// Store reference to database and window
 		a.database = database
-		a.Window = addWindow
+		a.window = addWindow
 	}
 
 	// Paths on NAS
@@ -63,21 +66,19 @@ func (a *AddWindow) OpenForm(builder *framework.Builder, database *data.Database
 	moviePaths := nasManager.GetMovies()
 	nasManager.Disconnect()
 
-
 	// Paths list
 	list := builder.GetObject("pathsList").(*gtk.ListBox)
 	_ = list.Connect("row-activated", a.rowActivated)
 	a.list = list
-	g := framework.NewGTK()
-	g.ClearListBox(a.list)
+	a.framework.Gtk.ClearListBox(a.list)
 	a.fillList(list, *moviePaths)
 
 	// Show the window
-	a.Window.ShowAll()
+	a.window.ShowAll()
 }
 
 func (a *AddWindow) closeWindow() {
-	a.Window.Hide()
+	a.window.Hide()
 }
 
 func (a *AddWindow) fillList(list *gtk.ListBox, paths []string) {

@@ -70,11 +70,11 @@ func (m Manager) GetMovies() *[]string {
 func (m Manager) removeMoviePaths(dirs *[]string, moviePaths *[]string) *[]string {
 	var result = &[]string{}
 
-	slice := framework.NewSlice()
+	fw := framework.NewFramework()
 	for i:= range *dirs {
 		dir := (*dirs)[i]
 
-		if !slice.ContainsString(*moviePaths, dir) {
+		if !fw.Slice.ContainsString(*moviePaths, dir) {
 			*result = append(*result, dir)
 		}
 	}
@@ -83,8 +83,8 @@ func (m Manager) removeMoviePaths(dirs *[]string, moviePaths *[]string) *[]strin
 }
 
 func (m Manager) getPassword() string {
-	io := framework.NewIO()
-	password, err := io.ReadAllText(credentialsFile)
+	fw := framework.NewFramework()
+	password, err := fw.IO.ReadAllText(credentialsFile)
 	if err != nil {
 		panic(err)
 	}

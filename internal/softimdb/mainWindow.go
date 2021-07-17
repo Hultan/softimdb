@@ -12,11 +12,12 @@ import (
 )
 
 type MainWindow struct {
-	builder *framework.Builder
+	builder        *framework.GtkBuilder
+	framework      *framework.Framework
 
 	window         *gtk.ApplicationWindow
 	aboutDialog    *gtk.AboutDialog
-	addWindow      *gtk.Window
+	addWindow      *AddWindow
 	movieList      *gtk.FlowBox
 	storyLineLabel *gtk.Label
 	searchEntry    *gtk.Entry
@@ -40,7 +41,9 @@ func (m *MainWindow) OpenMainWindow(app *gtk.Application) {
 	gtk.Init(&os.Args)
 
 	// Create a new softBuilder
-	builder, err := framework.NewBuilder("main.glade")
+	fw := framework.NewFramework()
+	m.framework = fw
+	builder, err := fw.Gtk.CreateBuilder("main.glade")
 	if err != nil {
 		panic(err)
 	}
@@ -97,7 +100,7 @@ func (m *MainWindow) closeMainWindow() {
 	m.database.CloseDatabase()
 	m.window.Close()
 	if m.addWindow != nil {
-		m.addWindow.Close()
+		m.addWindow.window.Close()
 	}
 	if m.aboutDialog != nil {
 		m.aboutDialog.Close()
@@ -126,8 +129,7 @@ func (m *MainWindow) fillMovieList(searchFor string) {
 	}
 
 	listHelper := ListHelperNew()
-	g := framework.NewGTK()
-	g.ClearFlowBox(m.movieList)
+	m.framework.Gtk.ClearFlowBox(m.movieList)
 
 	for i := range movies {
 		movie := movies[i]
@@ -185,8 +187,7 @@ func (m *MainWindow) getSelectedMovie() *data.Movie {
 
 func (m *MainWindow) openMovieDirectoryInNemo(movie *data.Movie) {
 	path := "smb://192.168.1.100/Videos/" + movie.MoviePath
-	process := framework.NewProcess()
-	process.OpenInNemo(path)
+	m.framework.Process.OpenInNemo(path)
 }
 
 func (m *MainWindow) setupToolBar() {
@@ -222,8 +223,7 @@ func (m *MainWindow) openAboutDialog() {
 		about.SetVersion(applicationVersion)
 		about.SetCopyright(applicationCopyRight)
 
-		resource := framework.NewResource()
-		image, err := gdk.PixbufNewFromFile(resource.GetResourcePath("application.png"))
+		image, err := gdk.PixbufNewFromFile(m.framework.Resource.GetResourcePath("application.png"))
 		if err == nil {
 			about.SetLogo(image)
 		}
@@ -244,8 +244,11 @@ func (m *MainWindow) openAboutDialog() {
 }
 
 func (m *MainWindow) openAddWindowClicked() {
-	addWindow := AddWindowNew()
-	addWindow.OpenForm(m.builder, m.database)
+	if m.addWindow == nil {
+		m.addWindow = AddWindowNew(m.framework)
+	}
+
+	m.addWindow.OpenForm(m.builder, m.database)
 }
 
 func (m *MainWindow) refreshButtonClicked() {
