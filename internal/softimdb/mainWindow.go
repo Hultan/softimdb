@@ -5,14 +5,14 @@ import (
 	"github.com/gotk3/gotk3/gdk"
 	"github.com/gotk3/gotk3/gtk"
 	"github.com/hultan/softimdb/internal/data"
+	"github.com/hultan/softteam/framework"
 	"os"
-	"os/exec"
 	"strconv"
 	"strings"
 )
 
 type MainWindow struct {
-	builder *SoftBuilder
+	builder *framework.Builder
 
 	window         *gtk.ApplicationWindow
 	aboutDialog    *gtk.AboutDialog
@@ -40,10 +40,14 @@ func (m *MainWindow) OpenMainWindow(app *gtk.Application) {
 	gtk.Init(&os.Args)
 
 	// Create a new softBuilder
-	m.builder = SoftBuilderNew("main.glade")
+	builder, err := framework.NewBuilder("main.glade")
+	if err != nil {
+		panic(err)
+	}
+	m.builder = builder
 
 	// Get the main window from the glade file
-	m.window = m.builder.getObject("mainWindow").(*gtk.ApplicationWindow)
+	m.window = m.builder.GetObject("mainWindow").(*gtk.ApplicationWindow)
 
 	// Set up main window
 	m.window.SetApplication(app)
@@ -54,7 +58,7 @@ func (m *MainWindow) OpenMainWindow(app *gtk.Application) {
 	_ = m.window.Connect("key-press-event", m.keyPressEvent)
 
 	// StoryLine label
-	m.storyLineLabel = m.builder.getObject("storyLineLabel").(*gtk.Label)
+	m.storyLineLabel = m.builder.GetObject("storyLineLabel").(*gtk.Label)
 
 	// Toolbar
 	m.setupToolBar()
@@ -63,7 +67,7 @@ func (m *MainWindow) OpenMainWindow(app *gtk.Application) {
 	m.setupMenu(m.window)
 
 	// MovieList
-	m.movieList = m.builder.getObject("movieList").(*gtk.FlowBox)
+	m.movieList = m.builder.GetObject("movieList").(*gtk.FlowBox)
 	m.movieList.SetSelectionMode(gtk.SELECTION_SINGLE)
 	m.movieList.SetRowSpacing(listSpacing)
 	m.movieList.SetColumnSpacing(listSpacing)
@@ -108,10 +112,10 @@ func (m *MainWindow) closeMainWindow() {
 }
 
 func (m *MainWindow) setupMenu(window *gtk.ApplicationWindow) {
-	menuQuit := m.builder.getObject("menuFileQuit").(*gtk.MenuItem)
+	menuQuit := m.builder.GetObject("menuFileQuit").(*gtk.MenuItem)
 	_ = menuQuit.Connect("activate", window.Close)
 
-	menuHelpAbout := m.builder.getObject("menuHelpAbout").(*gtk.MenuItem)
+	menuHelpAbout := m.builder.GetObject("menuHelpAbout").(*gtk.MenuItem)
 	_ = menuHelpAbout.Connect("activate", m.openAboutDialog)
 }
 
@@ -122,7 +126,8 @@ func (m *MainWindow) fillMovieList(searchFor string) {
 	}
 
 	listHelper := ListHelperNew()
-	m.clearList()
+	g := framework.NewGTK()
+	g.ClearFlowBox(m.movieList)
 
 	for i := range movies {
 		movie := movies[i]
@@ -130,19 +135,6 @@ func (m *MainWindow) fillMovieList(searchFor string) {
 		frame := listHelper.GetMovieCard(movie)
 		m.movieList.Add(frame)
 		frame.SetName("frame_" + strconv.Itoa(movie.Id))
-	}
-}
-
-func (m *MainWindow) clearList() {
-	children := m.movieList.GetChildren()
-	if children == nil {
-		return
-	}
-	var i uint = 0
-	for ; i < children.Length(); {
-		widget, _ := children.NthData(i).(*gtk.Widget)
-		m.movieList.Remove(widget)
-		i++
 	}
 }
 
@@ -193,35 +185,35 @@ func (m *MainWindow) getSelectedMovie() *data.Movie {
 
 func (m *MainWindow) openMovieDirectoryInNemo(movie *data.Movie) {
 	path := "smb://192.168.1.100/Videos/" + movie.MoviePath
-	command := exec.Command("nemo", path)
-	_ = command.Run()
+	process := framework.NewProcess()
+	process.OpenInNemo(path)
 }
 
 func (m *MainWindow) setupToolBar() {
 	// Quit button
-	button := m.builder.getObject("quitButton").(*gtk.ToolButton)
+	button := m.builder.GetObject("quitButton").(*gtk.ToolButton)
 	_ = button.Connect("clicked", m.window.Close)
 
 	// Refresh button
-	button = m.builder.getObject("refreshButton").(*gtk.ToolButton)
+	button = m.builder.GetObject("refreshButton").(*gtk.ToolButton)
 	_ = button.Connect("clicked", m.refreshButtonClicked)
 
 	// Add button
-	button = m.builder.getObject("addButton").(*gtk.ToolButton)
+	button = m.builder.GetObject("addButton").(*gtk.ToolButton)
 	_ = button.Connect("clicked", m.openAddWindowClicked)
 
 	// Search button
-	m.searchButton = m.builder.getObject("searchButton").(*gtk.ToolButton)
+	m.searchButton = m.builder.GetObject("searchButton").(*gtk.ToolButton)
 	_ = m.searchButton.Connect("clicked", m.searchButtonClicked)
 
 	// Search entry
-	m.searchEntry = m.builder.getObject("searchEntry").(*gtk.Entry)
+	m.searchEntry = m.builder.GetObject("searchEntry").(*gtk.Entry)
 	_ = m.searchEntry.Connect("activate", m.searchButtonClicked)
 }
 
 func (m *MainWindow) openAboutDialog() {
 	if m.aboutDialog == nil {
-		about := m.builder.getObject("aboutDialog").(*gtk.AboutDialog)
+		about := m.builder.GetObject("aboutDialog").(*gtk.AboutDialog)
 
 		about.SetDestroyWithParent(true)
 		about.SetTransientFor(m.window)
@@ -230,7 +222,7 @@ func (m *MainWindow) openAboutDialog() {
 		about.SetVersion(applicationVersion)
 		about.SetCopyright(applicationCopyRight)
 
-		resource := ResourcesNew()
+		resource := framework.NewResource()
 		image, err := gdk.PixbufNewFromFile(resource.GetResourcePath("application.png"))
 		if err == nil {
 			about.SetLogo(image)
@@ -263,7 +255,7 @@ func (m *MainWindow) refreshButtonClicked() {
 func (m *MainWindow) refresh(searchFor string) {
 	m.fillMovieList(searchFor)
 	m.movieList.ShowAll()
-	if searchFor=="" {
+	if searchFor == "" {
 		m.searchEntry.SetText("")
 	}
 }

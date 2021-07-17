@@ -1,14 +1,13 @@
 package nas
 
 import (
-	"bufio"
 	"fmt"
 	"github.com/hirochachacha/go-smb2"
 	"github.com/hultan/softimdb/internal/data"
-	"log"
+	"github.com/hultan/softteam/framework"
 	"net"
-	"os"
 	"path"
+	"strings"
 )
 
 type Manager struct {
@@ -16,6 +15,8 @@ type Manager struct {
 }
 
 const credentialsFile = "/home/per/.config/softteam/softimdb/.credentials"
+const IpNas = "192.168.1.100"
+const FolderNas = "Videos"
 
 func ManagerNew(database *data.Database) *Manager {
 	manager := new(Manager)
@@ -33,9 +34,9 @@ func (m Manager) GetMovies() *[]string {
 	session["Password"] = m.getPassword()
 	session["Domain"] = ""
 
-	client := connectClient("192.168.1.100", "Videos", session)
+	client := connectClient(IpNas, FolderNas, session)
 
-	fs, err := client.Mount(`Videos`)
+	fs, err := client.Mount(FolderNas)
 	if err != nil {
 		panic(err)
 	}
@@ -69,10 +70,11 @@ func (m Manager) GetMovies() *[]string {
 func (m Manager) removeMoviePaths(dirs *[]string, moviePaths *[]string) *[]string {
 	var result = &[]string{}
 
+	slice := framework.NewSlice()
 	for i:= range *dirs {
 		dir := (*dirs)[i]
 
-		if !contains(*moviePaths, dir) {
+		if !slice.ContainsString(*moviePaths, dir) {
 			*result = append(*result, dir)
 		}
 	}
@@ -81,26 +83,13 @@ func (m Manager) removeMoviePaths(dirs *[]string, moviePaths *[]string) *[]strin
 }
 
 func (m Manager) getPassword() string {
-	file, err := os.Open(credentialsFile)
+	io := framework.NewIO()
+	password, err := io.ReadAllText(credentialsFile)
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
-	defer func() {
-		if err = file.Close(); err != nil {
-			log.Fatal(err)
-		}
-	}()
 
-	// Create a new scanner
-	scanner := bufio.NewScanner(file)
-	// Split by lines
-	scanner.Split(bufio.ScanLines)
-	// Scan the file
-	scanner.Scan()
-	// Read the first line (this is a single line file)
-	password := scanner.Text()
-
-	return password
+	return strings.Replace(password, "\n", "", -1)
 }
 
 func readDirectoryEx(fs *smb2.Share, pathName string, ignoredPaths []*data.IgnoredPath, dirs *[]string) {
@@ -123,15 +112,6 @@ func readDirectoryEx(fs *smb2.Share, pathName string, ignoredPaths []*data.Ignor
 		}
 		readDirectoryEx(fs,path.Join(pathName, file.Name()), ignoredPaths, dirs)
 	}
-}
-
-func contains(slice []string, find string) bool {
-	for _, a := range slice {
-		if a == find {
-			return true
-		}
-	}
-	return false
 }
 
 func getIgnorePath(paths []*data.IgnoredPath, name string) *data.IgnoredPath {

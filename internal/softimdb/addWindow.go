@@ -5,6 +5,7 @@ import (
 	"github.com/hultan/softimdb/internal/data"
 	imdb2 "github.com/hultan/softimdb/internal/imdb"
 	"github.com/hultan/softimdb/internal/nas"
+	"github.com/hultan/softteam/framework"
 )
 
 type AddWindow struct {
@@ -19,10 +20,10 @@ func AddWindowNew() *AddWindow {
 	return new(AddWindow)
 }
 
-func (a *AddWindow) OpenForm(builder *SoftBuilder, database *data.Database) {
+func (a *AddWindow) OpenForm(builder *framework.Builder, database *data.Database) {
 	if a.Window == nil {
 		// Get the extra window from glade
-		addWindow := builder.getObject("addWindow").(*gtk.Window)
+		addWindow := builder.GetObject("addWindow").(*gtk.Window)
 
 		// Set up the extra window
 		addWindow.SetTitle("Add movie window")
@@ -35,21 +36,21 @@ func (a *AddWindow) OpenForm(builder *SoftBuilder, database *data.Database) {
 		_ = addWindow.Connect("delete-event", a.closeWindow)
 
 		// Close button
-		button := builder.getObject("closeButton").(*gtk.Button)
+		button := builder.GetObject("closeButton").(*gtk.Button)
 		_ = button.Connect("clicked", a.closeWindow)
 
 		// Ignore Path Button
-		ignoreButton := builder.getObject("ignorePathButton").(*gtk.Button)
+		ignoreButton := builder.GetObject("ignorePathButton").(*gtk.Button)
 		_ = ignoreButton.Connect("clicked", a.ignorePathButtonClicked)
 
 		// Add Movie Button
-		addMovieButton := builder.getObject("addMovieButton").(*gtk.Button)
+		addMovieButton := builder.GetObject("addMovieButton").(*gtk.Button)
 		_ = addMovieButton.Connect("clicked", a.addMovieButtonClicked)
 
 		// IMDB Url and Movie Path entry
-		entry := builder.getObject("imdbEntry").(*gtk.Entry)
+		entry := builder.GetObject("imdbEntry").(*gtk.Entry)
 		a.imdbUrlEntry = entry
-		entry = builder.getObject("moviePathEntry").(*gtk.Entry)
+		entry = builder.GetObject("moviePathEntry").(*gtk.Entry)
 		a.moviePathEntry = entry
 
 		// Store reference to database and window
@@ -64,10 +65,11 @@ func (a *AddWindow) OpenForm(builder *SoftBuilder, database *data.Database) {
 
 
 	// Paths list
-	list := builder.getObject("pathsList").(*gtk.ListBox)
+	list := builder.GetObject("pathsList").(*gtk.ListBox)
 	_ = list.Connect("row-activated", a.rowActivated)
 	a.list = list
-	a.clearList()
+	g := framework.NewGTK()
+	g.ClearListBox(a.list)
 	a.fillList(list, *moviePaths)
 
 	// Show the window
@@ -150,19 +152,6 @@ func (a *AddWindow) getEntryText(entry *gtk.Entry) string {
 		return ""
 	}
 	return text
-}
-
-func (a *AddWindow) clearList() {
-	children := a.list.GetChildren()
-	if children == nil {
-		return
-	}
-	var i uint = 0
-	for ; i < children.Length(); {
-		widget, _ := children.NthData(i).(*gtk.Widget)
-		a.list.Remove(widget)
-		i++
-	}
 }
 
 func (a *AddWindow) rowActivated() {
