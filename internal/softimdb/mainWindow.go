@@ -55,6 +55,7 @@ func (m *MainWindow) OpenMainWindow(app *gtk.Application) {
 	// Set up main window
 	m.window.SetApplication(app)
 	m.window.SetTitle(fmt.Sprintf("%s - %s", applicationTitle, applicationVersion))
+	m.window.Maximize()
 
 	// Hook up the destroy event
 	_ = m.window.Connect("destroy", m.closeMainWindow)

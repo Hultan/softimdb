@@ -1,7 +1,7 @@
 package softimdb
 
 import (
-	"strings"
+	"html"
 )
 
 // ErrorCheckWithPanic : panics on error
@@ -12,5 +12,6 @@ func ErrorCheckWithPanic(err error, message string) {
 }
 
 func cleanString(text string) string {
-	return strings.Replace(text,"&", "&amp;",-1)
+	text = html.EscapeString(text)
+	return text
 }
