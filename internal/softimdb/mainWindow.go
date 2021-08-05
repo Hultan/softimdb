@@ -278,8 +278,8 @@ func (m *MainWindow) keyPressEvent(_ *gtk.ApplicationWindow, event *gdk.Event) {
 
 	ctrl := (keyEvent.State() & gdk.CONTROL_MASK) > 0
 
-	// Catch CTRL + s
-	if keyEvent.KeyVal() == gdk.KEY_s && ctrl {
+	// Catch CTRL + f
+	if keyEvent.KeyVal() == gdk.KEY_f && ctrl {
 		m.searchEntry.GrabFocus()
 	}
 }
