@@ -12,8 +12,8 @@ import (
 )
 
 type MainWindow struct {
-	builder        *framework.GtkBuilder
-	framework      *framework.Framework
+	builder   *framework.GtkBuilder
+	framework *framework.Framework
 
 	window         *gtk.ApplicationWindow
 	aboutDialog    *gtk.AboutDialog
@@ -27,6 +27,10 @@ type MainWindow struct {
 
 	movies map[int]*data.Movie
 }
+
+var sortBy, sortOrder, tagIndex int
+var searchFor string
+var noneItem, menuSortByName, menuSortAscending *gtk.RadioMenuItem
 
 // NewMainWindow : Creates a new MainWindow object
 func NewMainWindow() *MainWindow {
@@ -64,6 +68,9 @@ func (m *MainWindow) OpenMainWindow(app *gtk.Application) {
 	// StoryLine label
 	m.storyLineLabel = m.builder.GetObject("storyLineLabel").(*gtk.Label)
 
+	// Open database
+	m.database = data.DatabaseNew(false)
+
 	// Toolbar
 	m.setupToolBar()
 
@@ -86,9 +93,6 @@ func (m *MainWindow) OpenMainWindow(app *gtk.Application) {
 	//// Status bar
 	//statusBar := m.builder.getObject("main_window_status_bar").(*gtk.Statusbar)
 	//statusBar.Push(statusBar.GetContextId("gtk-startup"), "gtk-startup : version 0.1.0")
-
-	// Open database
-	m.database = data.DatabaseNew(false)
 
 	// Fill movie list box
 	m.refreshButtonClicked()
@@ -121,10 +125,58 @@ func (m *MainWindow) setupMenu(window *gtk.ApplicationWindow) {
 
 	menuHelpAbout := m.builder.GetObject("menuHelpAbout").(*gtk.MenuItem)
 	_ = menuHelpAbout.Connect("activate", m.openAboutDialog)
+
+	menuSortByName = m.builder.GetObject("menuSortByName").(*gtk.RadioMenuItem)
+	menuSortByRating := m.builder.GetObject("menuSortByRating").(*gtk.RadioMenuItem)
+	menuSortByYear := m.builder.GetObject("menuSortByYear").(*gtk.RadioMenuItem)
+	menuSortByName.Connect("activate", func() {
+		if menuSortByName.GetActive() {
+			fmt.Println("Sort by name")
+			sortBy = sortByName
+			m.refresh(searchFor,tagIndex, m.getSortBy())
+		}
+	})
+	menuSortByRating.Connect("activate", func() {
+		if menuSortByRating.GetActive() {
+			fmt.Println("Sort by rating")
+			sortBy = sortByRating
+			m.refresh(searchFor,tagIndex, m.getSortBy())
+		}
+	})
+	menuSortByYear.Connect("activate", func() {
+		if menuSortByYear.GetActive() {
+			fmt.Println("Sort by year")
+			sortBy = sortByYear
+			m.refresh(searchFor,tagIndex, m.getSortBy())
+		}
+	})
+
+	menuSortAscending = m.builder.GetObject("menuSortAscending").(*gtk.RadioMenuItem)
+	menuSortDescending := m.builder.GetObject("menuSortDescending").(*gtk.RadioMenuItem)
+	menuSortAscending.Connect("activate", func() {
+		if menuSortAscending.GetActive() {
+			fmt.Println("Sort ascending")
+			sortOrder = sortAscending
+			m.refresh(searchFor,tagIndex, m.getSortBy())
+		}
+	})
+	menuSortDescending.Connect("activate", func() {
+		if menuSortDescending.GetActive() {
+			fmt.Println("Sort descending")
+			sortOrder = sortDescending
+			m.refresh(searchFor,tagIndex, m.getSortBy())
+		}
+	})
+
+	sortBy = sortByName
+	sortOrder = sortAscending
+
+	menuTags := m.builder.GetObject("menuTags").(*gtk.MenuItem)
+	m.fillTagsMenu(menuTags)
 }
 
-func (m *MainWindow) fillMovieList(searchFor string) {
-	movies, err := m.database.GetAllMovies(searchFor)
+func (m *MainWindow) fillMovieList(searchFor string, categoryId int, sortBy string) {
+	movies, err := m.database.GetAllMovies(searchFor, categoryId, sortBy)
 	if err != nil {
 		panic(err)
 	}
@@ -253,24 +305,32 @@ func (m *MainWindow) openAddWindowClicked() {
 }
 
 func (m *MainWindow) refreshButtonClicked() {
-	m.refresh("")
+	searchFor=""
+	tagIndex=-1
+	sortBy = sortByName
+	sortOrder = sortAscending
+	noneItem.SetActive(true)
+	menuSortByName.SetActive(true)
+	menuSortAscending.SetActive(true)
+	m.refresh(searchFor, tagIndex, m.getSortBy())
 }
 
-func (m *MainWindow) refresh(searchFor string) {
-	m.fillMovieList(searchFor)
+func (m *MainWindow) refresh(search string, categoryId int, sortBy string) {
+	m.fillMovieList(search, categoryId, sortBy)
 	m.movieList.ShowAll()
-	if searchFor == "" {
+	if search == "" {
 		m.searchEntry.SetText("")
 	}
 }
 
 func (m *MainWindow) searchButtonClicked() {
-	searchFor, err := m.searchEntry.GetText()
+	search, err := m.searchEntry.GetText()
 	if err != nil {
 		panic(err)
 	}
-	searchFor = strings.Trim(searchFor, " ")
-	m.refresh(searchFor)
+	search = strings.Trim(search, " ")
+	searchFor = search
+	m.refresh(searchFor, tagIndex, m.getSortBy())
 }
 
 func (m *MainWindow) keyPressEvent(_ *gtk.ApplicationWindow, event *gdk.Event) {
@@ -282,4 +342,61 @@ func (m *MainWindow) keyPressEvent(_ *gtk.ApplicationWindow, event *gdk.Event) {
 	if keyEvent.KeyVal() == gdk.KEY_f && ctrl {
 		m.searchEntry.GrabFocus()
 	}
+}
+
+func (m *MainWindow) getSortBy() string {
+	var sort = ""
+
+	switch sortBy {
+	case sortByName:
+		sort = "title"
+	case sortByRating:
+		sort = "imdb_rating"
+	case sortByYear:
+		sort = "year"
+	}
+
+	switch sortOrder {
+	case sortAscending:
+		sort += " asc"
+	case sortDescending:
+		sort += " desc"
+	}
+
+	return sort
+}
+
+func (m *MainWindow) fillTagsMenu(menu *gtk.MenuItem) {
+	tags, _ := m.database.GetTags()
+	sub, _ := gtk.MenuNew()
+	menu.SetSubmenu(sub)
+	noneItem, _ = gtk.RadioMenuItemNewWithLabel(nil,"None")
+	group, _ := noneItem.GetGroup()
+	noneItem.SetActive(true)
+	noneItem.SetName("-1")
+	sub.Add(noneItem)
+	sep, _ := gtk.SeparatorMenuItemNew()
+	sub.Add(sep)
+
+	for _, tag := range tags {
+		item, _ := gtk.RadioMenuItemNewWithLabel(group, tag.Name)
+		item.SetName(strconv.Itoa(tag.Id))
+		item.Connect("activate", func() {
+			if item.GetActive() {
+				name,_ := item.GetName()
+				i,_ := strconv.Atoi(name)
+				tagIndex = i
+				m.refresh(searchFor, tagIndex, m.getSortBy())
+			}
+		})
+		sub.Add(item)
+	}
+	noneItem.Connect("activate", func() {
+		if noneItem.GetActive() {
+			name,_ := noneItem.GetName()
+			i,_ := strconv.Atoi(name)
+			tagIndex = i
+			m.refresh(searchFor, tagIndex, m.getSortBy())
+		}
+	})
 }

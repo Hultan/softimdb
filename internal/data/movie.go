@@ -53,27 +53,46 @@ func (d *Database) GetMovie(id int) (*Movie, error) {
 	return &movie, nil
 }
 
-func (d *Database) GetAllMovies(searchFor string) ([]*Movie, error) {
+func (d *Database) GetAllMovies(searchFor string, categoryId int, orderBy string) ([]*Movie, error) {
 	db, err := d.getDatabase()
 	if err != nil {
 		return nil, err
+	}
+	if orderBy == "" {
+		orderBy = "title asc"
 	}
 
 	var movies []*Movie
 
 	var result *gorm.DB
-	if searchFor == "" {
-		if result = db.Order("title asc").Find(&movies); result.Error != nil {
+	if searchFor == "" && categoryId == -1 {
+		if result = db.Order(orderBy).Find(&movies); result.Error != nil {
+			return nil, result.Error
+		}
+	} else if searchFor != "" && categoryId == -1 {
+		s := "%" + searchFor + "%"
+		if result = db.Where("title like ? OR sub_title like ? OR year like ? OR story_line like ?", s, s, s, s).
+			Order(orderBy).
+			Find(&movies); result.Error != nil {
+			return nil, result.Error
+		}
+	} else if searchFor == "" && categoryId >= 0 {
+		if result = db.Joins("JOIN movie_tag on movies.id = movie_tag.movie_id").
+			Where("movie_tag.tag_id = ?", categoryId).
+			Order(orderBy).
+			Find(&movies); result.Error != nil {
 			return nil, result.Error
 		}
 	} else {
 		s := "%" + searchFor + "%"
-		if result = db.Where("title like ? OR sub_title like ? OR year like ? OR story_line like ?", s, s, s, s).
-			Order("title asc").
+		if result = db.Joins("JOIN movie_tag on movies.id = movie_tag.movie_id").
+			Where("(title like ? OR sub_title like ? OR year like ? OR story_line like ?) AND movie_tag.tag_id = ?", s, s, s, s, categoryId).
+			Order(orderBy).
 			Find(&movies); result.Error != nil {
 			return nil, result.Error
 		}
 	}
+
 	// Get images for movies
 	for i := range movies {
 		movie := movies[i]

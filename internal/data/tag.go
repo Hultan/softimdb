@@ -102,3 +102,29 @@ func (d *Database) GetTagsForMovie(movie *Movie) ([]Tag, error) {
 
 	return tags, nil
 }
+
+
+func (d *Database) GetTags() ([]Tag, error) {
+	db, err := d.getDatabase()
+	if err != nil {
+		return nil, err
+	}
+
+	// Get tag id:s for movie
+	var tags []Tag
+	if result := db.Find(&tags); result.Error != nil {
+		return nil, result.Error
+	}
+	//
+	//// Get tags for movieTags
+	//for i := range movieTags {
+	//	// Get tag id:s for movie
+	//	var tag Tag
+	//	if result := db.Where("id=?", movieTags[i].TagId).Find(&tag); result.Error != nil {
+	//		return nil, result.Error
+	//	}
+	//	tags = append(tags, tag)
+	//}
+
+	return tags, nil
+}
