@@ -6,7 +6,6 @@ import (
 	"github.com/gotk3/gotk3/gtk"
 	"github.com/hultan/softimdb/internal/data"
 	"github.com/hultan/softteam/framework"
-	"os"
 	"strconv"
 	"strings"
 )
@@ -15,6 +14,7 @@ type MainWindow struct {
 	builder   *framework.GtkBuilder
 	framework *framework.Framework
 
+	application    *gtk.Application
 	window         *gtk.ApplicationWindow
 	aboutDialog    *gtk.AboutDialog
 	addWindow      *AddWindow
@@ -22,6 +22,7 @@ type MainWindow struct {
 	storyLineLabel *gtk.Label
 	searchEntry    *gtk.Entry
 	searchButton   *gtk.ToolButton
+	popupMenu      *PopupMenu
 
 	database *data.Database
 
@@ -41,8 +42,7 @@ func NewMainWindow() *MainWindow {
 
 // OpenMainWindow : Opens the MainWindow window
 func (m *MainWindow) OpenMainWindow(app *gtk.Application) {
-	// Initialize gtk
-	gtk.Init(&os.Args)
+	m.application = app
 
 	// Create a new softBuilder
 	fw := framework.NewFramework()
@@ -74,6 +74,10 @@ func (m *MainWindow) OpenMainWindow(app *gtk.Application) {
 	// Toolbar
 	m.setupToolBar()
 
+	// Popup menu
+	m.popupMenu = NewPopupMenu(m)
+	m.popupMenu.Setup()
+
 	// Menu
 	m.setupMenu(m.window)
 
@@ -87,6 +91,7 @@ func (m *MainWindow) OpenMainWindow(app *gtk.Application) {
 	m.movieList.SetMarginStart(listMargin)
 	m.movieList.SetMarginEnd(listMargin)
 	m.movieList.SetActivateOnSingleClick(false)
+	m.movieList.SetFocusOnClick(true)
 	_ = m.movieList.Connect("selected-children-changed", m.selectionChanged)
 	_ = m.movieList.Connect("child-activated", m.movieClicked)
 
@@ -117,6 +122,8 @@ func (m *MainWindow) closeMainWindow() {
 	m.aboutDialog = nil
 	m.window = nil
 	m.builder = nil
+
+	m.application.Quit()
 }
 
 func (m *MainWindow) setupMenu(window *gtk.ApplicationWindow) {
@@ -133,21 +140,21 @@ func (m *MainWindow) setupMenu(window *gtk.ApplicationWindow) {
 		if menuSortByName.GetActive() {
 			fmt.Println("Sort by name")
 			sortBy = sortByName
-			m.refresh(searchFor,tagIndex, m.getSortBy())
+			m.refresh(searchFor, tagIndex, m.getSortBy())
 		}
 	})
 	menuSortByRating.Connect("activate", func() {
 		if menuSortByRating.GetActive() {
 			fmt.Println("Sort by rating")
 			sortBy = sortByRating
-			m.refresh(searchFor,tagIndex, m.getSortBy())
+			m.refresh(searchFor, tagIndex, m.getSortBy())
 		}
 	})
 	menuSortByYear.Connect("activate", func() {
 		if menuSortByYear.GetActive() {
 			fmt.Println("Sort by year")
 			sortBy = sortByYear
-			m.refresh(searchFor,tagIndex, m.getSortBy())
+			m.refresh(searchFor, tagIndex, m.getSortBy())
 		}
 	})
 
@@ -157,14 +164,14 @@ func (m *MainWindow) setupMenu(window *gtk.ApplicationWindow) {
 		if menuSortAscending.GetActive() {
 			fmt.Println("Sort ascending")
 			sortOrder = sortAscending
-			m.refresh(searchFor,tagIndex, m.getSortBy())
+			m.refresh(searchFor, tagIndex, m.getSortBy())
 		}
 	})
 	menuSortDescending.Connect("activate", func() {
 		if menuSortDescending.GetActive() {
 			fmt.Println("Sort descending")
 			sortOrder = sortDescending
-			m.refresh(searchFor,tagIndex, m.getSortBy())
+			m.refresh(searchFor, tagIndex, m.getSortBy())
 		}
 	})
 
@@ -305,8 +312,8 @@ func (m *MainWindow) openAddWindowClicked() {
 }
 
 func (m *MainWindow) refreshButtonClicked() {
-	searchFor=""
-	tagIndex=-1
+	searchFor = ""
+	tagIndex = -1
 	sortBy = sortByName
 	sortOrder = sortAscending
 	noneItem.SetActive(true)
@@ -370,7 +377,7 @@ func (m *MainWindow) fillTagsMenu(menu *gtk.MenuItem) {
 	tags, _ := m.database.GetTags()
 	sub, _ := gtk.MenuNew()
 	menu.SetSubmenu(sub)
-	noneItem, _ = gtk.RadioMenuItemNewWithLabel(nil,"None")
+	noneItem, _ = gtk.RadioMenuItemNewWithLabel(nil, "None")
 	group, _ := noneItem.GetGroup()
 	noneItem.SetActive(true)
 	noneItem.SetName("-1")
@@ -383,8 +390,8 @@ func (m *MainWindow) fillTagsMenu(menu *gtk.MenuItem) {
 		item.SetName(strconv.Itoa(tag.Id))
 		item.Connect("activate", func() {
 			if item.GetActive() {
-				name,_ := item.GetName()
-				i,_ := strconv.Atoi(name)
+				name, _ := item.GetName()
+				i, _ := strconv.Atoi(name)
 				tagIndex = i
 				m.refresh(searchFor, tagIndex, m.getSortBy())
 			}
@@ -393,8 +400,8 @@ func (m *MainWindow) fillTagsMenu(menu *gtk.MenuItem) {
 	}
 	noneItem.Connect("activate", func() {
 		if noneItem.GetActive() {
-			name,_ := noneItem.GetName()
-			i,_ := strconv.Atoi(name)
+			name, _ := noneItem.GetName()
+			i, _ := strconv.Atoi(name)
 			tagIndex = i
 			m.refresh(searchFor, tagIndex, m.getSortBy())
 		}

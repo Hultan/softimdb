@@ -13,6 +13,9 @@ const (
 )
 
 func main() {
+	// Initialize gtk
+	gtk.Init(&os.Args)
+
 	// Create a new application
 	application, err := gtk.ApplicationNew(ApplicationId, ApplicationFlags)
 	softimdb.ErrorCheckWithPanic(err, "Failed to create GTK Application")

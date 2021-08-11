@@ -1,6 +1,9 @@
 package data
 
-import "gorm.io/gorm"
+import (
+	"fmt"
+	"gorm.io/gorm"
+)
 
 type Tag struct {
 	Id        int     `gorm:"column:id;primary_key"`
@@ -76,6 +79,22 @@ func (d *Database) InsertMovieTag(movie *Movie, tag *Tag) error {
 	}
 	return nil
 }
+
+func (d *Database) RemoveMovieTag(movie *Movie, tag *Tag) error {
+	db, err := d.getDatabase()
+	if err != nil {
+		return err
+	}
+	sql := fmt.Sprintf("delete from movie_tag where movie_id = %v and tag_id = %v", movie.Id, tag.Id)
+	tx := db.Exec(sql)
+
+	if tx.Error != nil {
+		return tx.Error
+	}
+
+	return nil
+}
+
 func (d *Database) GetTagsForMovie(movie *Movie) ([]Tag, error) {
 	db, err := d.getDatabase()
 	if err != nil {
