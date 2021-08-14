@@ -15,8 +15,8 @@ type Manager struct {
 }
 
 const credentialsFile = "/home/per/.config/softteam/softimdb/.credentials"
-const IpNas = "192.168.1.100"
-const FolderNas = "Videos"
+const IpNas = "192.168.1.200"
+const FolderNas = "videos"
 
 func ManagerNew(database *data.Database) *Manager {
 	manager := new(Manager)
