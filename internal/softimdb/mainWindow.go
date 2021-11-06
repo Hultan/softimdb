@@ -7,6 +7,7 @@ import (
 	"github.com/hultan/softimdb/internal/data"
 	"github.com/hultan/softimdb/internal/nas"
 	"github.com/hultan/softteam/framework"
+	"os/exec"
 	"strconv"
 	"strings"
 )
@@ -408,4 +409,29 @@ func (m *MainWindow) fillTagsMenu(menu *gtk.MenuItem) {
 			m.refresh(searchFor, tagIndex, m.getSortBy())
 		}
 	})
+}
+
+func (m *MainWindow) playMovie(movie *data.Movie) {
+	go func() {
+		path := fmt.Sprintf("smb://%s/%s/%s", nas.IpNas, nas.FolderNas, movie.MoviePath)
+		cmd := fmt.Sprintf("find %s -type f -exec du -h {} + | sort -r | head -n1", path)
+		file, err := m.executeCommand("bash", "-c", cmd)
+		if err != nil {
+			panic(err)
+		}
+		m.framework.Process.Open("smplayer", file)
+	}()
+}
+
+func (m *MainWindow) executeCommand(command string, arguments ...string) (string, error) {
+	cmd := exec.Command(command, arguments...)
+
+	// set the output to our variable
+	out, err := cmd.Output()
+	if err != nil {
+		fmt.Println(err)
+		return "", err
+	}
+
+	return string(out), nil
 }

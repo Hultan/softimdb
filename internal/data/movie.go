@@ -1,6 +1,8 @@
 package data
 
-import "gorm.io/gorm"
+import (
+	"gorm.io/gorm"
+)
 
 type Movie struct {
 	Id         int     `gorm:"column:id;primary_key"`

@@ -10,8 +10,9 @@ type PopupMenu struct {
 	mainWindow *MainWindow
 	popupMenu  *gtk.Menu
 
-	popupTags               *gtk.MenuItem
-	popupOpenFolder               *gtk.MenuItem
+	popupTags       *gtk.MenuItem
+	popupOpenFolder *gtk.MenuItem
+	popupPlayMovie  *gtk.MenuItem
 }
 
 func NewPopupMenu(window *MainWindow) *PopupMenu {
@@ -25,6 +26,7 @@ func (p *PopupMenu) Setup() {
 
 	p.popupTags = p.mainWindow.builder.GetObject("popupTags").(*gtk.MenuItem)
 	p.popupOpenFolder = p.mainWindow.builder.GetObject("popupOpenFolder").(*gtk.MenuItem)
+	p.popupPlayMovie = p.mainWindow.builder.GetObject("popupPlayMovie").(*gtk.MenuItem)
 
 	p.setupEvents()
 }
@@ -80,10 +82,18 @@ func (p *PopupMenu) setupEvents() {
 
 	p.popupOpenFolder.Connect("activate", func() {
 		movie := p.mainWindow.getSelectedMovie()
-		if movie== nil {
+		if movie == nil {
 			return
 		}
 		p.mainWindow.openMovieDirectoryInNemo(movie)
+	})
+
+	p.popupPlayMovie.Connect("activate", func() {
+		movie := p.mainWindow.getSelectedMovie()
+		if movie == nil {
+			return
+		}
+		p.mainWindow.playMovie(movie)
 	})
 }
 
