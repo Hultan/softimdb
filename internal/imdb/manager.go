@@ -3,23 +3,27 @@ package imdb
 import (
 	"errors"
 	"fmt"
-	"github.com/PuerkitoBio/goquery"
-	"github.com/hultan/softimdb/internal/data"
 	"io/ioutil"
 	"net/http"
 	"strconv"
 	"strings"
+
+	"github.com/PuerkitoBio/goquery"
+
+	"github.com/hultan/softimdb/internal/data"
 )
 
+// Manager represents a IMDB screen scraper.
 type Manager struct {
-
 }
 
+// ManagerNew creates a new IMDB Manager
 func ManagerNew() *Manager {
 	imdb := new(Manager)
 	return imdb
 }
 
+// GetMovieInfo fills in some IMDB information on the Movie instance passed.
 func (i *Manager) GetMovieInfo(movie *data.Movie) error {
 	doc, err := i.getDocument(movie.ImdbUrl)
 	if err != nil {
@@ -58,10 +62,6 @@ func (i *Manager) parseDocument(doc *goquery.Document, movie *data.Movie) bool {
 	// Title
 	movie.Title = doc.Find("h1.TitleHeader__TitleText-sc-1wu6n3d-0").Text() //First().Clone().Children().Remove().End()
 
-	//if movie.Title=="" {
-	//	return false
-	//}
-
 	// Year
 	year := doc.Find("a.rgaOW").First().Text()
 	movie.Year, _ = strconv.Atoi(year)
@@ -69,7 +69,7 @@ func (i *Manager) parseDocument(doc *goquery.Document, movie *data.Movie) bool {
 	doc.Find("div.ipc-media--poster-l img.ipc-image").Each(func(x int, s *goquery.Selection) {
 		imageSource, ok := s.Attr("src")
 		if ok {
-			imageData,_ := i.downloadFile(imageSource)
+			imageData, _ := i.downloadFile(imageSource)
 			movie.Image = imageData
 			movie.HasImage = true
 		}
@@ -87,9 +87,9 @@ func (i *Manager) parseDocument(doc *goquery.Document, movie *data.Movie) bool {
 		tagSource, ok := s.Attr("href")
 		if ok && strings.Contains(tagSource, "genres") {
 			genreName := s.Text()
-			//fmt.Println("GENRE:",genreName)
-			genre := data.Tag{Name:genreName}
-			if movie.Tags==nil {
+			// fmt.Println("GENRE:",genreName)
+			genre := data.Tag{Name: genreName}
+			if movie.Tags == nil {
 				movie.Tags = []data.Tag{}
 			}
 			movie.Tags = append(movie.Tags, genre)
@@ -100,7 +100,7 @@ func (i *Manager) parseDocument(doc *goquery.Document, movie *data.Movie) bool {
 }
 
 func (i *Manager) downloadFile(url string) (*[]byte, error) {
-	//Get the response bytes from the url
+	// Get the response bytes from the url
 	response, err := http.Get(url)
 	if err != nil {
 		return nil, err

@@ -2,14 +2,17 @@ package nas
 
 import (
 	"fmt"
-	"github.com/hirochachacha/go-smb2"
-	"github.com/hultan/softimdb/internal/data"
-	"github.com/hultan/softteam/framework"
 	"net"
 	"path"
 	"strings"
+
+	"github.com/hirochachacha/go-smb2"
+
+	"github.com/hultan/softimdb/internal/data"
+	"github.com/hultan/softteam/framework"
 )
 
+// Manager represents a NAS manager.
 type Manager struct {
 	database *data.Database
 }
@@ -18,16 +21,19 @@ const credentialsFile = "/home/per/.config/softteam/softimdb/.credentials"
 const IpNas = "192.168.1.200"
 const FolderNas = "videos"
 
+// ManagerNew creates a new Manager.
 func ManagerNew(database *data.Database) *Manager {
 	manager := new(Manager)
 	manager.database = database
 	return manager
 }
 
+// Disconnect closes the connection to the NAS.
 func (m Manager) Disconnect() {
 	m.database = nil
 }
 
+// GetMovies returns a list of movie paths on the NAS.
 func (m Manager) GetMovies() *[]string {
 	session := make(map[string]string)
 	session["Username"] = "per"
@@ -71,7 +77,7 @@ func (m Manager) removeMoviePaths(dirs *[]string, moviePaths *[]string) *[]strin
 	var result = &[]string{}
 
 	fw := framework.NewFramework()
-	for i:= range *dirs {
+	for i := range *dirs {
 		dir := (*dirs)[i]
 
 		if !fw.Slice.ContainsString(*moviePaths, dir) {
@@ -102,7 +108,7 @@ func readDirectoryEx(fs *smb2.Share, pathName string, ignoredPaths []*data.Ignor
 			continue
 		}
 
-		currentPath := path.Join(pathName,file.Name())
+		currentPath := path.Join(pathName, file.Name())
 		ignore := getIgnorePath(ignoredPaths, currentPath)
 		if ignore != nil && ignore.IgnoreCompletely {
 			continue
@@ -110,7 +116,7 @@ func readDirectoryEx(fs *smb2.Share, pathName string, ignoredPaths []*data.Ignor
 		if ignore == nil {
 			*dirs = append(*dirs, currentPath)
 		}
-		readDirectoryEx(fs,path.Join(pathName, file.Name()), ignoredPaths, dirs)
+		readDirectoryEx(fs, path.Join(pathName, file.Name()), ignoredPaths, dirs)
 	}
 }
 
@@ -124,13 +130,13 @@ func getIgnorePath(paths []*data.IgnoredPath, name string) *data.IgnoredPath {
 }
 
 func connectClient(host string, _ string, session map[string]string) *smb2.Client {
-	//Checks for a connection on port
+	// Checks for a connection on port
 	conn, err := net.Dial("tcp", host+":445")
 	if err != nil {
 		panic(err)
 	}
 
-	//smb auth
+	// Smb auth
 	d := &smb2.Dialer{
 		Initiator: &smb2.NTLMInitiator{
 			User:     session["Username"],
@@ -139,7 +145,7 @@ func connectClient(host string, _ string, session map[string]string) *smb2.Clien
 		},
 	}
 
-	//Returns a client session
+	// Returns a client session
 	client, err := d.Dial(conn)
 	if err != nil {
 		fmt.Println("Connection failed")
