@@ -2,9 +2,11 @@ package data
 
 import (
 	"fmt"
+
 	"gorm.io/gorm"
 )
 
+// Tag represents a movie tag.
 type Tag struct {
 	Id        int     `gorm:"column:id;primary_key"`
 	Name      string  `gorm:"column:name;size:255"`
@@ -12,19 +14,23 @@ type Tag struct {
 	Movies    []Movie `gorm:"-"`
 }
 
+// MovieTag represents a tag and a movie.
 type MovieTag struct {
 	MovieId int `gorm:"column:movie_id;primary_key;"`
 	TagId   int `gorm:"column:tag_id;primary_key;"`
 }
 
+// TableName returns the tag table name.
 func (t *Tag) TableName() string {
 	return "tag"
 }
 
+// TableName returns the movie_tag table name.
 func (m *MovieTag) TableName() string {
 	return "movie_tag"
 }
 
+// GetTagByName returns a tag by name.
 func (d *Database) GetTagByName(name string) (*Tag, error) {
 	db, err := d.getDatabase()
 	if err != nil {
@@ -41,6 +47,7 @@ func (d *Database) GetTagByName(name string) (*Tag, error) {
 	return &tag, nil
 }
 
+// GetOrInsertTag either returns an existing tag or inserts a new tag and returns it.
 func (d *Database) GetOrInsertTag(tag *Tag) (*Tag, error) {
 	db, err := d.getDatabase()
 	if err != nil {
@@ -65,6 +72,7 @@ func (d *Database) GetOrInsertTag(tag *Tag) (*Tag, error) {
 	return tag, nil
 }
 
+// InsertMovieTag inserts a movie tag into the database.
 func (d *Database) InsertMovieTag(movie *Movie, tag *Tag) error {
 	db, err := d.getDatabase()
 	if err != nil {
@@ -80,6 +88,7 @@ func (d *Database) InsertMovieTag(movie *Movie, tag *Tag) error {
 	return nil
 }
 
+// RemoveMovieTag removes a movie tag from the database.
 func (d *Database) RemoveMovieTag(movie *Movie, tag *Tag) error {
 	db, err := d.getDatabase()
 	if err != nil {
@@ -95,6 +104,7 @@ func (d *Database) RemoveMovieTag(movie *Movie, tag *Tag) error {
 	return nil
 }
 
+// GetTagsForMovie returns a list of tags connected to the given movie.
 func (d *Database) GetTagsForMovie(movie *Movie) ([]Tag, error) {
 	db, err := d.getDatabase()
 	if err != nil {
@@ -122,7 +132,7 @@ func (d *Database) GetTagsForMovie(movie *Movie) ([]Tag, error) {
 	return tags, nil
 }
 
-
+// GetTags returns all tags
 func (d *Database) GetTags() ([]Tag, error) {
 	db, err := d.getDatabase()
 	if err != nil {
@@ -134,16 +144,6 @@ func (d *Database) GetTags() ([]Tag, error) {
 	if result := db.Find(&tags); result.Error != nil {
 		return nil, result.Error
 	}
-	//
-	//// Get tags for movieTags
-	//for i := range movieTags {
-	//	// Get tag id:s for movie
-	//	var tag Tag
-	//	if result := db.Where("id=?", movieTags[i].TagId).Find(&tag); result.Error != nil {
-	//		return nil, result.Error
-	//	}
-	//	tags = append(tags, tag)
-	//}
 
 	return tags, nil
 }

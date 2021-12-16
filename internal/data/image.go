@@ -1,14 +1,17 @@
 package data
 
+// Image represents a movie image.
 type Image struct {
-	Id   int    `gorm:"column:id;primary_key"`
+	Id   int     `gorm:"column:id;primary_key"`
 	Data *[]byte `gorm:"column:image;"`
 }
 
+// TableName returns the name of the table.
 func (i *Image) TableName() string {
 	return "image"
 }
 
+// GetImage returns an image from the database.
 func (d *Database) GetImage(id int) (*Image, error) {
 	db, err := d.getDatabase()
 	if err != nil {
@@ -22,6 +25,7 @@ func (d *Database) GetImage(id int) (*Image, error) {
 	return &image, nil
 }
 
+// InsertImage inserts an image into the database.
 func (d *Database) InsertImage(image *Image) error {
 	db, err := d.getDatabase()
 	if err != nil {

@@ -4,6 +4,7 @@ import (
 	"gorm.io/gorm"
 )
 
+// Movie represents a movie in the database.
 type Movie struct {
 	Id         int     `gorm:"column:id;primary_key"`
 	Title      string  `gorm:"column:title;size:100"`
@@ -22,10 +23,12 @@ type Movie struct {
 	ToWatch   bool    `gorm:"column:to_watch"`
 }
 
+// TableName returns the name of the table.
 func (m *Movie) TableName() string {
 	return "movies"
 }
 
+// GetMovie returns a movie from the database.
 func (d *Database) GetMovie(id int) (*Movie, error) {
 	db, err := d.getDatabase()
 	if err != nil {
@@ -55,6 +58,7 @@ func (d *Database) GetMovie(id int) (*Movie, error) {
 	return &movie, nil
 }
 
+// GetAllMovies returns all movies in the database.
 func (d *Database) GetAllMovies(searchFor string, categoryId int, orderBy string) ([]*Movie, error) {
 	db, err := d.getDatabase()
 	if err != nil {
@@ -122,6 +126,7 @@ func (d *Database) GetAllMovies(searchFor string, categoryId int, orderBy string
 	return movies, nil
 }
 
+// GetAllMoviePaths returns a list of all the movie paths in the database. Used when adding new movies.
 func (d *Database) GetAllMoviePaths() (*[]string, error) {
 	db, err := d.getDatabase()
 	if err != nil {
@@ -140,6 +145,7 @@ func (d *Database) GetAllMoviePaths() (*[]string, error) {
 	return paths, nil
 }
 
+// InsertMovie adds a new movie to the database.
 func (d *Database) InsertMovie(movie *Movie) error {
 	db, err := d.getDatabase()
 	if err != nil {
@@ -176,6 +182,7 @@ func (d *Database) InsertMovie(movie *Movie) error {
 	return nil
 }
 
+// DeleteMovie removes a movie from the database.
 func (d *Database) DeleteMovie(movie *Movie) error {
 	db, err := d.getDatabase()
 	if err != nil {
