@@ -3,6 +3,7 @@ package softimdb
 import (
 	"github.com/gotk3/gotk3/gdk"
 	"github.com/gotk3/gotk3/gtk"
+
 	"github.com/hultan/softimdb/internal/data"
 )
 

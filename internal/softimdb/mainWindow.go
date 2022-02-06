@@ -2,14 +2,16 @@ package softimdb
 
 import (
 	"fmt"
-	"github.com/gotk3/gotk3/gdk"
-	"github.com/gotk3/gotk3/gtk"
-	"github.com/hultan/softimdb/internal/data"
-	"github.com/hultan/softimdb/internal/nas"
-	"github.com/hultan/softteam/framework"
 	"os/exec"
 	"strconv"
 	"strings"
+
+	"github.com/gotk3/gotk3/gdk"
+	"github.com/gotk3/gotk3/gtk"
+
+	"github.com/hultan/softimdb/internal/data"
+	"github.com/hultan/softimdb/internal/nas"
+	"github.com/hultan/softteam/framework"
 )
 
 type MainWindow struct {
@@ -97,9 +99,9 @@ func (m *MainWindow) OpenMainWindow(app *gtk.Application) {
 	_ = m.movieList.Connect("selected-children-changed", m.selectionChanged)
 	_ = m.movieList.Connect("child-activated", m.movieClicked)
 
-	//// Status bar
-	//statusBar := m.builder.getObject("main_window_status_bar").(*gtk.Statusbar)
-	//statusBar.Push(statusBar.GetContextId("gtk-startup"), "gtk-startup : version 0.1.0")
+	// // Status bar
+	// statusBar := m.builder.getObject("main_window_status_bar").(*gtk.Statusbar)
+	// statusBar.Push(statusBar.GetContextId("gtk-startup"), "gtk-startup : version 0.1.0")
 
 	// Fill movie list box
 	m.refreshButtonClicked()
@@ -249,7 +251,7 @@ func (m *MainWindow) getSelectedMovie() *data.Movie {
 
 func (m *MainWindow) openMovieDirectoryInNemo(movie *data.Movie) {
 	path := fmt.Sprintf("smb://%s/%s/%s", nas.IpNas, nas.FolderNas, movie.MoviePath)
-	//path := "smb://192.168.1.100/Videos/" + movie.MoviePath
+	// path := "smb://192.168.1.100/Videos/" + movie.MoviePath
 	m.framework.Process.OpenInNemo(path)
 }
 

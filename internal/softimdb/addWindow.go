@@ -2,6 +2,7 @@ package softimdb
 
 import (
 	"github.com/gotk3/gotk3/gtk"
+
 	"github.com/hultan/softimdb/internal/data"
 	imdb2 "github.com/hultan/softimdb/internal/imdb"
 	"github.com/hultan/softimdb/internal/nas"

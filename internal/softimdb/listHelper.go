@@ -2,8 +2,10 @@ package softimdb
 
 import (
 	"fmt"
+
 	"github.com/gotk3/gotk3/gdk"
 	"github.com/gotk3/gotk3/gtk"
+
 	"github.com/hultan/softimdb/internal/data"
 )
 
@@ -20,6 +22,7 @@ func (l *ListHelper) GetMovieCard(movie *data.Movie) *gtk.Frame {
 	if err != nil {
 		panic(err)
 	}
+
 	// Create the card (box)
 	box, err := gtk.BoxNew(gtk.ORIENTATION_VERTICAL, 10)
 	if err != nil {

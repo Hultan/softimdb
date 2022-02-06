@@ -90,11 +90,14 @@ func (m Manager) removeMoviePaths(dirs *[]string, moviePaths *[]string) *[]strin
 
 func (m Manager) getPassword() string {
 	fw := framework.NewFramework()
-	password, err := fw.IO.ReadAllText(credentialsFile)
+	encrypted, err := fw.IO.ReadAllText(credentialsFile)
 	if err != nil {
 		panic(err)
 	}
-
+	password, err := fw.Crypto.Decrypt(encrypted)
+	if err != nil {
+		panic(err)
+	}
 	return strings.Replace(password, "\n", "", -1)
 }
 
