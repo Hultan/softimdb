@@ -9,10 +9,12 @@ import (
 	"github.com/gotk3/gotk3/gdk"
 	"github.com/gotk3/gotk3/gtk"
 
+	"github.com/hultan/softimdb/internal/config"
 	"github.com/hultan/softimdb/internal/data"
-	"github.com/hultan/softimdb/internal/nas"
 	"github.com/hultan/softteam/framework"
 )
+
+const configFile = "/home/per/.config/softteam/softimdb/config.json"
 
 type MainWindow struct {
 	builder   *framework.GtkBuilder
@@ -29,6 +31,7 @@ type MainWindow struct {
 	popupMenu      *PopupMenu
 
 	database *data.Database
+	config   *config.Config
 
 	movies map[int]*data.Movie
 }
@@ -105,6 +108,13 @@ func (m *MainWindow) OpenMainWindow(app *gtk.Application) {
 
 	// Fill movie list box
 	m.refreshButtonClicked()
+
+	// Load config file
+	config, err := config.LoadConfig(configFile)
+	if err != nil {
+		panic(err)
+	}
+	m.config = config
 
 	// Show the main window
 	m.window.ShowAll()
@@ -250,7 +260,7 @@ func (m *MainWindow) getSelectedMovie() *data.Movie {
 }
 
 func (m *MainWindow) openMovieDirectoryInNemo(movie *data.Movie) {
-	path := fmt.Sprintf("smb://%s/%s/%s", nas.IpNas, nas.FolderNas, movie.MoviePath)
+	path := fmt.Sprintf("smb://%s/%s/%s", m.config.Nas, m.config.Folder, movie.MoviePath)
 	// path := "smb://192.168.1.100/Videos/" + movie.MoviePath
 	m.framework.Process.OpenInNemo(path)
 }
@@ -313,7 +323,7 @@ func (m *MainWindow) openAddWindowClicked() {
 		m.addWindow = AddWindowNew(m.framework)
 	}
 
-	m.addWindow.OpenForm(m.builder, m.database)
+	m.addWindow.OpenForm(m.builder, m.database, m.config)
 }
 
 func (m *MainWindow) refreshButtonClicked() {
@@ -415,7 +425,7 @@ func (m *MainWindow) fillTagsMenu(menu *gtk.MenuItem) {
 
 func (m *MainWindow) playMovie(movie *data.Movie) {
 	go func() {
-		path := fmt.Sprintf("smb://%s/%s/%s", nas.IpNas, nas.FolderNas, movie.MoviePath)
+		path := fmt.Sprintf("smb://%s/%s/%s", m.config.Nas, m.config.Folder, movie.MoviePath)
 		cmd := fmt.Sprintf("find %s -type f -exec du -h {} + | sort -r | head -n1", path)
 		file, err := m.executeCommand("bash", "-c", cmd)
 		if err != nil {

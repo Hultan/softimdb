@@ -8,6 +8,7 @@ import (
 
 	"github.com/hirochachacha/go-smb2"
 
+	"github.com/hultan/softimdb/internal/config"
 	"github.com/hultan/softimdb/internal/data"
 	"github.com/hultan/softteam/framework"
 )
@@ -18,8 +19,9 @@ type Manager struct {
 }
 
 const credentialsFile = "/home/per/.config/softteam/softimdb/.credentials"
-const IpNas = "192.168.1.200"
-const FolderNas = "videos"
+
+// const IpNas = "192.168.1.200"
+// const FolderNas = "videos"
 
 // ManagerNew creates a new Manager.
 func ManagerNew(database *data.Database) *Manager {
@@ -34,15 +36,15 @@ func (m Manager) Disconnect() {
 }
 
 // GetMovies returns a list of movie paths on the NAS.
-func (m Manager) GetMovies() *[]string {
+func (m Manager) GetMovies(config *config.Config) *[]string {
 	session := make(map[string]string)
 	session["Username"] = "per"
 	session["Password"] = m.getPassword()
 	session["Domain"] = ""
 
-	client := connectClient(IpNas, FolderNas, session)
+	client := connectClient(config.Nas, config.Folder, session)
 
-	fs, err := client.Mount(FolderNas)
+	fs, err := client.Mount(config.Folder)
 	if err != nil {
 		panic(err)
 	}

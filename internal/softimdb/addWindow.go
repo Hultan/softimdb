@@ -3,6 +3,7 @@ package softimdb
 import (
 	"github.com/gotk3/gotk3/gtk"
 
+	"github.com/hultan/softimdb/internal/config"
 	"github.com/hultan/softimdb/internal/data"
 	imdb2 "github.com/hultan/softimdb/internal/imdb"
 	"github.com/hultan/softimdb/internal/nas"
@@ -15,7 +16,9 @@ type AddWindow struct {
 	list           *gtk.ListBox
 	imdbUrlEntry   *gtk.Entry
 	moviePathEntry *gtk.Entry
-	database       *data.Database
+
+	database *data.Database
+	config   *config.Config
 }
 
 func AddWindowNew(framework *framework.Framework) *AddWindow {
@@ -24,7 +27,7 @@ func AddWindowNew(framework *framework.Framework) *AddWindow {
 	return a
 }
 
-func (a *AddWindow) OpenForm(builder *framework.GtkBuilder,  database *data.Database) {
+func (a *AddWindow) OpenForm(builder *framework.GtkBuilder, database *data.Database, config *config.Config) {
 	if a.window == nil {
 		// Get the extra window from glade
 		addWindow := builder.GetObject("addWindow").(*gtk.Window)
@@ -60,11 +63,12 @@ func (a *AddWindow) OpenForm(builder *framework.GtkBuilder,  database *data.Data
 		// Store reference to database and window
 		a.database = database
 		a.window = addWindow
+		a.config = config
 	}
 
 	// Paths on NAS
 	nasManager := nas.ManagerNew(a.database)
-	moviePaths := nasManager.GetMovies()
+	moviePaths := nasManager.GetMovies(a.config)
 	nasManager.Disconnect()
 
 	// Paths list
