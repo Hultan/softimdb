@@ -182,6 +182,28 @@ func (d *Database) InsertMovie(movie *Movie) error {
 	return nil
 }
 
+// UpdateMovie update a movie.
+func (d *Database) UpdateMovie(movie *Movie) error {
+	db, err := d.getDatabase()
+	if err != nil {
+		return err
+	}
+
+	if result := db.Model(&movie).Update("title", movie.Title); result.Error != nil {
+		return result.Error
+	}
+
+	if result := db.Model(&movie).Update("imdb_rating", movie.ImdbRating); result.Error != nil {
+		return result.Error
+	}
+
+	if result := db.Model(&movie).Update("year", movie.Year); result.Error != nil {
+		return result.Error
+	}
+
+	return nil
+}
+
 // DeleteMovie removes a movie from the database.
 func (d *Database) DeleteMovie(movie *Movie) error {
 	db, err := d.getDatabase()

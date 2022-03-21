@@ -11,6 +11,7 @@ import (
 
 	"github.com/hultan/softimdb/internal/config"
 	"github.com/hultan/softimdb/internal/data"
+	imdb2 "github.com/hultan/softimdb/internal/imdb"
 	"github.com/hultan/softteam/framework"
 )
 
@@ -110,11 +111,11 @@ func (m *MainWindow) OpenMainWindow(app *gtk.Application) {
 	m.refreshButtonClicked()
 
 	// Load config file
-	config, err := config.LoadConfig(configFile)
+	cnf, err := config.LoadConfig(configFile)
 	if err != nil {
 		panic(err)
 	}
-	m.config = config
+	m.config = cnf
 
 	// Show the main window
 	m.window.ShowAll()
@@ -361,8 +362,14 @@ func (m *MainWindow) keyPressEvent(_ *gtk.ApplicationWindow, event *gdk.Event) {
 	ctrl := (keyEvent.State() & gdk.CONTROL_MASK) > 0
 
 	// Catch CTRL + f
-	if keyEvent.KeyVal() == gdk.KEY_f && ctrl {
+	switch {
+	case keyEvent.KeyVal() == gdk.KEY_f && ctrl:
 		m.searchEntry.GrabFocus()
+	case keyEvent.KeyVal() == gdk.KEY_F5 && ctrl:
+		m.refreshIMDB()
+	}
+	if keyEvent.KeyVal() == gdk.KEY_f && ctrl {
+
 	}
 }
 
@@ -446,4 +453,24 @@ func (m *MainWindow) executeCommand(command string, arguments ...string) (string
 	}
 
 	return string(out), nil
+}
+
+func (m *MainWindow) refreshIMDB() {
+	v := m.getSelectedMovie()
+	if v == nil {
+		return
+	}
+
+	imdb := &imdb2.Manager{}
+	err := imdb.GetMovieInfo(v)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	err = m.database.UpdateMovie(v)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
 }

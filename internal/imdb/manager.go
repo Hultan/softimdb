@@ -60,10 +60,10 @@ func (i *Manager) getDocument(url string) (*goquery.Document, error) {
 
 func (i *Manager) parseDocument(doc *goquery.Document, movie *data.Movie) bool {
 	// Title
-	movie.Title = doc.Find("h1.TitleHeader__TitleText-sc-1wu6n3d-0").Text() //First().Clone().Children().Remove().End()
+	movie.Title = doc.Find(".sc-b73cd867-0").Text()
 
 	// Year
-	year := doc.Find("a.rgaOW").First().Text()
+	year := doc.Find(".sc-52284603-0 > li:nth-child(1) > span:nth-child(2)").Text()
 	movie.Year, _ = strconv.Atoi(year)
 
 	doc.Find("div.ipc-media--poster-l img.ipc-image").Each(func(x int, s *goquery.Selection) {
@@ -76,7 +76,8 @@ func (i *Manager) parseDocument(doc *goquery.Document, movie *data.Movie) bool {
 	})
 
 	// Rating
-	rating, _ := strconv.ParseFloat(doc.Find("span.AggregateRatingButton__RatingScore-sc-1ll29m0-1").First().Text(), 32)
+	ratingString := doc.Find(".sc-94726ce4-4 > div:nth-child(1) > div:nth-child(1) > a:nth-child(2) > div:nth-child(1) > div:nth-child(1) > div:nth-child(2) > div:nth-child(1) > span:nth-child(1)").Text()
+	rating, _ := strconv.ParseFloat(ratingString, 32)
 	movie.ImdbRating = float32(rating)
 
 	// StoryLine
