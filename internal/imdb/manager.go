@@ -63,8 +63,8 @@ func (i *Manager) parseDocument(doc *goquery.Document, movie *data.Movie) bool {
 	movie.Title = doc.Find(".sc-b73cd867-0").Text()
 
 	// Year
-	year := doc.Find(".sc-52284603-0 > li:nth-child(1) > span:nth-child(2)").Text()
-	movie.Year, _ = strconv.Atoi(year)
+	year := doc.Find(".itZqyK").Text()
+	movie.Year, _ = strconv.Atoi(year[:4])
 
 	doc.Find("div.ipc-media--poster-l img.ipc-image").Each(func(x int, s *goquery.Selection) {
 		imageSource, ok := s.Attr("src")
