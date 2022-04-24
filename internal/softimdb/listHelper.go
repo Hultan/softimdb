@@ -39,9 +39,9 @@ func (l *ListHelper) GetMovieCard(movie *data.Movie) *gtk.Frame {
 	if err != nil {
 		panic(err)
 	}
-	titleLabel.SetMarkup(`<span font="Sans Regular 14" foreground="#d49c6b"><b>` + cleanString(movie.Title) + `</b></span> 
-<span font="Sans Regular 10" foreground="#d49c6b"><b>` + cleanString(movie.SubTitle) + `</b></span>
-<span font="Sans Regular 10" foreground="#967c61">` + fmt.Sprintf("%v", movie.Year) + ` - ` + fmt.Sprintf("Imdb : %v", movie.ImdbRating) + `</span>`	)
+	titleLabel.SetMarkup(`<span font="Sans Regular 14" foreground="#111111"><b>` + cleanString(movie.Title) + `</b></span> 
+<span font="Sans Regular 10" foreground="#111111"><b>` + cleanString(movie.SubTitle) + `</b></span>
+<span font="Sans Regular 10" foreground="#DDDDDD">` + fmt.Sprintf("%v", movie.Year) + ` - ` + fmt.Sprintf("Imdb : %v", movie.ImdbRating) + `</span>`)
 	nameBox.PackStart(titleLabel, true, false, 5)
 	box.PackStart(nameBox, false, false, 5)
 
@@ -60,7 +60,7 @@ func (l *ListHelper) GetMovieCard(movie *data.Movie) *gtk.Frame {
 	var str string
 	for i := range movie.Tags {
 		tag := movie.Tags[i]
-		if str!=""{
+		if str != "" {
 			str += ", "
 		}
 		str += tag.Name
@@ -69,7 +69,7 @@ func (l *ListHelper) GetMovieCard(movie *data.Movie) *gtk.Frame {
 	if err != nil {
 		panic(err)
 	}
-	str = `<span font="Sans Regular 10" foreground="#d49c6b">` + str + `</span>`
+	str = `<span font="Sans Regular 10" foreground="#DDDDDD">` + str + `</span>`
 	label.SetMarkup(str)
 	box.Add(label)
 
