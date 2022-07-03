@@ -6,7 +6,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strconv"
-	"strings"
 
 	"github.com/PuerkitoBio/goquery"
 
@@ -84,17 +83,14 @@ func (i *Manager) parseDocument(doc *goquery.Document, movie *data.Movie) bool {
 	movie.StoryLine = doc.Find("div.ipc-html-content div").First().Text()
 
 	// Genres
-	doc.Find("div.ipc-metadata-list-item__content-container ul li a").Each(func(x int, s *goquery.Selection) {
-		tagSource, ok := s.Attr("href")
-		if ok && strings.Contains(tagSource, "genres") {
-			genreName := s.Text()
-			// fmt.Println("GENRE:",genreName)
-			genre := data.Tag{Name: genreName}
-			if movie.Tags == nil {
-				movie.Tags = []data.Tag{}
-			}
-			movie.Tags = append(movie.Tags, genre)
+	doc.Find("div.ipc-chip-list a ul li").Each(func(x int, s *goquery.Selection) {
+		genreName := s.Text()
+		// fmt.Println("GENRE:",genreName)
+		genre := data.Tag{Name: genreName}
+		if movie.Tags == nil {
+			movie.Tags = []data.Tag{}
 		}
+		movie.Tags = append(movie.Tags, genre)
 	})
 
 	return true
