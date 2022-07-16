@@ -83,7 +83,7 @@ func (i *Manager) parseDocument(doc *goquery.Document, movie *data.Movie) bool {
 	movie.StoryLine = doc.Find("div.ipc-html-content div").First().Text()
 
 	// Genres
-	doc.Find("div.ipc-chip-list a ul li").Each(func(x int, s *goquery.Selection) {
+	doc.Find("span.ipc-chip__text").Each(func(x int, s *goquery.Selection) {
 		genreName := s.Text()
 		// fmt.Println("GENRE:",genreName)
 		genre := data.Tag{Name: genreName}

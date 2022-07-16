@@ -201,6 +201,24 @@ func (d *Database) UpdateMovie(movie *Movie) error {
 		return result.Error
 	}
 
+	// Handle tags
+	for i := range movie.Tags {
+		tag, err := d.GetOrInsertTag(&movie.Tags[i])
+		if err != nil {
+			return err
+		}
+
+		err = d.RemoveMovieTag(movie, tag)
+		if err != nil {
+			return err
+		}
+
+		err = d.InsertMovieTag(movie, tag)
+		if err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
