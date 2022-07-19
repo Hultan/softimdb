@@ -2,7 +2,9 @@ package softimdb
 
 import (
 	"fmt"
+	"log"
 	"os/exec"
+	"runtime"
 	"strconv"
 	"strings"
 
@@ -142,12 +144,15 @@ func (m *MainWindow) closeMainWindow() {
 }
 
 func (m *MainWindow) setupMenu(window *gtk.ApplicationWindow) {
+	// File menu
 	menuQuit := m.builder.GetObject("menuFileQuit").(*gtk.MenuItem)
 	_ = menuQuit.Connect("activate", window.Close)
 
+	// Help menu
 	menuHelpAbout := m.builder.GetObject("menuHelpAbout").(*gtk.MenuItem)
 	_ = menuHelpAbout.Connect("activate", m.openAboutDialog)
 
+	// Sort menu
 	menuSortByName = m.builder.GetObject("menuSortByName").(*gtk.RadioMenuItem)
 	menuSortByRating := m.builder.GetObject("menuSortByRating").(*gtk.RadioMenuItem)
 	menuSortByYear := m.builder.GetObject("menuSortByYear").(*gtk.RadioMenuItem)
@@ -193,8 +198,16 @@ func (m *MainWindow) setupMenu(window *gtk.ApplicationWindow) {
 	sortBy = sortByName
 	sortOrder = sortAscending
 
+	// Tags menu
 	menuTags := m.builder.GetObject("menuTags").(*gtk.MenuItem)
 	m.fillTagsMenu(menuTags)
+
+	// Tools menu
+	menuToolsRefresh := m.builder.GetObject("mnuToolsRefreshIMDBData").(*gtk.MenuItem)
+	_ = menuToolsRefresh.Connect("activate", m.refreshIMDB)
+	menuToolsOpenIMDB := m.builder.GetObject("mnuToolsIOpenIMDB").(*gtk.MenuItem)
+	_ = menuToolsOpenIMDB.Connect("activate", m.openIMDB)
+
 }
 
 func (m *MainWindow) fillMovieList(searchFor string, categoryId int, sortBy string) {
@@ -473,4 +486,33 @@ func (m *MainWindow) refreshIMDB() {
 		fmt.Println(err)
 		return
 	}
+}
+
+func (m *MainWindow) openIMDB() {
+	v := m.getSelectedMovie()
+	if v == nil {
+		return
+	}
+
+	openbrowser(v.ImdbUrl)
+}
+
+// https://gist.github.com/hyg/9c4afcd91fe24316cbf0
+func openbrowser(url string) {
+	var err error
+
+	switch runtime.GOOS {
+	case "linux":
+		err = exec.Command("xdg-open", url).Start()
+	case "windows":
+		err = exec.Command("rundll32", "url.dll,FileProtocolHandler", url).Start()
+	case "darwin":
+		err = exec.Command("open", url).Start()
+	default:
+		err = fmt.Errorf("unsupported platform")
+	}
+	if err != nil {
+		log.Fatal(err)
+	}
+
 }
