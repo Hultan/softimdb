@@ -39,7 +39,7 @@ type MainWindow struct {
 	movies map[int]*data.Movie
 }
 
-var sortBy, sortOrder, tagIndex int
+var sortBy, sortOrder, selectedGenreId int
 var searchFor string
 var noneItem, menuSortByName, menuSortAscending *gtk.RadioMenuItem
 
@@ -160,21 +160,21 @@ func (m *MainWindow) setupMenu(window *gtk.ApplicationWindow) {
 		if menuSortByName.GetActive() {
 			fmt.Println("Sort by name")
 			sortBy = sortByName
-			m.refresh(searchFor, tagIndex, m.getSortBy())
+			m.refresh(searchFor, selectedGenreId, m.getSortBy())
 		}
 	})
 	menuSortByRating.Connect("activate", func() {
 		if menuSortByRating.GetActive() {
 			fmt.Println("Sort by rating")
 			sortBy = sortByRating
-			m.refresh(searchFor, tagIndex, m.getSortBy())
+			m.refresh(searchFor, selectedGenreId, m.getSortBy())
 		}
 	})
 	menuSortByYear.Connect("activate", func() {
 		if menuSortByYear.GetActive() {
 			fmt.Println("Sort by year")
 			sortBy = sortByYear
-			m.refresh(searchFor, tagIndex, m.getSortBy())
+			m.refresh(searchFor, selectedGenreId, m.getSortBy())
 		}
 	})
 
@@ -184,14 +184,14 @@ func (m *MainWindow) setupMenu(window *gtk.ApplicationWindow) {
 		if menuSortAscending.GetActive() {
 			fmt.Println("Sort ascending")
 			sortOrder = sortAscending
-			m.refresh(searchFor, tagIndex, m.getSortBy())
+			m.refresh(searchFor, selectedGenreId, m.getSortBy())
 		}
 	})
 	menuSortDescending.Connect("activate", func() {
 		if menuSortDescending.GetActive() {
 			fmt.Println("Sort descending")
 			sortOrder = sortDescending
-			m.refresh(searchFor, tagIndex, m.getSortBy())
+			m.refresh(searchFor, selectedGenreId, m.getSortBy())
 		}
 	})
 
@@ -342,13 +342,13 @@ func (m *MainWindow) openAddWindowClicked() {
 
 func (m *MainWindow) refreshButtonClicked() {
 	searchFor = ""
-	tagIndex = -1
+	selectedGenreId = -1
 	sortBy = sortByName
 	sortOrder = sortAscending
 	noneItem.SetActive(true)
 	menuSortByName.SetActive(true)
 	menuSortAscending.SetActive(true)
-	m.refresh(searchFor, tagIndex, m.getSortBy())
+	m.refresh(searchFor, selectedGenreId, m.getSortBy())
 }
 
 func (m *MainWindow) refresh(search string, categoryId int, sortBy string) {
@@ -366,7 +366,7 @@ func (m *MainWindow) searchButtonClicked() {
 	}
 	search = strings.Trim(search, " ")
 	searchFor = search
-	m.refresh(searchFor, tagIndex, m.getSortBy())
+	m.refresh(searchFor, selectedGenreId, m.getSortBy())
 }
 
 func (m *MainWindow) keyPressEvent(_ *gtk.ApplicationWindow, event *gdk.Event) {
@@ -380,9 +380,6 @@ func (m *MainWindow) keyPressEvent(_ *gtk.ApplicationWindow, event *gdk.Event) {
 		m.searchEntry.GrabFocus()
 	case keyEvent.KeyVal() == gdk.KEY_F5 && ctrl:
 		m.refreshIMDB()
-	}
-	if keyEvent.KeyVal() == gdk.KEY_f && ctrl {
-
 	}
 }
 
@@ -427,8 +424,8 @@ func (m *MainWindow) fillTagsMenu(menu *gtk.MenuItem) {
 			if item.GetActive() {
 				name, _ := item.GetName()
 				i, _ := strconv.Atoi(name)
-				tagIndex = i
-				m.refresh(searchFor, tagIndex, m.getSortBy())
+				selectedGenreId = i
+				m.refresh(searchFor, selectedGenreId, m.getSortBy())
 			}
 		})
 		sub.Add(item)
@@ -437,8 +434,8 @@ func (m *MainWindow) fillTagsMenu(menu *gtk.MenuItem) {
 		if noneItem.GetActive() {
 			name, _ := noneItem.GetName()
 			i, _ := strconv.Atoi(name)
-			tagIndex = i
-			m.refresh(searchFor, tagIndex, m.getSortBy())
+			selectedGenreId = i
+			m.refresh(searchFor, selectedGenreId, m.getSortBy())
 		}
 	})
 }
