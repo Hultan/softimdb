@@ -574,6 +574,22 @@
       </object>
     </child>
     <child>
+      <object class="GtkMenuItem" id="popupOpenIMDBPage">
+        <property name="visible">True</property>
+        <property name="can-focus">False</property>
+        <property name="label" translatable="yes">Open IMDB Page...</property>
+        <property name="use-underline">True</property>
+      </object>
+    </child>
+    <child>
+      <object class="GtkMenuItem" id="popupRefreshIMDB">
+        <property name="visible">True</property>
+        <property name="can-focus">False</property>
+        <property name="label" translatable="yes">Refresh IMDB Data</property>
+        <property name="use-underline">True</property>
+      </object>
+    </child>
+    <child>
       <object class="GtkMenuItem" id="popupOpenFolder">
         <property name="visible">True</property>
         <property name="can-focus">False</property>

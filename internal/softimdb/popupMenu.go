@@ -11,9 +11,11 @@ type PopupMenu struct {
 	mainWindow *MainWindow
 	popupMenu  *gtk.Menu
 
-	popupTags       *gtk.MenuItem
-	popupOpenFolder *gtk.MenuItem
-	popupPlayMovie  *gtk.MenuItem
+	popupTags        *gtk.MenuItem
+	popupOpenFolder  *gtk.MenuItem
+	popupRefreshIMDB *gtk.MenuItem
+	popupOpenIMDB    *gtk.MenuItem
+	popupPlayMovie   *gtk.MenuItem
 }
 
 func NewPopupMenu(window *MainWindow) *PopupMenu {
@@ -27,6 +29,8 @@ func (p *PopupMenu) Setup() {
 
 	p.popupTags = p.mainWindow.builder.GetObject("popupTags").(*gtk.MenuItem)
 	p.popupOpenFolder = p.mainWindow.builder.GetObject("popupOpenFolder").(*gtk.MenuItem)
+	p.popupOpenIMDB = p.mainWindow.builder.GetObject("popupOpenIMDBPage").(*gtk.MenuItem)
+	p.popupRefreshIMDB = p.mainWindow.builder.GetObject("popupRefreshIMDB").(*gtk.MenuItem)
 	p.popupPlayMovie = p.mainWindow.builder.GetObject("popupPlayMovie").(*gtk.MenuItem)
 
 	p.setupEvents()
@@ -87,6 +91,14 @@ func (p *PopupMenu) setupEvents() {
 			return
 		}
 		p.mainWindow.openMovieDirectoryInNemo(movie)
+	})
+
+	p.popupOpenIMDB.Connect("activate", func() {
+		p.mainWindow.openIMDB()
+	})
+
+	p.popupRefreshIMDB.Connect("activate", func() {
+		p.mainWindow.refreshIMDB()
 	})
 
 	p.popupPlayMovie.Connect("activate", func() {
