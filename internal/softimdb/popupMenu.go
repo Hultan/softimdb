@@ -70,11 +70,15 @@ func (p *PopupMenu) setupEvents() {
 					menu.Add(item)
 					item.Connect("activate", func() {
 						if item.GetActive() {
-							p.mainWindow.database.InsertMovieTag(movie, &tag)
-							p.addTag(movie, &tag)
+							err = p.mainWindow.database.InsertMovieTag(movie, &tag)
+							if err == nil {
+								p.addTag(movie, &tag)
+							}
 						} else {
-							p.mainWindow.database.RemoveMovieTag(movie, &tag)
-							p.removeTag(movie, &tag)
+							err = p.mainWindow.database.RemoveMovieTag(movie, &tag)
+							if err == nil {
+								p.removeTag(movie, &tag)
+							}
 						}
 					})
 				}
