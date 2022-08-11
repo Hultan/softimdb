@@ -75,8 +75,8 @@ func (i *Manager) parseDocument(doc *goquery.Document, movie *data.Movie) bool {
 	})
 
 	// Rating
-	ratingString := doc.Find(".sc-94726ce4-4 > div:nth-child(1) > div:nth-child(1) > a:nth-child(2) > div:nth-child(1) > div:nth-child(1) > div:nth-child(2) > div:nth-child(1) > span:nth-child(1)").Text()
-	rating, _ := strconv.ParseFloat(ratingString, 32)
+	ratingString := doc.Find(".jGRxWM").Text()
+	rating, _ := strconv.ParseFloat(ratingString[:3], 32)
 	movie.ImdbRating = float32(rating)
 
 	// StoryLine

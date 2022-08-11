@@ -222,7 +222,7 @@ func (m *MainWindow) fillMovieList(searchFor string, categoryId int, sortBy stri
 	for i := range movies {
 		movie := movies[i]
 		m.movies[movie.Id] = movie
-		frame := listHelper.GetMovieCard(movie)
+		frame := listHelper.CreateMovieCard(movie)
 		m.movieList.Add(frame)
 		frame.SetName("frame_" + strconv.Itoa(movie.Id))
 	}

@@ -29,6 +29,10 @@ func (d *Database) CloseDatabase() {
 	if d.db == nil {
 		return
 	}
+
+	sqlDB, _ := d.db.DB()
+	sqlDB.Close()
+
 	d.db = nil
 
 	return
@@ -44,6 +48,8 @@ func (d *Database) getPassword() string {
 }
 
 func (d *Database) getDatabase() (*gorm.DB, error) {
+	d.CloseDatabase()
+
 	if d.db == nil {
 		db, err := d.openDatabase()
 		if err != nil {

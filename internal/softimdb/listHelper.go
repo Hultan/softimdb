@@ -16,7 +16,7 @@ func ListHelperNew() *ListHelper {
 	return new(ListHelper)
 }
 
-func (l *ListHelper) GetMovieCard(movie *data.Movie) *gtk.Frame {
+func (l *ListHelper) CreateMovieCard(movie *data.Movie) *gtk.Frame {
 	// Create a frame (for the border)
 	frame, err := gtk.FrameNew("")
 	if err != nil {
