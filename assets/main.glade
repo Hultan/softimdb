@@ -605,6 +605,20 @@
       </object>
     </child>
     <child>
+      <object class="GtkMenuItem" id="popupUpdateImage">
+        <property name="visible">True</property>
+        <property name="can-focus">False</property>
+        <property name="label" translatable="yes">Update image</property>
+        <property name="use-underline">True</property>
+      </object>
+    </child>
+    <child>
+      <object class="GtkSeparatorMenuItem">
+        <property name="visible">True</property>
+        <property name="can-focus">False</property>
+      </object>
+    </child>
+    <child>
       <object class="GtkMenuItem" id="popupTags">
         <property name="visible">True</property>
         <property name="can-focus">False</property>

@@ -85,6 +85,10 @@ func (i *Manager) parseDocument(doc *goquery.Document, movie *data.Movie) bool {
 	// Genres
 	doc.Find("span.ipc-chip__text").Each(func(x int, s *goquery.Selection) {
 		genreName := s.Text()
+		if genreName == "Back to top" {
+			// Ignore Back to top-button that occasionally shows up here
+			return
+		}
 		// fmt.Println("GENRE:",genreName)
 		genre := data.Tag{Name: genreName}
 		if movie.Tags == nil {

@@ -201,6 +201,10 @@ func (d *Database) UpdateMovie(movie *Movie) error {
 		return result.Error
 	}
 
+	if result := db.Model(&movie).Update("image_id", movie.ImageId); result.Error != nil {
+		return result.Error
+	}
+
 	// Handle tags
 	for i := range movie.Tags {
 		tag, err := d.GetOrInsertTag(&movie.Tags[i])

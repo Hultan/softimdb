@@ -1,6 +1,9 @@
 package softimdb
 
 import (
+	"fmt"
+	"os"
+
 	"github.com/gotk3/gotk3/gdk"
 	"github.com/gotk3/gotk3/gtk"
 
@@ -16,6 +19,7 @@ type PopupMenu struct {
 	popupRefreshIMDB *gtk.MenuItem
 	popupOpenIMDB    *gtk.MenuItem
 	popupPlayMovie   *gtk.MenuItem
+	popupUpdateImage *gtk.MenuItem
 }
 
 func NewPopupMenu(window *MainWindow) *PopupMenu {
@@ -32,6 +36,7 @@ func (p *PopupMenu) Setup() {
 	p.popupOpenIMDB = p.mainWindow.builder.GetObject("popupOpenIMDBPage").(*gtk.MenuItem)
 	p.popupRefreshIMDB = p.mainWindow.builder.GetObject("popupRefreshIMDB").(*gtk.MenuItem)
 	p.popupPlayMovie = p.mainWindow.builder.GetObject("popupPlayMovie").(*gtk.MenuItem)
+	p.popupUpdateImage = p.mainWindow.builder.GetObject("popupUpdateImage").(*gtk.MenuItem)
 
 	p.setupEvents()
 }
@@ -111,6 +116,42 @@ func (p *PopupMenu) setupEvents() {
 			return
 		}
 		p.mainWindow.playMovie(movie)
+	})
+
+	p.popupUpdateImage.Connect("activate", func() {
+		dialog, err := gtk.FileChooserDialogNewWith2Buttons("Choose new image...", p.mainWindow.window, gtk.FILE_CHOOSER_ACTION_OPEN, "Ok", gtk.RESPONSE_OK,
+			"Cancel", gtk.RESPONSE_CANCEL)
+		if err != nil {
+			panic(err)
+		}
+		defer dialog.Destroy()
+
+		response := dialog.Run()
+		if response == gtk.RESPONSE_CANCEL {
+			return
+		}
+
+		movie := p.mainWindow.getSelectedMovie()
+		if movie == nil {
+			return
+		}
+
+		fileName := dialog.GetFilename()
+		file, err := os.ReadFile(fileName)
+		if err != nil {
+			fmt.Printf("Could not read the file due to this %s error \n", err)
+		}
+		image := &data.Image{Data: &file}
+		err = p.mainWindow.database.InsertImage(image)
+		if err != nil {
+			panic(err)
+		}
+
+		movie.ImageId = image.Id
+		err = p.mainWindow.database.UpdateMovie(movie)
+		if err != nil {
+			panic(err)
+		}
 	})
 }
 
