@@ -1,6 +1,8 @@
 package softimdb
 
 import (
+	"fmt"
+
 	"github.com/gotk3/gotk3/gtk"
 
 	"github.com/hultan/softimdb/internal/config"
@@ -69,6 +71,14 @@ func (a *AddWindow) OpenForm(builder *framework.GtkBuilder, database *data.Datab
 	// Paths on NAS
 	nasManager := nas.ManagerNew(a.database)
 	moviePaths := nasManager.GetMovies(a.config)
+	if moviePaths == nil {
+		a.window.ShowAll()
+		message := "Failed to access NAS, is it unlocked?"
+		dialog := gtk.MessageDialogNew(nil, gtk.DIALOG_MODAL, gtk.MESSAGE_ERROR, gtk.BUTTONS_OK, message)
+		dialog.Run()
+		dialog.Destroy()
+		return
+	}
 	nasManager.Disconnect()
 
 	// Paths list
@@ -95,6 +105,11 @@ func (a *AddWindow) fillList(list *gtk.ListBox, paths []string) {
 		}
 		list.Add(label)
 	}
+	// Select the first row, this won't crash if
+	// list is empty, since GetRowAtIndex returns
+	// nil, and SelectRow can handle nil.
+	row := list.GetRowAtIndex(0)
+	list.SelectRow(row)
 }
 
 func (a *AddWindow) ignorePathButtonClicked() {
@@ -126,14 +141,30 @@ func (a *AddWindow) ignorePathButtonClicked() {
 func (a *AddWindow) addMovieButtonClicked() {
 	url := a.getEntryText(a.imdbUrlEntry)
 	if url == "" {
+		message := "IMDB Url cannot be empty"
+		dialog := gtk.MessageDialogNew(a.window, gtk.DIALOG_MODAL, gtk.MESSAGE_ERROR, gtk.BUTTONS_OK, message)
+		dialog.Run()
+		dialog.Destroy()
 		return
 	}
 	moviePath := a.getEntryText(a.moviePathEntry)
+	if moviePath == "" {
+		message := "Movie path cannot be empty"
+		dialog := gtk.MessageDialogNew(a.window, gtk.DIALOG_MODAL, gtk.MESSAGE_ERROR, gtk.BUTTONS_OK, message)
+		dialog.Run()
+		dialog.Destroy()
+		return
+	}
+
 	imdb := imdb2.ManagerNew()
 	movie := data.Movie{ImdbUrl: url, MoviePath: moviePath}
 	err := imdb.GetMovieInfo(&movie)
 	if err != nil {
-		panic(err)
+		message := fmt.Sprintf("Failed to retrieve movie information : \n\n%v", err)
+		dialog := gtk.MessageDialogNew(a.window, gtk.DIALOG_MODAL, gtk.MESSAGE_ERROR, gtk.BUTTONS_OK, message)
+		dialog.Run()
+		dialog.Destroy()
+		return
 	}
 
 	err = a.database.InsertMovie(&movie)

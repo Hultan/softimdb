@@ -46,7 +46,7 @@ func (m Manager) GetMovies(config *config.Config) *[]string {
 
 	fs, err := client.Mount(config.Folder)
 	if err != nil {
-		panic(err)
+		return nil
 	}
 	defer func() {
 		err = fs.Umount()
