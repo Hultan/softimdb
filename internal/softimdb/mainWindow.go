@@ -3,6 +3,7 @@ package softimdb
 import (
 	"fmt"
 	"log"
+	"os"
 	"os/exec"
 	"runtime"
 	"strconv"
@@ -207,7 +208,8 @@ func (m *MainWindow) setupMenu(window *gtk.ApplicationWindow) {
 	_ = menuToolsRefresh.Connect("activate", m.refreshIMDB)
 	menuToolsOpenIMDB := m.builder.GetObject("mnuToolsIOpenIMDB").(*gtk.MenuItem)
 	_ = menuToolsOpenIMDB.Connect("activate", m.openIMDB)
-
+	menuToolsUpdateImage := m.builder.GetObject("mnuToolsUpdateImage").(*gtk.MenuItem)
+	_ = menuToolsUpdateImage.Connect("activate", m.UpdateImage)
 }
 
 func (m *MainWindow) fillMovieList(searchFor string, categoryId int, sortBy string) {
@@ -380,6 +382,8 @@ func (m *MainWindow) keyPressEvent(_ *gtk.ApplicationWindow, event *gdk.Event) {
 		m.searchEntry.GrabFocus()
 	case keyEvent.KeyVal() == gdk.KEY_F5 && ctrl:
 		m.refreshIMDB()
+	case keyEvent.KeyVal() == gdk.KEY_a && ctrl:
+		m.openAddWindowClicked()
 	}
 }
 
@@ -512,4 +516,40 @@ func openbrowser(url string) {
 		log.Fatal(err)
 	}
 
+}
+
+func (m *MainWindow) UpdateImage() {
+	dialog, err := gtk.FileChooserDialogNewWith2Buttons("Choose new image...", m.window, gtk.FILE_CHOOSER_ACTION_OPEN, "Ok", gtk.RESPONSE_OK,
+		"Cancel", gtk.RESPONSE_CANCEL)
+	if err != nil {
+		panic(err)
+	}
+	defer dialog.Destroy()
+
+	response := dialog.Run()
+	if response == gtk.RESPONSE_CANCEL {
+		return
+	}
+
+	movie := m.getSelectedMovie()
+	if movie == nil {
+		return
+	}
+
+	fileName := dialog.GetFilename()
+	file, err := os.ReadFile(fileName)
+	if err != nil {
+		fmt.Printf("Could not read the file due to this %s error \n", err)
+	}
+	image := &data.Image{Data: &file}
+	err = m.database.InsertImage(image)
+	if err != nil {
+		panic(err)
+	}
+
+	movie.ImageId = image.Id
+	err = m.database.UpdateMovie(movie)
+	if err != nil {
+		panic(err)
+	}
 }

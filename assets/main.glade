@@ -319,6 +319,7 @@
                       <object class="GtkMenuItem" id="mnuToolsIOpenIMDB">
                         <property name="visible">True</property>
                         <property name="can-focus">False</property>
+                        <property name="tooltip-text" translatable="yes">Ctrl + i</property>
                         <property name="label" translatable="yes">Open IMDB page...</property>
                         <property name="use-underline">True</property>
                       </object>
@@ -327,7 +328,16 @@
                       <object class="GtkMenuItem" id="mnuToolsRefreshIMDBData">
                         <property name="visible">True</property>
                         <property name="can-focus">False</property>
+                        <property name="tooltip-text" translatable="yes">Ctrl + F5</property>
                         <property name="label" translatable="yes">Refresh IMDB Data</property>
+                        <property name="use-underline">True</property>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkMenuItem" id="mnuToolsUpdateImage">
+                        <property name="visible">True</property>
+                        <property name="can-focus">False</property>
+                        <property name="label" translatable="yes">Update image...</property>
                         <property name="use-underline">True</property>
                       </object>
                     </child>
@@ -396,6 +406,7 @@
               <object class="GtkToolButton" id="refreshButton">
                 <property name="visible">True</property>
                 <property name="can-focus">False</property>
+                <property name="tooltip-text" translatable="yes">Ctrl + F5</property>
                 <property name="is-important">True</property>
                 <property name="label" translatable="yes">Refresh</property>
                 <property name="use-underline">True</property>
@@ -420,6 +431,7 @@
               <object class="GtkToolButton" id="addButton">
                 <property name="visible">True</property>
                 <property name="can-focus">False</property>
+                <property name="tooltip-text" translatable="yes">Ctrl + a</property>
                 <property name="is-important">True</property>
                 <property name="label" translatable="yes">Add</property>
                 <property name="use-underline">True</property>
@@ -460,6 +472,7 @@
               <object class="GtkToolButton" id="searchButton">
                 <property name="visible">True</property>
                 <property name="can-focus">False</property>
+                <property name="tooltip-text" translatable="yes">Ctrl + f</property>
                 <property name="is-important">True</property>
                 <property name="label" translatable="yes">Search</property>
                 <property name="use-underline">True</property>
@@ -608,7 +621,7 @@
       <object class="GtkMenuItem" id="popupUpdateImage">
         <property name="visible">True</property>
         <property name="can-focus">False</property>
-        <property name="label" translatable="yes">Update image</property>
+        <property name="label" translatable="yes">Update image...</property>
         <property name="use-underline">True</property>
       </object>
     </child>
