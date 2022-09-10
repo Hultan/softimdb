@@ -110,6 +110,7 @@ func (a *AddWindow) fillList(list *gtk.ListBox, paths []string) {
 	// nil, and SelectRow can handle nil.
 	row := list.GetRowAtIndex(0)
 	list.SelectRow(row)
+	a.rowActivated()
 }
 
 func (a *AddWindow) ignorePathButtonClicked() {

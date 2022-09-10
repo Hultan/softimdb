@@ -46,15 +46,23 @@ func (l *ListHelper) CreateMovieCard(movie *data.Movie) *gtk.Frame {
 	box.PackStart(nameBox, false, false, 5)
 
 	// Image
-	pixBuf, err := gdk.PixbufNewFromBytesOnly(*movie.Image)
-	if err != nil {
-		panic(err)
+	if movie.Image == nil {
+		image, err := gtk.ImageNew()
+		if err != nil {
+			panic(err)
+		}
+		box.Add(image)
+	} else {
+		pixBuf, err := gdk.PixbufNewFromBytesOnly(*movie.Image)
+		if err != nil {
+			panic(err)
+		}
+		image, err := gtk.ImageNewFromPixbuf(pixBuf)
+		if err != nil {
+			panic(err)
+		}
+		box.Add(image)
 	}
-	image, err := gtk.ImageNewFromPixbuf(pixBuf)
-	if err != nil {
-		panic(err)
-	}
-	box.Add(image)
 
 	// Genres
 	var str string
