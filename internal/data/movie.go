@@ -1,6 +1,8 @@
 package data
 
 import (
+	"strings"
+
 	"gorm.io/gorm"
 )
 
@@ -76,8 +78,19 @@ func (d *Database) GetAllMovies(searchFor string, categoryId int, orderBy string
 			return nil, result.Error
 		}
 	} else if searchFor != "" && categoryId == -1 {
+		var where string
+		if strings.HasPrefix(searchFor, "title:") {
+			where = "title like ? OR sub_title like ?"
+			searchFor = searchFor[6:]
+		} else if strings.HasPrefix(searchFor, "year:") {
+			where = "year like ?"
+			searchFor = searchFor[5:]
+		} else {
+			where = "title like ? OR sub_title like ? OR year like ? OR story_line like ?"
+		}
+
 		s := "%" + searchFor + "%"
-		if result = db.Where("title like ? OR sub_title like ? OR year like ? OR story_line like ?", s, s, s, s).
+		if result = db.Where(where, s, s, s, s).
 			Order(orderBy).
 			Find(&movies); result.Error != nil {
 			return nil, result.Error

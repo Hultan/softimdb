@@ -33,6 +33,7 @@ type MainWindow struct {
 	searchEntry    *gtk.Entry
 	searchButton   *gtk.ToolButton
 	popupMenu      *PopupMenu
+	countLabel     *gtk.Label
 
 	database *data.Database
 	config   *config.Config
@@ -106,9 +107,10 @@ func (m *MainWindow) OpenMainWindow(app *gtk.Application) {
 	_ = m.movieList.Connect("selected-children-changed", m.selectionChanged)
 	_ = m.movieList.Connect("child-activated", m.movieClicked)
 
-	// // Status bar
-	// statusBar := m.builder.getObject("main_window_status_bar").(*gtk.Statusbar)
-	// statusBar.Push(statusBar.GetContextId("gtk-startup"), "gtk-startup : version 0.1.0")
+	// Status bar
+	versionLabel := m.builder.GetObject("versionLabel").(*gtk.Label)
+	versionLabel.SetText("Version : " + applicationVersion)
+	m.countLabel = m.builder.GetObject("countLabel").(*gtk.Label)
 
 	// Fill movie list box
 	m.refreshButtonClicked()
@@ -228,6 +230,8 @@ func (m *MainWindow) fillMovieList(searchFor string, categoryId int, sortBy stri
 		m.movieList.Add(frame)
 		frame.SetName("frame_" + strconv.Itoa(movie.Id))
 	}
+
+	m.updateCountLabel(len(movies))
 }
 
 func (m *MainWindow) selectionChanged(_ *gtk.FlowBox) {
@@ -552,4 +556,8 @@ func (m *MainWindow) UpdateImage() {
 	if err != nil {
 		panic(err)
 	}
+}
+
+func (m *MainWindow) updateCountLabel(i int) {
+	m.countLabel.SetText(fmt.Sprintf("Number of videos : %d", i))
 }

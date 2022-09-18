@@ -1,7 +1,7 @@
 package softimdb
 
 const applicationTitle = "SoftImdb"
-const applicationVersion = "v 1.7.1"
+const applicationVersion = "v 1.7.2"
 const applicationCopyRight = "©SoftTeam AB, 2020"
 const listMargin = 3
 const listSpacing = 0

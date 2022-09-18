@@ -3,7 +3,7 @@ package imdb
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strconv"
 
@@ -59,53 +59,62 @@ func (i *Manager) getDocument(url string) (*goquery.Document, error) {
 
 func (i *Manager) parseDocument(doc *goquery.Document, movie *data.Movie) bool {
 	// Title
-	movie.Title = doc.Find(".sc-b73cd867-0").Text()
-	if movie.Title == "" {
+	title, ok := getMovieTitle(doc)
+	if !ok {
 		// We failed to get the movie title, abort
 		return false
 	}
 
 	// Year
-	year := doc.Find(".itZqyK").Text()
-	movie.Year, _ = strconv.Atoi(year[:4])
-	if movie.Year < 1900 || movie.Year > 2100 {
+	year, ok := getMovieYear(doc)
+	if !ok {
 		// We retrieved an invalid release year, abort
 		return false
 	}
 
-	success := false
-	doc.Find("div.ipc-media--poster-l img.ipc-image").Each(func(x int, s *goquery.Selection) {
-		imageSource, ok := s.Attr("src")
-		if ok {
-			imageData, _ := i.downloadFile(imageSource)
-			movie.Image = imageData
-			movie.HasImage = true
-			success = true
-		}
-	})
-	if !success {
+	// Get movie poster
+	poster, ok := getMoviePoster(doc)
+	if !ok {
 		// We failed to retrieve an image, abort
 		return false
 	}
 
 	// Rating
-	ratingString := doc.Find(".jGRxWM").Text()
-	rating, _ := strconv.ParseFloat(ratingString[:3], 32)
-	movie.ImdbRating = float32(rating)
-	if movie.ImdbRating < 1 || movie.ImdbRating > 10 {
-		// We retrieved an invalid IMDB rating, abort
+	rating, ok := getMovieRating(doc)
+	if !ok {
 		return false
 	}
 
 	// StoryLine
-	movie.StoryLine = doc.Find("div.ipc-html-content div").First().Text()
-	if movie.StoryLine == "" {
+	storyLine, ok := getMovieStoryLine(doc)
+	if !ok {
 		// We retrieved an invalid storyline, abort
 		return false
 	}
 
 	// Genres
-	success = false
+	genres, ok := getMovieGenres(doc)
+	if !ok {
+		// We failed to retrieve at least one tag, abort
+		return false
+	}
+
+	// Store data
+	movie.Title = title
+	movie.Year = year
+	movie.Image = &poster
+	movie.HasImage = true
+	movie.ImdbRating = rating
+	movie.StoryLine = storyLine
+	movie.Tags = genres
+
+	return true
+}
+
+func getMovieGenres(doc *goquery.Document) ([]data.Tag, bool) {
+	var genres []data.Tag
+
+	ok := false
 	doc.Find("span.ipc-chip__text").Each(func(x int, s *goquery.Selection) {
 		genreName := s.Text()
 		if genreName == "Back to top" {
@@ -113,23 +122,68 @@ func (i *Manager) parseDocument(doc *goquery.Document, movie *data.Movie) bool {
 			// Skip this tag
 			return
 		}
-		// fmt.Println("GENRE:",genreName)
 		genre := data.Tag{Name: genreName}
-		if movie.Tags == nil {
-			movie.Tags = []data.Tag{}
-		}
-		movie.Tags = append(movie.Tags, genre)
-		success = true
+		genres = append(genres, genre)
+		ok = true
 	})
-	if !success {
+	if !ok {
 		// We failed to retrieve at least one tag, abort
-		return false
+		return nil, false
 	}
-
-	return true
+	return genres, true
 }
 
-func (i *Manager) downloadFile(url string) (*[]byte, error) {
+func getMovieStoryLine(doc *goquery.Document) (string, bool) {
+	storyLine := doc.Find("div.ipc-html-content div").First().Text()
+	if storyLine == "" {
+		// We retrieved an invalid storyline, abort
+		return "", false
+	}
+	return storyLine, true
+}
+
+func getMovieRating(doc *goquery.Document) (float32, bool) {
+	ratingString := doc.Find(".jGRxWM").Text()
+	rating, err := strconv.ParseFloat(ratingString[:3], 32)
+	if err != nil || rating < 1 || rating > 10 {
+		return -1, false
+	}
+	return float32(rating), true
+}
+
+func getMoviePoster(doc *goquery.Document) ([]byte, bool) {
+	s := doc.Find("div.ipc-media--poster-l img.ipc-image").First()
+	imageSource, ok := s.Attr("src")
+	if !ok {
+		return nil, false
+	}
+	imageData, err := downloadFile(imageSource)
+	if err != nil {
+		return nil, false
+	}
+	return imageData, true
+}
+
+func getMovieYear(doc *goquery.Document) (int, bool) {
+	year := doc.Find(".itZqyK").Text()
+	yearInt, err := strconv.Atoi(year[:4])
+	if err != nil || yearInt < 1900 || yearInt > 2100 {
+		// We retrieved an invalid release year, abort
+		return -1, false
+	}
+	return yearInt, true
+}
+
+func getMovieTitle(doc *goquery.Document) (string, bool) {
+	title := doc.Find(".sc-b73cd867-0").Text()
+	if title == "" {
+		// We failed to get the movie title, abort
+		return "", false
+	}
+	return title, true
+}
+
+func downloadFile(url string) ([]byte, error) {
 	// Get the response bytes from the url
 	response, err := http.Get(url)
 	if err != nil {
@@ -143,10 +197,11 @@ func (i *Manager) downloadFile(url string) (*[]byte, error) {
 		return nil, errors.New("received non 200 response code")
 	}
 
-	fileData, err := ioutil.ReadAll(response.Body)
+	// ioutil.ReadAll is deprecated
+	fileData, err := io.ReadAll(response.Body)
 	if err != nil {
 		return nil, err
 	}
 
-	return &fileData, err
+	return fileData, err
 }
