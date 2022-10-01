@@ -7,7 +7,7 @@ import (
 
 	"github.com/hultan/softimdb/internal/config"
 	"github.com/hultan/softimdb/internal/data"
-	imdb2 "github.com/hultan/softimdb/internal/imdb"
+	"github.com/hultan/softimdb/internal/imdb"
 	"github.com/hultan/softimdb/internal/nas"
 	"github.com/hultan/softteam/framework"
 )
@@ -21,7 +21,11 @@ type AddWindow struct {
 
 	database *data.Database
 	config   *config.Config
+	builder  *framework.GtkBuilder
 }
+
+var currentMovie *data.Movie
+var currentMovieInfo *imdb.MovieInfo
 
 func AddWindowNew(framework *framework.Framework) *AddWindow {
 	a := new(AddWindow)
@@ -30,6 +34,7 @@ func AddWindowNew(framework *framework.Framework) *AddWindow {
 }
 
 func (a *AddWindow) OpenForm(builder *framework.GtkBuilder, database *data.Database, config *config.Config) {
+	a.builder = builder
 	if a.window == nil {
 		// Get the extra window from glade
 		addWindow := builder.GetObject("addWindow").(*gtk.Window)
@@ -90,6 +95,8 @@ func (a *AddWindow) OpenForm(builder *framework.GtkBuilder, database *data.Datab
 
 	// Show the window
 	a.window.ShowAll()
+
+	a.imdbUrlEntry.GrabFocus()
 }
 
 func (a *AddWindow) closeWindow() {
@@ -157,9 +164,10 @@ func (a *AddWindow) addMovieButtonClicked() {
 		return
 	}
 
-	imdb := imdb2.ManagerNew()
-	movie := data.Movie{ImdbUrl: url, MoviePath: moviePath}
-	err := imdb.GetMovieInfo(&movie)
+	manager := imdb.ManagerNew()
+	currentMovie = &data.Movie{ImdbUrl: url, MoviePath: moviePath}
+	var err error
+	currentMovieInfo, err = manager.GetMovieInfo(currentMovie)
 	if err != nil {
 		message := fmt.Sprintf("Failed to retrieve movie information : \n\n%v", err)
 		dialog := gtk.MessageDialogNew(a.window, gtk.DIALOG_MODAL, gtk.MESSAGE_ERROR, gtk.BUTTONS_OK, message)
@@ -168,7 +176,25 @@ func (a *AddWindow) addMovieButtonClicked() {
 		return
 	}
 
-	err = a.database.InsertMovie(&movie)
+	// Get IMDB id
+	currentMovie.ImdbID = currentMovie.ImdbUrl[28 : 28+9]
+
+	// Open movie dialog here
+	movieDialog := MovieWindowNew(currentMovieInfo, a.saveMovieInfo)
+	movieDialog.OpenForm(a.builder, a.window)
+}
+
+func (a *AddWindow) saveMovieInfo() {
+	// Store data
+	currentMovie.Title = currentMovieInfo.Title
+	currentMovie.Year = currentMovieInfo.Year
+	currentMovie.Image = &currentMovieInfo.Poster
+	currentMovie.HasImage = true
+	currentMovie.ImdbRating = float32(currentMovieInfo.Rating)
+	currentMovie.StoryLine = currentMovieInfo.StoryLine
+	currentMovie.Tags = a.getTags(currentMovieInfo.Tags)
+
+	err := a.database.InsertMovie(currentMovie)
 	if err != nil {
 		panic(err)
 	}
@@ -204,4 +230,15 @@ func (a *AddWindow) rowActivated() {
 		return
 	}
 	a.moviePathEntry.SetText(path)
+}
+
+func (a *AddWindow) getTags(tags []string) []data.Tag {
+	var dataTags []data.Tag
+
+	for _, tag := range tags {
+		dataTag := data.Tag{Name: tag}
+		dataTags = append(dataTags, dataTag)
+	}
+
+	return dataTags
 }

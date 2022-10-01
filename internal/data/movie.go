@@ -14,6 +14,7 @@ type Movie struct {
 	Year       int     `gorm:"column:year;"`
 	ImdbRating float32 `gorm:"column:imdb_rating;"`
 	ImdbUrl    string  `gorm:"column:imdb_url;size:1024"`
+	ImdbID     string  `gorm:"column:imdb_id;size:9"`
 	StoryLine  string  `gorm:"column:story_line;size:65535"`
 	MoviePath  string  `gorm:"column:path;size:1024"`
 	Tags       []Tag   `gorm:"-"`

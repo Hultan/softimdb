@@ -474,19 +474,36 @@ func (m *MainWindow) executeCommand(command string, arguments ...string) (string
 }
 
 func (m *MainWindow) refreshIMDB() {
-	v := m.getSelectedMovie()
-	if v == nil {
+	var err error
+
+	currentMovie = m.getSelectedMovie()
+	if currentMovie == nil {
 		return
 	}
 
 	imdb := &imdb2.Manager{}
-	err := imdb.GetMovieInfo(v)
+	currentMovieInfo, err = imdb.GetMovieInfo(currentMovie)
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
 
-	err = m.database.UpdateMovie(v)
+	// Open movie dialog here
+	movieDialog := MovieWindowNew(currentMovieInfo, m.saveMovieInfo)
+	movieDialog.OpenForm(m.builder, m.window)
+}
+
+func (m *MainWindow) saveMovieInfo() {
+	// Store data
+	currentMovie.Title = currentMovieInfo.Title
+	currentMovie.Year = currentMovieInfo.Year
+	currentMovie.Image = &currentMovieInfo.Poster
+	currentMovie.HasImage = true
+	currentMovie.ImdbRating = float32(currentMovieInfo.Rating)
+	currentMovie.StoryLine = currentMovieInfo.StoryLine
+	currentMovie.Tags = m.getTags(currentMovieInfo.Tags)
+
+	err := m.database.UpdateMovie(currentMovie)
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -546,6 +563,7 @@ func (m *MainWindow) UpdateImage() {
 		fmt.Printf("Could not read the file due to this %s error \n", err)
 	}
 	image := &data.Image{Data: &file}
+
 	err = m.database.InsertImage(image)
 	if err != nil {
 		panic(err)
@@ -560,4 +578,15 @@ func (m *MainWindow) UpdateImage() {
 
 func (m *MainWindow) updateCountLabel(i int) {
 	m.countLabel.SetText(fmt.Sprintf("Number of videos : %d", i))
+}
+
+func (m *MainWindow) getTags(tags []string) []data.Tag {
+	var dataTags []data.Tag
+
+	for _, tag := range tags {
+		dataTag := data.Tag{Name: tag}
+		dataTags = append(dataTags, dataTag)
+	}
+
+	return dataTags
 }
