@@ -14,7 +14,7 @@ import (
 
 	"github.com/hultan/softimdb/internal/config"
 	"github.com/hultan/softimdb/internal/data"
-	imdb2 "github.com/hultan/softimdb/internal/imdb"
+	"github.com/hultan/softimdb/internal/imdb2"
 	"github.com/hultan/softteam/framework"
 )
 
@@ -481,29 +481,44 @@ func (m *MainWindow) refreshIMDB() {
 		return
 	}
 
-	imdb := &imdb2.Manager{}
-	currentMovieInfo, err = imdb.GetMovieInfo(currentMovie)
+	a, err := imdb2.NewApiKeyManagerFromStandardPath()
+	if err != nil {
+		// TODO : Error handling
+		panic(err)
+	}
+
+	manager := imdb2.NewImdb(a)
+	currentMovieInfo, err = manager.Title(currentMovie.ImdbID)
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
 
 	// Open movie dialog here
-	movieDialog := MovieWindowNew(currentMovieInfo, m.saveMovieInfo)
+	movieDialog := NewMovieWindow(currentMovieInfo, m.saveMovieInfo)
 	movieDialog.OpenForm(m.builder, m.window)
 }
 
-func (m *MainWindow) saveMovieInfo() {
+func (m *MainWindow) saveMovieInfo(window *MovieWindow) {
 	// Store data
 	currentMovie.Title = currentMovieInfo.Title
-	currentMovie.Year = currentMovieInfo.Year
-	currentMovie.Image = &currentMovieInfo.Poster
+	year, err := currentMovieInfo.GetYear()
+	if err != nil {
+		// TODO : Error handling
+		panic(err)
+	}
+	currentMovie.Year = year
+	currentMovie.Image = &window.poster
 	currentMovie.HasImage = true
-	currentMovie.ImdbRating = float32(currentMovieInfo.Rating)
+	rating, err := currentMovieInfo.GetRating()
+	if err != nil {
+		panic(err)
+	}
+	currentMovie.ImdbRating = float32(rating)
 	currentMovie.StoryLine = currentMovieInfo.StoryLine
-	currentMovie.Tags = m.getTags(currentMovieInfo.Tags)
+	currentMovie.Tags = m.getTags(currentMovieInfo.GetGenres())
 
-	err := m.database.UpdateMovie(currentMovie)
+	err = m.database.UpdateMovie(currentMovie)
 	if err != nil {
 		fmt.Println(err)
 		return

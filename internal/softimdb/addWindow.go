@@ -1,13 +1,15 @@
 package softimdb
 
 import (
+	"errors"
 	"fmt"
+	"regexp"
 
 	"github.com/gotk3/gotk3/gtk"
 
 	"github.com/hultan/softimdb/internal/config"
 	"github.com/hultan/softimdb/internal/data"
-	"github.com/hultan/softimdb/internal/imdb"
+	"github.com/hultan/softimdb/internal/imdb2"
 	"github.com/hultan/softimdb/internal/nas"
 	"github.com/hultan/softteam/framework"
 )
@@ -25,7 +27,7 @@ type AddWindow struct {
 }
 
 var currentMovie *data.Movie
-var currentMovieInfo *imdb.MovieInfo
+var currentMovieInfo *imdb2.Movie
 
 func AddWindowNew(framework *framework.Framework) *AddWindow {
 	a := new(AddWindow)
@@ -157,6 +159,7 @@ func (a *AddWindow) addMovieButtonClicked() {
 	}
 	moviePath := a.getEntryText(a.moviePathEntry)
 	if moviePath == "" {
+		// Clean up message dialog code, should be one function
 		message := "Movie path cannot be empty"
 		dialog := gtk.MessageDialogNew(a.window, gtk.DIALOG_MODAL, gtk.MESSAGE_ERROR, gtk.BUTTONS_OK, message)
 		dialog.Run()
@@ -164,10 +167,26 @@ func (a *AddWindow) addMovieButtonClicked() {
 		return
 	}
 
-	manager := imdb.ManagerNew()
+	key, err := imdb2.NewApiKeyManagerFromStandardPath()
+	if err != nil {
+		message := "Failed to create new api key manager"
+		dialog := gtk.MessageDialogNew(a.window, gtk.DIALOG_MODAL, gtk.MESSAGE_ERROR, gtk.BUTTONS_OK, message)
+		dialog.Run()
+		dialog.Destroy()
+		return
+	}
+
+	id, err := a.getIdFromUrl(url)
+	if err != nil {
+		message := "Failed to retrieve id from url"
+		dialog := gtk.MessageDialogNew(a.window, gtk.DIALOG_MODAL, gtk.MESSAGE_ERROR, gtk.BUTTONS_OK, message)
+		dialog.Run()
+		dialog.Destroy()
+		return
+	}
+	manager := imdb2.NewImdb(key)
 	currentMovie = &data.Movie{ImdbUrl: url, MoviePath: moviePath}
-	var err error
-	currentMovieInfo, err = manager.GetMovieInfo(currentMovie)
+	currentMovieInfo, err = manager.Title(id)
 	if err != nil {
 		message := fmt.Sprintf("Failed to retrieve movie information : \n\n%v", err)
 		dialog := gtk.MessageDialogNew(a.window, gtk.DIALOG_MODAL, gtk.MESSAGE_ERROR, gtk.BUTTONS_OK, message)
@@ -180,22 +199,33 @@ func (a *AddWindow) addMovieButtonClicked() {
 	currentMovie.ImdbID = currentMovie.ImdbUrl[28 : 28+9]
 
 	// Open movie dialog here
-	movieDialog := MovieWindowNew(currentMovieInfo, a.saveMovieInfo)
+	movieDialog := NewMovieWindow(currentMovieInfo, a.saveMovieInfo)
 	movieDialog.OpenForm(a.builder, a.window)
 }
 
-func (a *AddWindow) saveMovieInfo() {
+func (a *AddWindow) saveMovieInfo(window *MovieWindow) {
 	// Store data
 	currentMovie.Title = currentMovieInfo.Title
-	currentMovie.Year = currentMovieInfo.Year
-	currentMovie.Image = &currentMovieInfo.Poster
-	currentMovie.HasImage = true
-	currentMovie.ImdbRating = float32(currentMovieInfo.Rating)
-	currentMovie.StoryLine = currentMovieInfo.StoryLine
-	currentMovie.Tags = a.getTags(currentMovieInfo.Tags)
-
-	err := a.database.InsertMovie(currentMovie)
+	year, err := currentMovieInfo.GetYear()
 	if err != nil {
+		// TODO : Error handling
+		panic(err)
+	}
+	currentMovie.Year = year
+	currentMovie.Image = &window.poster
+	currentMovie.HasImage = true
+	rating, err := currentMovieInfo.GetRating()
+	if err != nil {
+		// TODO : Error handling
+		panic(err)
+	}
+	currentMovie.ImdbRating = float32(rating)
+	currentMovie.StoryLine = currentMovieInfo.StoryLine
+	currentMovie.Tags = a.getTags(currentMovieInfo.GetGenres())
+
+	err = a.database.InsertMovie(currentMovie)
+	if err != nil {
+		// TODO : Error handling
 		panic(err)
 	}
 
@@ -241,4 +271,31 @@ func (a *AddWindow) getTags(tags []string) []data.Tag {
 	}
 
 	return dataTags
+}
+
+func (a *AddWindow) getIdFromUrl(url string) (string, error) {
+	re := regexp.MustCompile(`tt\d{8}`)
+	matches := re.FindAll([]byte(url), -1)
+	if len(matches) == 0 {
+		return "", errors.New("invalid imdb URL")
+	}
+	return string(matches[0]), nil
+	//
+	// // TODO : Cleanup error handling
+	// // Make sure the url is long enough
+	// if len(url) < 29+9 {
+	// 	return "", errors.New("invalid imdb URL")
+	// }
+	// id := url[29 : 29+9]
+	// // Make sure it is a IMDB title id that starts with tt
+	// if id[0:2] != "tt" {
+	// 	return "", errors.New("invalid imdb URL")
+	// }
+	// // Make sure it is a IMDB title id that ends with a number
+	// numberPart := id[2:]
+	// _, err := strconv.Atoi(numberPart)
+	// if err != nil {
+	// 	return "", err
+	// }
+	// return id, nil
 }
