@@ -1,9 +1,13 @@
 package imdb2
 
 import (
-	"os"
+	"bytes"
+	"image/jpeg"
+	"net/http"
 	"strconv"
 	"strings"
+
+	"github.com/nfnt/resize"
 )
 
 type MovieResults struct {
@@ -55,11 +59,28 @@ func (m *Movie) GetGenres() []string {
 }
 
 func (m *Movie) GetPoster() ([]byte, error) {
-	file, err := os.ReadFile(m.ImageURL)
+	// Open the url
+	resp, err := http.Get(m.ImageURL)
 	if err != nil {
 		return nil, err
 	}
-	return file, nil
+	defer func() {
+		err = resp.Body.Close()
+	}()
+	// Get the image from the body
+	img, err := jpeg.Decode(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	// Resize the image
+	smallImg := resize.Resize(190, 0, img, resize.Lanczos3)
+	// Get a []byte back
+	buffer := bytes.Buffer{}
+	err = jpeg.Encode(&buffer, smallImg, nil)
+	if err != nil {
+		return nil, err
+	}
+	return buffer.Bytes(), nil
 }
 
 func (m *Movie) getGenres(text string) []string {

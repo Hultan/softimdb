@@ -133,6 +133,8 @@ func (m *MovieWindow) OpenForm(builder *framework.GtkBuilder, parent gtk.IWindow
 				panic(err)
 			}
 			m.posterImage.SetFromPixbuf(pix)
+			m.poster = poster
+			m.PosterHasChanged = true
 		}
 		// Store reference to database and window
 		m.window = movieWindow
