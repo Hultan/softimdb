@@ -274,28 +274,12 @@ func (a *AddWindow) getTags(tags []string) []data.Tag {
 }
 
 func (a *AddWindow) getIdFromUrl(url string) (string, error) {
-	re := regexp.MustCompile(`tt\d{8}`)
+	// Get the IMDB id from the URL.
+	// Starts with tt and ends with 7 or 8 digits.
+	re := regexp.MustCompile(`tt\d{7,8}`)
 	matches := re.FindAll([]byte(url), -1)
 	if len(matches) == 0 {
 		return "", errors.New("invalid imdb URL")
 	}
 	return string(matches[0]), nil
-	//
-	// // TODO : Cleanup error handling
-	// // Make sure the url is long enough
-	// if len(url) < 29+9 {
-	// 	return "", errors.New("invalid imdb URL")
-	// }
-	// id := url[29 : 29+9]
-	// // Make sure it is a IMDB title id that starts with tt
-	// if id[0:2] != "tt" {
-	// 	return "", errors.New("invalid imdb URL")
-	// }
-	// // Make sure it is a IMDB title id that ends with a number
-	// numberPart := id[2:]
-	// _, err := strconv.Atoi(numberPart)
-	// if err != nil {
-	// 	return "", err
-	// }
-	// return id, nil
 }
