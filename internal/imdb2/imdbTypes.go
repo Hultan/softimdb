@@ -49,7 +49,7 @@ func (m *Movie) GetYear() (int, error) {
 func (m *Movie) GetRating() (float64, error) {
 	rating, err := strconv.ParseFloat(m.Rating, 64)
 	if err != nil {
-		return 0, err
+		return 0, nil
 	}
 	return rating, nil
 }
@@ -64,22 +64,28 @@ func (m *Movie) GetPoster() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	// Defer close response
 	defer func() {
 		err = resp.Body.Close()
 	}()
-	// Get the image from the body
+
+	// Decode the image
 	img, err := jpeg.Decode(resp.Body)
 	if err != nil {
 		return nil, err
 	}
+
 	// Resize the image
 	smallImg := resize.Resize(190, 0, img, resize.Lanczos3)
+
 	// Get a []byte back
 	buffer := bytes.Buffer{}
 	err = jpeg.Encode(&buffer, smallImg, nil)
 	if err != nil {
 		return nil, err
 	}
+
 	return buffer.Bytes(), nil
 }
 
