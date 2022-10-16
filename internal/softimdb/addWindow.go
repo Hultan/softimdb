@@ -19,6 +19,7 @@ type AddWindow struct {
 	window         *gtk.Window
 	list           *gtk.ListBox
 	imdbUrlEntry   *gtk.Entry
+	imdbIdEntry    *gtk.Entry
 	moviePathEntry *gtk.Entry
 
 	database *data.Database
@@ -66,6 +67,9 @@ func (a *AddWindow) OpenForm(builder *framework.GtkBuilder, database *data.Datab
 		// IMDB Url and Movie Path entry
 		entry := builder.GetObject("imdbEntry").(*gtk.Entry)
 		a.imdbUrlEntry = entry
+		entry = builder.GetObject("imdbIdEntry").(*gtk.Entry)
+		a.imdbIdEntry = entry
+		_ = entry.Connect("changed", a.imdbURLChanged)
 		entry = builder.GetObject("moviePathEntry").(*gtk.Entry)
 		a.moviePathEntry = entry
 
@@ -175,9 +179,9 @@ func (a *AddWindow) addMovieButtonClicked() {
 		return
 	}
 
-	id, err := a.getIdFromUrl(url)
-	if err != nil {
-		message := "Failed to retrieve id from url"
+	id := a.getEntryText(a.imdbIdEntry)
+	if id == "" {
+		message := "IMDB id cannot be empty"
 		dialog := gtk.MessageDialogNew(a.window, gtk.DIALOG_MODAL, gtk.MESSAGE_ERROR, gtk.BUTTONS_OK, message)
 		dialog.Run()
 		dialog.Destroy()
@@ -195,7 +199,7 @@ func (a *AddWindow) addMovieButtonClicked() {
 	}
 
 	// Get IMDB id
-	currentMovie.ImdbID = currentMovie.ImdbUrl[28 : 28+9]
+	currentMovie.ImdbID = currentMovieInfo.Id
 
 	// Open movie dialog here
 	movieDialog := NewMovieWindow(currentMovieInfo, a.saveMovieInfo)
@@ -281,4 +285,16 @@ func (a *AddWindow) getIdFromUrl(url string) (string, error) {
 		return "", errors.New("invalid imdb URL")
 	}
 	return string(matches[0]), nil
+}
+
+func (a *AddWindow) imdbURLChanged() {
+	text, err := a.imdbUrlEntry.GetText()
+	if err != nil {
+		panic(err)
+	}
+	id, err := a.getIdFromUrl(text)
+	if err != nil {
+		panic(err)
+	}
+	a.imdbIdEntry.SetText(id)
 }
