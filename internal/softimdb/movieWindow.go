@@ -8,7 +8,7 @@ import (
 	"github.com/gotk3/gotk3/gtk"
 
 	"github.com/hultan/softimdb/internal/data"
-	"github.com/hultan/softimdb/internal/imdb2"
+	"github.com/hultan/softimdb/internal/imdb"
 	"github.com/hultan/softteam/framework"
 )
 
@@ -26,12 +26,12 @@ type MovieWindow struct {
 	PosterHasChanged bool
 	poster           []byte
 
-	movieImdb    *imdb2.Movie
+	movieImdb    *imdb.Movie
 	movie        *data.Movie
 	saveCallback func(*MovieWindow)
 }
 
-func NewMovieWindow(info *imdb2.Movie, saveCallback func(window *MovieWindow)) *MovieWindow {
+func NewMovieWindow(info *imdb.Movie, saveCallback func(window *MovieWindow)) *MovieWindow {
 	m := new(MovieWindow)
 	m.saveCallback = saveCallback
 	m.movieImdb = info
@@ -42,7 +42,7 @@ func NewMovieWindowFromMovie(movie *data.Movie, saveCallback func(window *MovieW
 	m := new(MovieWindow)
 	m.saveCallback = saveCallback
 	m.movie = movie
-	m.movieImdb = &imdb2.Movie{
+	m.movieImdb = &imdb.Movie{
 		Id:           movie.ImdbID,
 		Title:        movie.Title,
 		Type:         "movie",

@@ -14,7 +14,7 @@ import (
 
 	"github.com/hultan/softimdb/internal/config"
 	"github.com/hultan/softimdb/internal/data"
-	"github.com/hultan/softimdb/internal/imdb2"
+	"github.com/hultan/softimdb/internal/imdb"
 	"github.com/hultan/softteam/framework"
 )
 
@@ -481,13 +481,13 @@ func (m *MainWindow) refreshIMDB() {
 		return
 	}
 
-	a, err := imdb2.NewApiKeyManagerFromStandardPath()
+	a, err := imdb.NewApiKeyManagerFromStandardPath()
 	if err != nil {
 		// TODO : Error handling
 		panic(err)
 	}
 
-	manager := imdb2.NewImdb(a)
+	manager := imdb.NewImdb(a)
 	currentMovieInfo, err = manager.Title(currentMovie.ImdbID)
 	if err != nil {
 		fmt.Println(err)

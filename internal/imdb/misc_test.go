@@ -1,4 +1,4 @@
-package imdb2
+package imdb
 
 import (
 	"testing"

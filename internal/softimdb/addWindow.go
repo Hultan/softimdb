@@ -9,7 +9,7 @@ import (
 
 	"github.com/hultan/softimdb/internal/config"
 	"github.com/hultan/softimdb/internal/data"
-	"github.com/hultan/softimdb/internal/imdb2"
+	"github.com/hultan/softimdb/internal/imdb"
 	"github.com/hultan/softimdb/internal/nas"
 	"github.com/hultan/softteam/framework"
 )
@@ -27,7 +27,7 @@ type AddWindow struct {
 }
 
 var currentMovie *data.Movie
-var currentMovieInfo *imdb2.Movie
+var currentMovieInfo *imdb.Movie
 
 func AddWindowNew(framework *framework.Framework) *AddWindow {
 	a := new(AddWindow)
@@ -167,7 +167,7 @@ func (a *AddWindow) addMovieButtonClicked() {
 		return
 	}
 
-	key, err := imdb2.NewApiKeyManagerFromStandardPath()
+	key, err := imdb.NewApiKeyManagerFromStandardPath()
 	if err != nil {
 		message := "Failed to create new api key manager"
 		dialog := gtk.MessageDialogNew(a.window, gtk.DIALOG_MODAL, gtk.MESSAGE_ERROR, gtk.BUTTONS_OK, message)
@@ -184,7 +184,7 @@ func (a *AddWindow) addMovieButtonClicked() {
 		dialog.Destroy()
 		return
 	}
-	manager := imdb2.NewImdb(key)
+	manager := imdb.NewImdb(key)
 	currentMovie = &data.Movie{ImdbUrl: url, MoviePath: moviePath}
 	currentMovieInfo, err = manager.Title(id)
 	if err != nil {
