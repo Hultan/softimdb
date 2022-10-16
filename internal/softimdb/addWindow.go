@@ -67,9 +67,9 @@ func (a *AddWindow) OpenForm(builder *framework.GtkBuilder, database *data.Datab
 		// IMDB Url and Movie Path entry
 		entry := builder.GetObject("imdbEntry").(*gtk.Entry)
 		a.imdbUrlEntry = entry
+		_ = entry.Connect("changed", a.imdbURLChanged)
 		entry = builder.GetObject("imdbIdEntry").(*gtk.Entry)
 		a.imdbIdEntry = entry
-		_ = entry.Connect("changed", a.imdbURLChanged)
 		entry = builder.GetObject("moviePathEntry").(*gtk.Entry)
 		a.moviePathEntry = entry
 
@@ -291,6 +291,9 @@ func (a *AddWindow) imdbURLChanged() {
 	text, err := a.imdbUrlEntry.GetText()
 	if err != nil {
 		panic(err)
+	}
+	if text == "" {
+		return
 	}
 	id, err := a.getIdFromUrl(text)
 	if err != nil {
