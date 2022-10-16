@@ -89,11 +89,10 @@ func (a *AddWindow) OpenForm(builder *framework.GtkBuilder, database *data.Datab
 	nasManager.Disconnect()
 
 	// Paths list
-	list := builder.GetObject("pathsList").(*gtk.ListBox)
-	_ = list.Connect("row-activated", a.rowActivated)
-	a.list = list
+	a.list = builder.GetObject("pathsList").(*gtk.ListBox)
+	_ = a.list.Connect("row-activated", a.rowActivated)
 	a.framework.Gtk.ClearListBox(a.list)
-	a.fillList(list, *moviePaths)
+	a.fillList(a.list, *moviePaths)
 
 	// Show the window
 	a.window.ShowAll()
