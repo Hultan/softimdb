@@ -240,6 +240,7 @@ func (a *AddWindow) saveMovieInfo(window *MovieWindow) {
 
 	a.list.Remove(row)
 	a.imdbUrlEntry.SetText("")
+	a.imdbIdEntry.SetText("")
 	a.moviePathEntry.SetText("")
 }
 
