@@ -15,7 +15,7 @@ func cleanString(text string) string {
 
 func reportError(err error) {
 	fw := framework.NewFramework()
-	fmt.Fprintln(os.Stderr, err)
+	_, _ = fmt.Fprintln(os.Stderr, err)
 	fw.Gtk.Title(applicationTitle).Text(err.Error()).
 		ErrorIcon().OkButton().Show()
 }

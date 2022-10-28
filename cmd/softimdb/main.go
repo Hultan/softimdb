@@ -22,7 +22,7 @@ func main() {
 	// Create a new application
 	application, err := gtk.ApplicationNew(ApplicationId, ApplicationFlags)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "failed to create GTK Application : %v", err)
+		_, _ = fmt.Fprintf(os.Stderr, "failed to create GTK Application : %v", err)
 	}
 
 	mainForm := softimdb.NewMainWindow()
