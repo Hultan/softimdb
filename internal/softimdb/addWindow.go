@@ -149,53 +149,42 @@ func (a *AddWindow) ignorePathButtonClicked() {
 }
 
 func (a *AddWindow) addMovieButtonClicked() {
+	fw := framework.NewFramework()
+
 	url := a.getEntryText(a.imdbUrlEntry)
 	if url == "" {
-		message := "IMDB Url cannot be empty"
-		dialog := gtk.MessageDialogNew(a.window, gtk.DIALOG_MODAL, gtk.MESSAGE_ERROR, gtk.BUTTONS_OK, message)
-		dialog.Run()
-		dialog.Destroy()
+		fw.Gtk.Title("SoftIMDB").Text("IMDB Url cannot be empty").ErrorIcon().OkButton().Show()
 		return
 	}
 	moviePath := a.getEntryText(a.moviePathEntry)
 	if moviePath == "" {
-		// Clean up message dialog code, should be one function
-		message := "Movie path cannot be empty"
-		dialog := gtk.MessageDialogNew(a.window, gtk.DIALOG_MODAL, gtk.MESSAGE_ERROR, gtk.BUTTONS_OK, message)
-		dialog.Run()
-		dialog.Destroy()
+		fw.Gtk.Title("SoftIMDB").Text("Movie path cannot be empty").ErrorIcon().OkButton().Show()
 		return
 	}
 
 	key, err := imdb.NewApiKeyManagerFromStandardPath()
 	if err != nil {
-		message := "Failed to create new api key manager"
-		dialog := gtk.MessageDialogNew(a.window, gtk.DIALOG_MODAL, gtk.MESSAGE_ERROR, gtk.BUTTONS_OK, message)
-		dialog.Run()
-		dialog.Destroy()
+		fw.Gtk.Title("SoftIMDB").Text("Failed to create new api key manager").ErrorIcon().OkButton().Show()
 		return
 	}
 
 	id := a.getEntryText(a.imdbIdEntry)
 	if id == "" {
-		message := "IMDB id cannot be empty"
-		dialog := gtk.MessageDialogNew(a.window, gtk.DIALOG_MODAL, gtk.MESSAGE_ERROR, gtk.BUTTONS_OK, message)
-		dialog.Run()
-		dialog.Destroy()
+		fw.Gtk.Title("SoftIMDB").Text("IMDB id cannot be empty").ErrorIcon().OkButton().Show()
 		return
 	}
 	manager := imdb.NewImdb(key)
 	info, err := manager.Title(id)
 	if err != nil {
-		message := fmt.Sprintf("Failed to retrieve movie information : \n\n%v", err)
-		dialog := gtk.MessageDialogNew(a.window, gtk.DIALOG_MODAL, gtk.MESSAGE_ERROR, gtk.BUTTONS_OK, message)
-		dialog.Run()
-		dialog.Destroy()
+		fw.Gtk.Title("SoftIMDB").
+			Text(fmt.Sprintf("Failed to retrieve movie information : \n\n%v", err)).
+			ErrorIcon().OkButton().Show()
 		return
 	}
 
 	movie, err := newMovieInfoFromImdb(info)
 	if err != nil {
+		fw.Gtk.Title("SoftIMDB").Text(err.Error()).ErrorIcon().OkButton().Show()
 		panic(err)
 	}
 
