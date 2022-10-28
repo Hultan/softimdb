@@ -39,9 +39,13 @@ func (l *ListHelper) CreateMovieCard(movie *data.Movie) *gtk.Frame {
 	if err != nil {
 		panic(err)
 	}
-	titleLabel.SetMarkup(`<span font="Sans Regular 14" foreground="#111111"><b>` + cleanString(movie.Title) + `</b></span> 
+	titleLabel.SetMarkup(
+		`<span font="Sans Regular 14" foreground="#111111"><b>` + cleanString(movie.Title) + `</b></span> 
 <span font="Sans Regular 10" foreground="#111111"><b>` + cleanString(movie.SubTitle) + `</b></span>
-<span font="Sans Regular 10" foreground="#DDDDDD">` + fmt.Sprintf("%v", movie.Year) + ` - ` + fmt.Sprintf("Imdb : %v", movie.ImdbRating) + `</span>`)
+<span font="Sans Regular 10" foreground="#DDDDDD">` + fmt.Sprintf("%v", movie.Year) + ` - ` + fmt.Sprintf(
+			"Imdb : %v", movie.ImdbRating,
+		) + `</span>`,
+	)
 	nameBox.PackStart(titleLabel, true, false, 5)
 	box.PackStart(nameBox, false, false, 5)
 
@@ -53,7 +57,7 @@ func (l *ListHelper) CreateMovieCard(movie *data.Movie) *gtk.Frame {
 		}
 		box.Add(image)
 	} else {
-		pixBuf, err := gdk.PixbufNewFromBytesOnly(*movie.Image)
+		pixBuf, err := gdk.PixbufNewFromBytesOnly(movie.Image)
 		if err != nil {
 			panic(err)
 		}

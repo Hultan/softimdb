@@ -159,44 +159,54 @@ func (m *MainWindow) setupMenu(window *gtk.ApplicationWindow) {
 	menuSortByName = m.builder.GetObject("menuSortByName").(*gtk.RadioMenuItem)
 	menuSortByRating := m.builder.GetObject("menuSortByRating").(*gtk.RadioMenuItem)
 	menuSortByYear := m.builder.GetObject("menuSortByYear").(*gtk.RadioMenuItem)
-	menuSortByName.Connect("activate", func() {
-		if menuSortByName.GetActive() {
-			fmt.Println("Sort by name")
-			sortBy = sortByName
-			m.refresh(searchFor, selectedGenreId, m.getSortBy())
-		}
-	})
-	menuSortByRating.Connect("activate", func() {
-		if menuSortByRating.GetActive() {
-			fmt.Println("Sort by rating")
-			sortBy = sortByRating
-			m.refresh(searchFor, selectedGenreId, m.getSortBy())
-		}
-	})
-	menuSortByYear.Connect("activate", func() {
-		if menuSortByYear.GetActive() {
-			fmt.Println("Sort by year")
-			sortBy = sortByYear
-			m.refresh(searchFor, selectedGenreId, m.getSortBy())
-		}
-	})
+	menuSortByName.Connect(
+		"activate", func() {
+			if menuSortByName.GetActive() {
+				fmt.Println("Sort by name")
+				sortBy = sortByName
+				m.refresh(searchFor, selectedGenreId, m.getSortBy())
+			}
+		},
+	)
+	menuSortByRating.Connect(
+		"activate", func() {
+			if menuSortByRating.GetActive() {
+				fmt.Println("Sort by rating")
+				sortBy = sortByRating
+				m.refresh(searchFor, selectedGenreId, m.getSortBy())
+			}
+		},
+	)
+	menuSortByYear.Connect(
+		"activate", func() {
+			if menuSortByYear.GetActive() {
+				fmt.Println("Sort by year")
+				sortBy = sortByYear
+				m.refresh(searchFor, selectedGenreId, m.getSortBy())
+			}
+		},
+	)
 
 	menuSortAscending = m.builder.GetObject("menuSortAscending").(*gtk.RadioMenuItem)
 	menuSortDescending := m.builder.GetObject("menuSortDescending").(*gtk.RadioMenuItem)
-	menuSortAscending.Connect("activate", func() {
-		if menuSortAscending.GetActive() {
-			fmt.Println("Sort ascending")
-			sortOrder = sortAscending
-			m.refresh(searchFor, selectedGenreId, m.getSortBy())
-		}
-	})
-	menuSortDescending.Connect("activate", func() {
-		if menuSortDescending.GetActive() {
-			fmt.Println("Sort descending")
-			sortOrder = sortDescending
-			m.refresh(searchFor, selectedGenreId, m.getSortBy())
-		}
-	})
+	menuSortAscending.Connect(
+		"activate", func() {
+			if menuSortAscending.GetActive() {
+				fmt.Println("Sort ascending")
+				sortOrder = sortAscending
+				m.refresh(searchFor, selectedGenreId, m.getSortBy())
+			}
+		},
+	)
+	menuSortDescending.Connect(
+		"activate", func() {
+			if menuSortDescending.GetActive() {
+				fmt.Println("Sort descending")
+				sortOrder = sortDescending
+				m.refresh(searchFor, selectedGenreId, m.getSortBy())
+			}
+		},
+	)
 
 	sortBy = sortByName
 	sortOrder = sortAscending
@@ -211,7 +221,7 @@ func (m *MainWindow) setupMenu(window *gtk.ApplicationWindow) {
 	menuToolsOpenIMDB := m.builder.GetObject("mnuToolsIOpenIMDB").(*gtk.MenuItem)
 	_ = menuToolsOpenIMDB.Connect("activate", m.openIMDB)
 	menuToolsUpdateImage := m.builder.GetObject("mnuToolsUpdateImage").(*gtk.MenuItem)
-	_ = menuToolsUpdateImage.Connect("activate", m.UpdateImage)
+	_ = menuToolsUpdateImage.Connect("activate", m.updateImage)
 }
 
 func (m *MainWindow) fillMovieList(searchFor string, categoryId int, sortBy string) {
@@ -326,11 +336,13 @@ func (m *MainWindow) openAboutDialog() {
 		about.SetModal(true)
 		about.SetPosition(gtk.WIN_POS_CENTER)
 
-		_ = about.Connect("response", func(dialog *gtk.AboutDialog, responseId gtk.ResponseType) {
-			if responseId == gtk.RESPONSE_CANCEL || responseId == gtk.RESPONSE_DELETE_EVENT {
-				about.Hide()
-			}
-		})
+		_ = about.Connect(
+			"response", func(dialog *gtk.AboutDialog, responseId gtk.ResponseType) {
+				if responseId == gtk.RESPONSE_CANCEL || responseId == gtk.RESPONSE_DELETE_EVENT {
+					about.Hide()
+				}
+			},
+		)
 
 		m.aboutDialog = about
 	}
@@ -428,24 +440,28 @@ func (m *MainWindow) fillTagsMenu(menu *gtk.MenuItem) {
 	for _, tag := range tags {
 		item, _ := gtk.RadioMenuItemNewWithLabel(group, tag.Name)
 		item.SetName(strconv.Itoa(tag.Id))
-		item.Connect("activate", func() {
-			if item.GetActive() {
-				name, _ := item.GetName()
+		item.Connect(
+			"activate", func() {
+				if item.GetActive() {
+					name, _ := item.GetName()
+					i, _ := strconv.Atoi(name)
+					selectedGenreId = i
+					m.refresh(searchFor, selectedGenreId, m.getSortBy())
+				}
+			},
+		)
+		sub.Add(item)
+	}
+	noneItem.Connect(
+		"activate", func() {
+			if noneItem.GetActive() {
+				name, _ := noneItem.GetName()
 				i, _ := strconv.Atoi(name)
 				selectedGenreId = i
 				m.refresh(searchFor, selectedGenreId, m.getSortBy())
 			}
-		})
-		sub.Add(item)
-	}
-	noneItem.Connect("activate", func() {
-		if noneItem.GetActive() {
-			name, _ := noneItem.GetName()
-			i, _ := strconv.Atoi(name)
-			selectedGenreId = i
-			m.refresh(searchFor, selectedGenreId, m.getSortBy())
-		}
-	})
+		},
+	)
 }
 
 func (m *MainWindow) playMovie(movie *data.Movie) {
@@ -476,8 +492,8 @@ func (m *MainWindow) executeCommand(command string, arguments ...string) (string
 func (m *MainWindow) refreshIMDB() {
 	var err error
 
-	currentMovie = m.getSelectedMovie()
-	if currentMovie == nil {
+	movie := m.getSelectedMovie()
+	if movie == nil {
 		return
 	}
 
@@ -488,41 +504,53 @@ func (m *MainWindow) refreshIMDB() {
 	}
 
 	manager := imdb.NewImdb(a)
-	currentMovieInfo, err = manager.Title(currentMovie.ImdbID)
+	info, err := manager.Title(movie.ImdbID)
 	if err != nil {
 		fmt.Println(err)
 		return
+	}
+
+	movieInfo, err := newMovieInfoFromImdb(info)
+	if err != nil {
+		panic(err)
 	}
 
 	// Open movie dialog here
-	movieDialog := NewMovieWindow(currentMovieInfo, m.saveMovieInfo)
+	movieDialog := NewMovieWindow(movieInfo, movie, m.saveMovieInfo)
 	movieDialog.OpenForm(m.builder, m.window)
 }
 
-func (m *MainWindow) saveMovieInfo(window *MovieWindow) {
-	// Store data
-	currentMovie.Title = currentMovieInfo.Title
-	year, err := currentMovieInfo.GetYear()
-	if err != nil {
-		// TODO : Error handling
-		panic(err)
-	}
-	currentMovie.Year = year
-	currentMovie.Image = &window.poster
-	currentMovie.HasImage = true
-	rating, err := currentMovieInfo.GetRating()
-	if err != nil {
-		panic(err)
-	}
-	currentMovie.ImdbRating = float32(rating)
-	currentMovie.StoryLine = currentMovieInfo.StoryLine
-	currentMovie.Tags = m.getTags(currentMovieInfo.GetGenres())
+func (m *MainWindow) saveMovieInfo(movieInfo *MovieInfo, movie *data.Movie) {
+	movieInfo.toDatabase(movie)
 
-	err = m.database.UpdateMovie(currentMovie)
+	// Store data
+	movie.Title = movieInfo.title
+	movie.StoryLine = movieInfo.storyLine
+	movie.Year = movieInfo.getYear()
+	movie.ImdbRating = movieInfo.getImdbRating()
+	// TODO : Tags not editable for now
+	// currentMovie.Tags = m.getTags(currentMovieInfo.GetGenres())
+
+	err := m.database.UpdateMovie(movie)
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
+
+	if movieInfo.imageHasChanged {
+		image, err := m.database.GetImage(movie.ImageId)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+		image.Data = movieInfo.image
+		err = m.database.UpdateImage(image)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+	}
+
 }
 
 func (m *MainWindow) openIMDB() {
@@ -531,11 +559,11 @@ func (m *MainWindow) openIMDB() {
 		return
 	}
 
-	openbrowser(v.ImdbUrl)
+	m.openBrowser(v.ImdbUrl)
 }
 
 // https://gist.github.com/hyg/9c4afcd91fe24316cbf0
-func openbrowser(url string) {
+func (m *MainWindow) openBrowser(url string) {
 	var err error
 
 	switch runtime.GOOS {
@@ -554,9 +582,16 @@ func openbrowser(url string) {
 
 }
 
-func (m *MainWindow) UpdateImage() {
-	dialog, err := gtk.FileChooserDialogNewWith2Buttons("Choose new image...", m.window, gtk.FILE_CHOOSER_ACTION_OPEN, "Ok", gtk.RESPONSE_OK,
-		"Cancel", gtk.RESPONSE_CANCEL)
+func (m *MainWindow) updateImage() {
+	selectedMovie := m.getSelectedMovie()
+	if selectedMovie == nil {
+		return
+	}
+
+	dialog, err := gtk.FileChooserDialogNewWith2Buttons(
+		"Choose new image...", m.window, gtk.FILE_CHOOSER_ACTION_OPEN, "Ok", gtk.RESPONSE_OK,
+		"Cancel", gtk.RESPONSE_CANCEL,
+	)
 	if err != nil {
 		panic(err)
 	}
@@ -567,27 +602,22 @@ func (m *MainWindow) UpdateImage() {
 		return
 	}
 
-	movie := m.getSelectedMovie()
-	if movie == nil {
-		return
-	}
-
 	fileName := dialog.GetFilename()
-	file, err := os.ReadFile(fileName)
+	bytes, err := os.ReadFile(fileName)
 	if err != nil {
 		fmt.Printf("Could not read the file due to this %s error \n", err)
 	}
-	image := &data.Image{Data: &file}
 
-	err = m.database.InsertImage(image)
+	movieImage, err := m.database.GetImage(selectedMovie.ImageId)
 	if err != nil {
-		panic(err)
+		fmt.Println(err)
+		return
 	}
-
-	movie.ImageId = image.Id
-	err = m.database.UpdateMovie(movie)
+	movieImage.Data = bytes
+	err = m.database.UpdateImage(movieImage)
 	if err != nil {
-		panic(err)
+		fmt.Println(err)
+		return
 	}
 }
 

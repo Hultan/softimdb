@@ -4,6 +4,8 @@ import (
 	"strings"
 
 	"gorm.io/gorm"
+
+	"github.com/hultan/softimdb/internal/imdb"
 )
 
 // Movie represents a movie in the database.
@@ -19,11 +21,11 @@ type Movie struct {
 	MoviePath  string  `gorm:"column:path;size:1024"`
 	Tags       []Tag   `gorm:"-"`
 
-	HasImage  bool    `gorm:"-"`
-	Image     *[]byte `gorm:"-"`
-	ImageId   int     `gorm:"column:image_id;"`
-	ImagePath string  `gorm:"column:image_path;size:1024"`
-	ToWatch   bool    `gorm:"column:to_watch"`
+	HasImage  bool   `gorm:"-"`
+	Image     []byte `gorm:"-"`
+	ImageId   int    `gorm:"column:image_id;"`
+	ImagePath string `gorm:"column:image_path;size:1024"` // Not used yet
+	ToWatch   bool   `gorm:"column:to_watch"`             // Not used yet
 }
 
 // TableName returns the name of the table.
@@ -106,7 +108,11 @@ func (d *Database) GetAllMovies(searchFor string, categoryId int, orderBy string
 	} else {
 		s := "%" + searchFor + "%"
 		if result = db.Joins("JOIN movie_tag on movies.id = movie_tag.movie_id").
-			Where("(title like ? OR sub_title like ? OR year like ? OR story_line like ?) AND movie_tag.tag_id = ?", s, s, s, s, categoryId).
+			Where(
+				"(title like ? OR sub_title like ? OR year like ? OR story_line like ?) AND movie_tag.tag_id = ?", s, s,
+				s,
+				s, categoryId,
+			).
 			Order(orderBy).
 			Find(&movies); result.Error != nil {
 			return nil, result.Error
@@ -167,7 +173,7 @@ func (d *Database) InsertMovie(movie *Movie) error {
 	}
 
 	// Insert image
-	if movie.HasImage && len(*movie.Image) > 0 {
+	if movie.HasImage && len(movie.Image) > 0 {
 		image := Image{Data: movie.Image}
 		err = d.InsertImage(&image)
 		if err != nil {
@@ -204,6 +210,14 @@ func (d *Database) UpdateMovie(movie *Movie) error {
 	}
 
 	if result := db.Model(&movie).Update("title", movie.Title); result.Error != nil {
+		return result.Error
+	}
+
+	if result := db.Model(&movie).Update("sub_title", movie.SubTitle); result.Error != nil {
+		return result.Error
+	}
+
+	if result := db.Model(&movie).Update("story_line", movie.StoryLine); result.Error != nil {
 		return result.Error
 	}
 
@@ -264,4 +278,33 @@ func (d *Database) getMovieImage(movie *Movie) {
 		movie.Image = image.Data
 		movie.HasImage = true
 	}
+}
+
+func (d *Database) FromIMDB(movie *imdb.Movie) (*Movie, error) {
+	var tags []Tag
+	for _, genre := range movie.GetGenres() {
+		tags = append(tags, Tag{Id: 0, Name: genre, IsPrivate: false, Movies: nil})
+	}
+
+	poster, err := movie.GetPoster()
+	if err != nil {
+		return nil, err
+	}
+
+	return &Movie{
+		Id:         0,
+		Title:      movie.Title,
+		SubTitle:   "",
+		Year:       movie.GetYear(),
+		ImdbRating: float32(movie.GetRating()),
+		ImdbUrl:    movie.GetURL(),
+		ImdbID:     movie.Id,
+		StoryLine:  movie.StoryLine,
+		MoviePath:  "",
+		Tags:       tags,
+
+		ImageId:  0,
+		Image:    poster,
+		HasImage: true,
+	}, nil
 }

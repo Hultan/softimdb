@@ -8,64 +8,31 @@ import (
 	"github.com/gotk3/gotk3/gtk"
 
 	"github.com/hultan/softimdb/internal/data"
-	"github.com/hultan/softimdb/internal/imdb"
 	"github.com/hultan/softteam/framework"
 )
 
-// 1. Create a struct called MovieWindowManager
-// 2. Make that handle the opening and saving the IMDB information/Movie
-
 type MovieWindow struct {
-	window           *gtk.Window
-	titleEntry       *gtk.Entry
-	yearEntry        *gtk.Entry
-	storyLineEntry   *gtk.TextView
-	ratingEntry      *gtk.Entry
-	genresEntry      *gtk.Entry
-	posterImage      *gtk.Image
-	PosterHasChanged bool
-	poster           []byte
+	window         *gtk.Window
+	titleEntry     *gtk.Entry
+	subTitleEntry  *gtk.Entry
+	yearEntry      *gtk.Entry
+	storyLineEntry *gtk.TextView
+	ratingEntry    *gtk.Entry
+	genresEntry    *gtk.Entry
+	posterImage    *gtk.Image
 
-	movieImdb    *imdb.Movie
-	movie        *data.Movie
-	saveCallback func(*MovieWindow)
+	movieInfo *MovieInfo
+	movie     *data.Movie
+
+	saveCallback func(*MovieInfo, *data.Movie)
 }
 
-func NewMovieWindow(info *imdb.Movie, saveCallback func(window *MovieWindow)) *MovieWindow {
+func NewMovieWindow(info *MovieInfo, movie *data.Movie, saveCallback func(*MovieInfo, *data.Movie)) *MovieWindow {
 	m := new(MovieWindow)
-	m.saveCallback = saveCallback
-	m.movieImdb = info
-	return m
-}
-
-func NewMovieWindowFromMovie(movie *data.Movie, saveCallback func(window *MovieWindow)) *MovieWindow {
-	m := new(MovieWindow)
-	m.saveCallback = saveCallback
+	m.movieInfo = info
 	m.movie = movie
-	m.movieImdb = &imdb.Movie{
-		Id:           movie.ImdbID,
-		Title:        movie.Title,
-		Type:         "movie",
-		Year:         fmt.Sprintf("%d", movie.Year),
-		ImageURL:     "",
-		StoryLine:    movie.StoryLine,
-		Genres:       tagsToString(movie.Tags),
-		Rating:       fmt.Sprintf("%.2f", movie.ImdbRating),
-		ErrorMessage: "",
-	}
-	m.poster = *movie.Image
+	m.saveCallback = saveCallback
 	return m
-}
-
-func tagsToString(tags []data.Tag) string {
-	result := ""
-	for _, tag := range tags {
-		if result != "" {
-			result += ","
-		}
-		result += tag.Name
-	}
-	return result
 }
 
 func (m *MovieWindow) OpenForm(builder *framework.GtkBuilder, parent gtk.IWindow) {
@@ -92,6 +59,7 @@ func (m *MovieWindow) OpenForm(builder *framework.GtkBuilder, parent gtk.IWindow
 
 		// Entries and images
 		m.titleEntry = builder.GetObject("titleEntry").(*gtk.Entry)
+		m.subTitleEntry = builder.GetObject("subTitleEntry").(*gtk.Entry)
 		m.yearEntry = builder.GetObject("yearEntry").(*gtk.Entry)
 		m.storyLineEntry = builder.GetObject("storyLineTextView").(*gtk.TextView)
 		m.ratingEntry = builder.GetObject("ratingEntry").(*gtk.Entry)
@@ -101,41 +69,23 @@ func (m *MovieWindow) OpenForm(builder *framework.GtkBuilder, parent gtk.IWindow
 		eventBox.Connect("button-press-event", m.onImageClick)
 
 		// Fill form with data
-		m.titleEntry.SetText(m.movieImdb.Title)
-		m.yearEntry.SetText(m.movieImdb.Year)
+		m.titleEntry.SetText(m.movieInfo.title)
+		m.subTitleEntry.SetText(m.movieInfo.subTitle)
+		m.yearEntry.SetText(fmt.Sprintf("%d", m.movieInfo.getYear()))
 		buffer, err := gtk.TextBufferNew(nil)
 		if err != nil {
 			// TODO : Fix error handling
 			panic(err)
 		}
-		buffer.SetText(m.movieImdb.StoryLine)
+		buffer.SetText(m.movieInfo.storyLine)
 		m.storyLineEntry.SetBuffer(buffer)
-		m.ratingEntry.SetText(m.movieImdb.Rating)
-		m.genresEntry.SetText(m.movieImdb.Genres)
-		if m.movieImdb.ImageURL == "" {
-			// We are opening a movie from the database
-			pix, err := gdk.PixbufNewFromBytesOnly(m.poster)
-			if err != nil {
-				// TODO : Fix error handling
-				panic(err)
-			}
-			m.posterImage.SetFromPixbuf(pix)
-		} else {
-			// We are opening a movie from IMDB
-			poster, err := m.movieImdb.GetPoster()
-			if err != nil {
-				// TODO : Fix error handling
-				panic(err)
-			}
-			pix, err := gdk.PixbufNewFromBytesOnly(poster)
-			if err != nil {
-				// TODO : Fix error handling
-				panic(err)
-			}
-			m.posterImage.SetFromPixbuf(pix)
-			m.poster = poster
-			m.PosterHasChanged = true
-		}
+		m.ratingEntry.SetText(m.movieInfo.imdbRating)
+		m.genresEntry.SetText(m.movieInfo.tags)
+		m.genresEntry.SetEditable(false)
+
+		// Poster
+		m.updateImage(m.movieInfo.image)
+
 		// Store reference to database and window
 		m.window = movieWindow
 	}
@@ -160,9 +110,10 @@ func (m *MovieWindow) getEntryText(entry *gtk.Entry) string {
 
 func (m *MovieWindow) okButtonClicked() {
 	// Fill fields
-	m.movieImdb.Title = m.getEntryText(m.titleEntry)
-	m.movieImdb.Year = m.getEntryText(m.yearEntry)
-	m.movieImdb.Rating = m.getEntryText(m.ratingEntry)
+	m.movieInfo.title = m.getEntryText(m.titleEntry)
+	m.movieInfo.subTitle = m.getEntryText(m.subTitleEntry)
+	m.movieInfo.year = m.getEntryText(m.yearEntry)
+	m.movieInfo.imdbRating = m.getEntryText(m.ratingEntry)
 	buffer, err := m.storyLineEntry.GetBuffer()
 	if err != nil {
 		panic(err)
@@ -171,39 +122,22 @@ func (m *MovieWindow) okButtonClicked() {
 	if err != nil {
 		panic(err)
 	}
-	m.movieImdb.StoryLine = storyLine
-	m.movieImdb.Genres = m.getEntryText(m.genresEntry)
+	m.movieInfo.storyLine = storyLine
+
+	// TODO : Fix editing of tags/genres
+	// m.movie.Tags = m.getEntryText(m.genresEntry)
+
 	// Poster is set when clicking on the image
 
-	m.saveCallback(m)
-
+	m.saveCallback(m.movieInfo, m.movie)
 	m.window.Hide()
 }
 
-func (m *MovieWindow) getGenresText(tags []string) string {
-	result := ""
-	for _, tag := range tags {
-		if result != "" {
-			result += ","
-		}
-		result += tag
-	}
-	return result
-}
-
-//
-// func (m *MovieWindow) getGenres(text string) []string {
-// 	var result []string
-// 	genres := strings.Split(text, ",")
-// 	for _, genre := range genres {
-// 		result = append(result, genre)
-// 	}
-// 	return result
-// }
-
 func (m *MovieWindow) onImageClick() {
-	dialog, err := gtk.FileChooserDialogNewWith2Buttons("Choose an image...", m.window, gtk.FILE_CHOOSER_ACTION_OPEN, "Ok", gtk.RESPONSE_OK,
-		"Cancel", gtk.RESPONSE_CANCEL)
+	dialog, err := gtk.FileChooserDialogNewWith2Buttons(
+		"Choose an image...", m.window, gtk.FILE_CHOOSER_ACTION_OPEN, "Ok", gtk.RESPONSE_OK,
+		"Cancel", gtk.RESPONSE_CANCEL,
+	)
 	if err != nil {
 		panic(err)
 	}
@@ -215,11 +149,22 @@ func (m *MovieWindow) onImageClick() {
 	}
 
 	fileName := dialog.GetFilename()
-	file, err := os.ReadFile(fileName)
+	bytes, err := os.ReadFile(fileName)
 	if err != nil {
 		fmt.Printf("Could not read the file due to this %s error \n", err)
+		return
 	}
 
-	m.poster = file
-	m.PosterHasChanged = true
+	m.updateImage(bytes)
+	m.movieInfo.image = bytes
+	m.movieInfo.imageHasChanged = true
+}
+
+func (m *MovieWindow) updateImage(image []byte) {
+	pix, err := gdk.PixbufNewFromBytesOnly(image)
+	if err != nil {
+		// TODO : Fix error handling
+		panic(err)
+	}
+	m.posterImage.SetFromPixbuf(pix)
 }

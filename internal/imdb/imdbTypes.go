@@ -34,24 +34,29 @@ type Movie struct {
 	StoryLine string `json:"plot"`
 	Genres    string `json:"genres"`
 	Rating    string `json:"imDbRating"`
+	URL       string
 
 	ErrorMessage string `json:"errorMessage"`
 }
 
-func (m *Movie) GetYear() (int, error) {
-	year, err := strconv.Atoi(m.Year)
-	if err != nil {
-		return -1, err
-	}
-	return year, nil
+func (m *Movie) GetURL() string {
+	return "https://www.imdb.com/title/" + m.Id
 }
 
-func (m *Movie) GetRating() (float64, error) {
+func (m *Movie) GetYear() int {
+	year, err := strconv.Atoi(m.Year)
+	if err != nil {
+		return 0
+	}
+	return year
+}
+
+func (m *Movie) GetRating() float64 {
 	rating, err := strconv.ParseFloat(m.Rating, 64)
 	if err != nil {
-		return 0, nil
+		return 0
 	}
-	return rating, nil
+	return rating
 }
 
 func (m *Movie) GetGenres() []string {

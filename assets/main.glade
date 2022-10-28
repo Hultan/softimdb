@@ -783,12 +783,12 @@
             <property name="label-xalign">0</property>
             <child>
               <object class="GtkScrolledWindow">
+                <property name="height-request">100</property>
                 <property name="visible">True</property>
                 <property name="can-focus">True</property>
                 <property name="shadow-type">in</property>
                 <child>
                   <object class="GtkTextView" id="storyLineTextView">
-                    <property name="height-request">100</property>
                     <property name="visible">True</property>
                     <property name="can-focus">True</property>
                     <property name="wrap-mode">word</property>
@@ -826,10 +826,25 @@
           </packing>
         </child>
         <child>
-          <placeholder/>
+          <object class="GtkEntry" id="subTitleEntry">
+            <property name="visible">True</property>
+            <property name="can-focus">True</property>
+          </object>
+          <packing>
+            <property name="left-attach">1</property>
+            <property name="top-attach">1</property>
+          </packing>
         </child>
         <child>
-          <placeholder/>
+          <object class="GtkLabel">
+            <property name="visible">True</property>
+            <property name="can-focus">False</property>
+            <property name="label" translatable="yes">Subtitle</property>
+          </object>
+          <packing>
+            <property name="left-attach">0</property>
+            <property name="top-attach">1</property>
+          </packing>
         </child>
         <child>
           <placeholder/>

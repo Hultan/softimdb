@@ -27,9 +27,6 @@ type AddWindow struct {
 	builder  *framework.GtkBuilder
 }
 
-var currentMovie *data.Movie
-var currentMovieInfo *imdb.Movie
-
 func AddWindowNew(framework *framework.Framework) *AddWindow {
 	a := new(AddWindow)
 	a.framework = framework
@@ -188,8 +185,7 @@ func (a *AddWindow) addMovieButtonClicked() {
 		return
 	}
 	manager := imdb.NewImdb(key)
-	currentMovie = &data.Movie{ImdbUrl: url, MoviePath: moviePath}
-	currentMovieInfo, err = manager.Title(id)
+	info, err := manager.Title(id)
 	if err != nil {
 		message := fmt.Sprintf("Failed to retrieve movie information : \n\n%v", err)
 		dialog := gtk.MessageDialogNew(a.window, gtk.DIALOG_MODAL, gtk.MESSAGE_ERROR, gtk.BUTTONS_OK, message)
@@ -198,35 +194,20 @@ func (a *AddWindow) addMovieButtonClicked() {
 		return
 	}
 
-	// Get IMDB id
-	currentMovie.ImdbID = currentMovieInfo.Id
+	movie, err := newMovieInfoFromImdb(info)
+	if err != nil {
+		panic(err)
+	}
 
 	// Open movie dialog here
-	movieDialog := NewMovieWindow(currentMovieInfo, a.saveMovieInfo)
+	movieDialog := NewMovieWindow(movie, nil, a.saveMovieInfo)
 	movieDialog.OpenForm(a.builder, a.window)
 }
 
-func (a *AddWindow) saveMovieInfo(window *MovieWindow) {
-	// Store data
-	currentMovie.Title = currentMovieInfo.Title
-	year, err := currentMovieInfo.GetYear()
-	if err != nil {
-		// TODO : Error handling
-		panic(err)
-	}
-	currentMovie.Year = year
-	currentMovie.Image = &window.poster
-	currentMovie.HasImage = true
-	rating, err := currentMovieInfo.GetRating()
-	if err != nil {
-		// TODO : Error handling
-		panic(err)
-	}
-	currentMovie.ImdbRating = float32(rating)
-	currentMovie.StoryLine = currentMovieInfo.StoryLine
-	currentMovie.Tags = a.getTags(currentMovieInfo.GetGenres())
-
-	err = a.database.InsertMovie(currentMovie)
+func (a *AddWindow) saveMovieInfo(info *MovieInfo, _ *data.Movie) {
+	newMovie := &data.Movie{}
+	info.toDatabase(newMovie)
+	err := a.database.InsertMovie(newMovie)
 	if err != nil {
 		// TODO : Error handling
 		panic(err)

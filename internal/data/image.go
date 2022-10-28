@@ -2,8 +2,8 @@ package data
 
 // Image represents a movie image.
 type Image struct {
-	Id   int     `gorm:"column:id;primary_key"`
-	Data *[]byte `gorm:"column:image;"`
+	Id   int    `gorm:"column:id;primary_key"`
+	Data []byte `gorm:"column:image;"`
 }
 
 // TableName returns the name of the table.
@@ -32,6 +32,20 @@ func (d *Database) InsertImage(image *Image) error {
 		return err
 	}
 	if result := db.Create(image); result.Error != nil {
+		return result.Error
+	}
+
+	return nil
+}
+
+// UpdateImage updates an image.
+func (d *Database) UpdateImage(image *Image) error {
+	db, err := d.getDatabase()
+	if err != nil {
+		return err
+	}
+
+	if result := db.Model(&image).Update("Data", image.Data); result.Error != nil {
 		return result.Error
 	}
 
