@@ -3,6 +3,7 @@ package softimdb
 import (
 	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/hultan/softimdb/internal/data"
 	"github.com/hultan/softimdb/internal/imdb"
@@ -63,9 +64,15 @@ func (m *MovieInfo) toDatabase(movie *data.Movie) {
 	movie.Title = m.title
 	movie.SubTitle = m.subTitle
 	movie.StoryLine = m.storyLine
+	movie.MoviePath = m.path
 	movie.Year = m.getYear()
+	movie.ImdbID = m.imdbId
+	movie.ImdbUrl = m.imdbUrl
 	movie.ImdbRating = m.getImdbRating()
+	movie.Tags = m.getTags(m.tags)
 	if m.imageHasChanged {
+		movie.HasImage = true
+		movie.ImagePath = ""
 		movie.Image = m.image
 	}
 }
@@ -84,6 +91,15 @@ func (m *MovieInfo) getYear() int {
 		return 0
 	}
 	return year
+}
+
+func (m *MovieInfo) getTags(tags string) []data.Tag {
+	var result []data.Tag
+	tagItems := strings.Split(tags, ",")
+	for _, item := range tagItems {
+		result = append(result, data.Tag{Name: item})
+	}
+	return result
 }
 
 func getTagsString(tags []data.Tag) string {

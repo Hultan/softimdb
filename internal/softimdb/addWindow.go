@@ -200,6 +200,10 @@ func (a *AddWindow) addMovieButtonClicked() {
 		panic(err)
 	}
 
+	if len(movie.image) > 0 {
+		movie.imageHasChanged = true
+	}
+
 	// Open movie dialog here
 	win := NewMovieWindow(movie, nil, a.saveMovieInfo)
 	win.OpenForm(a.builder, a.window)
@@ -209,6 +213,7 @@ func (a *AddWindow) addMovieButtonClicked() {
 func (a *AddWindow) saveMovieInfo(info *MovieInfo, _ *data.Movie) {
 	newMovie := &data.Movie{}
 	info.toDatabase(newMovie)
+	newMovie.MoviePath = a.getEntryText(a.moviePathEntry)
 	err := a.database.InsertMovie(newMovie)
 	if err != nil {
 		reportError(err)
@@ -288,7 +293,7 @@ func (a *AddWindow) imdbURLChanged() {
 	id, err := a.getIdFromUrl(text)
 	if err != nil {
 		reportError(err)
-		panic(err)
+		return
 	}
 	a.imdbIdEntry.SetText(id)
 }
