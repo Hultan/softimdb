@@ -271,7 +271,6 @@ func (a *AddWindow) getIdFromUrl(url string) (string, error) {
 	matches := re.FindAll([]byte(url), -1)
 	if len(matches) == 0 {
 		err := errors.New("invalid imdb URL")
-		reportError(err)
 		return "", err
 	}
 	return string(matches[0]), nil

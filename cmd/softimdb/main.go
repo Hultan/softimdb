@@ -1,10 +1,13 @@
 package main
 
 import (
+	"fmt"
+	"os"
+
 	"github.com/gotk3/gotk3/glib"
 	"github.com/gotk3/gotk3/gtk"
+
 	"github.com/hultan/softimdb/internal/softimdb"
-	"os"
 )
 
 const (
@@ -18,7 +21,9 @@ func main() {
 
 	// Create a new application
 	application, err := gtk.ApplicationNew(ApplicationId, ApplicationFlags)
-	softimdb.ErrorCheckWithPanic(err, "Failed to create GTK Application")
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "failed to create GTK Application : %v", err)
+	}
 
 	mainForm := softimdb.NewMainWindow()
 	// Hook up the activate event handler
