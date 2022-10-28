@@ -28,15 +28,17 @@ type MovieWindow struct {
 }
 
 func NewMovieWindow(info *MovieInfo, movie *data.Movie, saveCallback func(*MovieInfo, *data.Movie)) *MovieWindow {
-	m := new(MovieWindow)
-	m.movieInfo = info
-	m.movie = movie
-	m.saveCallback = saveCallback
-	return m
+	return &MovieWindow{movieInfo: info, movie: movie, saveCallback: saveCallback}
 }
 
-func (m *MovieWindow) OpenForm(builder *framework.GtkBuilder, parent gtk.IWindow) {
+func (m *MovieWindow) OpenForm(_ *framework.GtkBuilder, parent gtk.IWindow) {
 	if m.window == nil {
+		fw := framework.NewFramework()
+		builder, err := fw.Gtk.CreateBuilder("main.glade")
+		if err != nil {
+			panic(err)
+		}
+
 		// Get the extra window from glade
 		movieWindow := builder.GetObject("movieWindow").(*gtk.Window)
 
@@ -125,7 +127,7 @@ func (m *MovieWindow) okButtonClicked() {
 	m.movieInfo.storyLine = storyLine
 
 	// TODO : Fix editing of tags/genres
-	// m.movie.Tags = m.getEntryText(m.genresEntry)
+	// m.movieInfo.Tags = m.getEntryText(m.genresEntry)
 
 	// Poster is set when clicking on the image
 

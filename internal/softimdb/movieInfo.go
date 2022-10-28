@@ -64,11 +64,10 @@ func (m *MovieInfo) toDatabase(movie *data.Movie) {
 	movie.SubTitle = m.subTitle
 	movie.StoryLine = m.storyLine
 	movie.Year = m.getYear()
-	movie.MoviePath = m.path
 	movie.ImdbRating = m.getImdbRating()
-	movie.ImdbUrl = m.imdbUrl
-	movie.ImdbID = m.imdbId
-	movie.Image = m.image
+	if m.imageHasChanged {
+		movie.Image = m.image
+	}
 }
 
 func (m *MovieInfo) getImdbRating() float32 {

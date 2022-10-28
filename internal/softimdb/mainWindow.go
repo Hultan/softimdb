@@ -34,9 +34,9 @@ type MainWindow struct {
 	searchButton   *gtk.ToolButton
 	popupMenu      *PopupMenu
 	countLabel     *gtk.Label
-
-	database *data.Database
-	config   *config.Config
+	movieWindow    *MovieWindow
+	database       *data.Database
+	config         *config.Config
 
 	movies map[int]*data.Movie
 }
@@ -492,8 +492,8 @@ func (m *MainWindow) executeCommand(command string, arguments ...string) (string
 func (m *MainWindow) refreshIMDB() {
 	var err error
 
-	movie := m.getSelectedMovie()
-	if movie == nil {
+	selectedMovie := m.getSelectedMovie()
+	if selectedMovie == nil {
 		return
 	}
 
@@ -504,7 +504,7 @@ func (m *MainWindow) refreshIMDB() {
 	}
 
 	manager := imdb.NewImdb(a)
-	info, err := manager.Title(movie.ImdbID)
+	info, err := manager.Title(selectedMovie.ImdbID)
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -516,20 +516,31 @@ func (m *MainWindow) refreshIMDB() {
 	}
 
 	// Open movie dialog here
-	movieDialog := NewMovieWindow(movieInfo, movie, m.saveMovieInfo)
-	movieDialog.OpenForm(m.builder, m.window)
+	win := NewMovieWindow(movieInfo, selectedMovie, m.saveMovieInfo)
+	win.OpenForm(m.builder, m.window)
+	m.movieWindow = win
+}
+
+func (m *MainWindow) editMovieInfo() {
+	selectedMovie := m.getSelectedMovie()
+	if selectedMovie == nil {
+		return
+	}
+
+	movieInfo, err := newMovieInfoFromDatabase(selectedMovie)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	// Open movie dialog here
+	win := NewMovieWindow(movieInfo, selectedMovie, m.saveMovieInfo)
+	win.OpenForm(m.builder, m.window)
+	m.movieWindow = win
 }
 
 func (m *MainWindow) saveMovieInfo(movieInfo *MovieInfo, movie *data.Movie) {
 	movieInfo.toDatabase(movie)
-
-	// Store data
-	movie.Title = movieInfo.title
-	movie.StoryLine = movieInfo.storyLine
-	movie.Year = movieInfo.getYear()
-	movie.ImdbRating = movieInfo.getImdbRating()
-	// TODO : Tags not editable for now
-	// currentMovie.Tags = m.getTags(currentMovieInfo.GetGenres())
 
 	err := m.database.UpdateMovie(movie)
 	if err != nil {
@@ -551,6 +562,8 @@ func (m *MainWindow) saveMovieInfo(movieInfo *MovieInfo, movie *data.Movie) {
 		}
 	}
 
+	m.movieWindow.window.Destroy()
+	m.movieWindow = nil
 }
 
 func (m *MainWindow) openIMDB() {

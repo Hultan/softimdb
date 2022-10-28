@@ -112,20 +112,7 @@ func (p *PopupMenu) setupEvents() {
 
 	p.popupOpenMovieInfo.Connect(
 		"activate", func() {
-			movie := p.mainWindow.getSelectedMovie()
-			if movie == nil {
-				return
-			}
-
-			movieInfo, err := newMovieInfoFromDatabase(movie)
-			if err != nil {
-				fmt.Println(err)
-				return
-			}
-
-			// Open movie dialog here
-			movieDialog := NewMovieWindow(movieInfo, movie, p.mainWindow.saveMovieInfo)
-			movieDialog.OpenForm(p.mainWindow.builder, p.mainWindow.window)
+			p.mainWindow.editMovieInfo()
 		},
 	)
 

@@ -21,10 +21,10 @@ type AddWindow struct {
 	imdbUrlEntry   *gtk.Entry
 	imdbIdEntry    *gtk.Entry
 	moviePathEntry *gtk.Entry
-
-	database *data.Database
-	config   *config.Config
-	builder  *framework.GtkBuilder
+	movieWindow    *MovieWindow
+	database       *data.Database
+	config         *config.Config
+	builder        *framework.GtkBuilder
 }
 
 func AddWindowNew(framework *framework.Framework) *AddWindow {
@@ -200,8 +200,9 @@ func (a *AddWindow) addMovieButtonClicked() {
 	}
 
 	// Open movie dialog here
-	movieDialog := NewMovieWindow(movie, nil, a.saveMovieInfo)
-	movieDialog.OpenForm(a.builder, a.window)
+	win := NewMovieWindow(movie, nil, a.saveMovieInfo)
+	win.OpenForm(a.builder, a.window)
+	a.movieWindow = win
 }
 
 func (a *AddWindow) saveMovieInfo(info *MovieInfo, _ *data.Movie) {
@@ -223,6 +224,9 @@ func (a *AddWindow) saveMovieInfo(info *MovieInfo, _ *data.Movie) {
 	a.imdbUrlEntry.SetText("")
 	a.imdbIdEntry.SetText("")
 	a.moviePathEntry.SetText("")
+
+	a.window.Destroy()
+	a.window = nil
 }
 
 func (a *AddWindow) getEntryText(entry *gtk.Entry) string {
