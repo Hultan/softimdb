@@ -61,6 +61,7 @@ func (m *MainWindow) OpenMainWindow(app *gtk.Application) {
 	m.framework = fw
 	builder, err := fw.Gtk.CreateBuilder("main.glade")
 	if err != nil {
+		reportError(err)
 		panic(err)
 	}
 	m.builder = builder
@@ -118,6 +119,7 @@ func (m *MainWindow) OpenMainWindow(app *gtk.Application) {
 	// Load config file
 	cnf, err := config.LoadConfig(configFile)
 	if err != nil {
+		reportError(err)
 		panic(err)
 	}
 	m.config = cnf
@@ -227,6 +229,7 @@ func (m *MainWindow) setupMenu(window *gtk.ApplicationWindow) {
 func (m *MainWindow) fillMovieList(searchFor string, categoryId int, sortBy string) {
 	movies, err := m.database.GetAllMovies(searchFor, categoryId, sortBy)
 	if err != nil {
+		reportError(err)
 		panic(err)
 	}
 
@@ -258,7 +261,7 @@ func (m *MainWindow) movieClicked(_ *gtk.FlowBox) {
 	if movie == nil {
 		return
 	}
-	m.openMovieDirectoryInNemo(movie)
+	m.editMovieInfo()
 }
 
 func (m *MainWindow) getSelectedMovie() *data.Movie {
@@ -380,6 +383,7 @@ func (m *MainWindow) refresh(search string, categoryId int, sortBy string) {
 func (m *MainWindow) searchButtonClicked() {
 	search, err := m.searchEntry.GetText()
 	if err != nil {
+		reportError(err)
 		panic(err)
 	}
 	search = strings.Trim(search, " ")
@@ -470,6 +474,7 @@ func (m *MainWindow) playMovie(movie *data.Movie) {
 		cmd := fmt.Sprintf("find %s -type f -exec du -h {} + | sort -r | head -n1", path)
 		file, err := m.executeCommand("bash", "-c", cmd)
 		if err != nil {
+			reportError(err)
 			panic(err)
 		}
 		m.framework.Process.Open("smplayer", file)
@@ -482,7 +487,7 @@ func (m *MainWindow) executeCommand(command string, arguments ...string) (string
 	// set the output to our variable
 	out, err := cmd.Output()
 	if err != nil {
-		fmt.Println(err)
+		reportError(err)
 		return "", err
 	}
 
@@ -499,19 +504,20 @@ func (m *MainWindow) refreshIMDB() {
 
 	a, err := imdb.NewApiKeyManagerFromStandardPath()
 	if err != nil {
-		// TODO : Error handling
+		reportError(err)
 		panic(err)
 	}
 
 	manager := imdb.NewImdb(a)
 	info, err := manager.Title(selectedMovie.ImdbID)
 	if err != nil {
-		fmt.Println(err)
+		reportError(err)
 		return
 	}
 
 	movieInfo, err := newMovieInfoFromImdb(info)
 	if err != nil {
+		reportError(err)
 		panic(err)
 	}
 
@@ -529,7 +535,7 @@ func (m *MainWindow) editMovieInfo() {
 
 	movieInfo, err := newMovieInfoFromDatabase(selectedMovie)
 	if err != nil {
-		fmt.Println(err)
+		reportError(err)
 		return
 	}
 
@@ -544,20 +550,20 @@ func (m *MainWindow) saveMovieInfo(movieInfo *MovieInfo, movie *data.Movie) {
 
 	err := m.database.UpdateMovie(movie)
 	if err != nil {
-		fmt.Println(err)
+		reportError(err)
 		return
 	}
 
 	if movieInfo.imageHasChanged {
 		image, err := m.database.GetImage(movie.ImageId)
 		if err != nil {
-			fmt.Println(err)
+			reportError(err)
 			return
 		}
 		image.Data = movieInfo.image
 		err = m.database.UpdateImage(image)
 		if err != nil {
-			fmt.Println(err)
+			reportError(err)
 			return
 		}
 	}

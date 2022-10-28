@@ -20,23 +20,27 @@ func (l *ListHelper) CreateMovieCard(movie *data.Movie) *gtk.Frame {
 	// Create a frame (for the border)
 	frame, err := gtk.FrameNew("")
 	if err != nil {
+		reportError(err)
 		panic(err)
 	}
 
 	// Create the card (box)
 	box, err := gtk.BoxNew(gtk.ORIENTATION_VERTICAL, 10)
 	if err != nil {
-		return nil
+		reportError(err)
+		panic(err)
 	}
 	box.SetBorderWidth(10)
 	frame.Add(box)
 	// Title, Year and IMDB rating
 	nameBox, err := gtk.BoxNew(gtk.ORIENTATION_HORIZONTAL, 5)
 	if err != nil {
+		reportError(err)
 		panic(err)
 	}
 	titleLabel, err := gtk.LabelNew("")
 	if err != nil {
+		reportError(err)
 		panic(err)
 	}
 	titleLabel.SetMarkup(
@@ -53,16 +57,19 @@ func (l *ListHelper) CreateMovieCard(movie *data.Movie) *gtk.Frame {
 	if movie.Image == nil {
 		image, err := gtk.ImageNew()
 		if err != nil {
+			reportError(err)
 			panic(err)
 		}
 		box.Add(image)
 	} else {
 		pixBuf, err := gdk.PixbufNewFromBytesOnly(movie.Image)
 		if err != nil {
+			reportError(err)
 			panic(err)
 		}
 		image, err := gtk.ImageNewFromPixbuf(pixBuf)
 		if err != nil {
+			reportError(err)
 			panic(err)
 		}
 		box.Add(image)
@@ -79,6 +86,7 @@ func (l *ListHelper) CreateMovieCard(movie *data.Movie) *gtk.Frame {
 	}
 	label, err := gtk.LabelNew("")
 	if err != nil {
+		reportError(err)
 		panic(err)
 	}
 	str = `<span font="Sans Regular 10" foreground="#DDDDDD">` + str + `</span>`

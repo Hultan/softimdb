@@ -36,6 +36,7 @@ func (m *MovieWindow) OpenForm(_ *framework.GtkBuilder, parent gtk.IWindow) {
 		fw := framework.NewFramework()
 		builder, err := fw.Gtk.CreateBuilder("main.glade")
 		if err != nil {
+			reportError(err)
 			panic(err)
 		}
 
@@ -76,7 +77,7 @@ func (m *MovieWindow) OpenForm(_ *framework.GtkBuilder, parent gtk.IWindow) {
 		m.yearEntry.SetText(fmt.Sprintf("%d", m.movieInfo.getYear()))
 		buffer, err := gtk.TextBufferNew(nil)
 		if err != nil {
-			// TODO : Fix error handling
+			reportError(err)
 			panic(err)
 		}
 		buffer.SetText(m.movieInfo.storyLine)
@@ -118,10 +119,12 @@ func (m *MovieWindow) okButtonClicked() {
 	m.movieInfo.imdbRating = m.getEntryText(m.ratingEntry)
 	buffer, err := m.storyLineEntry.GetBuffer()
 	if err != nil {
+		reportError(err)
 		panic(err)
 	}
 	storyLine, err := buffer.GetText(buffer.GetStartIter(), buffer.GetEndIter(), false)
 	if err != nil {
+		reportError(err)
 		panic(err)
 	}
 	m.movieInfo.storyLine = storyLine
@@ -141,6 +144,7 @@ func (m *MovieWindow) onImageClick() {
 		"Cancel", gtk.RESPONSE_CANCEL,
 	)
 	if err != nil {
+		reportError(err)
 		panic(err)
 	}
 	defer dialog.Destroy()
@@ -153,7 +157,7 @@ func (m *MovieWindow) onImageClick() {
 	fileName := dialog.GetFilename()
 	bytes, err := os.ReadFile(fileName)
 	if err != nil {
-		fmt.Printf("Could not read the file due to this %s error \n", err)
+		reportError(err)
 		return
 	}
 
@@ -165,7 +169,7 @@ func (m *MovieWindow) onImageClick() {
 func (m *MovieWindow) updateImage(image []byte) {
 	pix, err := gdk.PixbufNewFromBytesOnly(image)
 	if err != nil {
-		// TODO : Fix error handling
+		reportError(err)
 		panic(err)
 	}
 	m.posterImage.SetFromPixbuf(pix)

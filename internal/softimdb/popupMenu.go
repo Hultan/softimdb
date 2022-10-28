@@ -1,7 +1,6 @@
 package softimdb
 
 import (
-	"fmt"
 	"os"
 
 	"github.com/gotk3/gotk3/gdk"
@@ -55,16 +54,19 @@ func (p *PopupMenu) setupEvents() {
 
 				menu, err := gtk.MenuNew()
 				if err != nil {
+					reportError(err)
 					panic(err)
 				} else {
 					tags, err := p.mainWindow.database.GetTags()
 					if err != nil {
+						reportError(err)
 						panic(err)
 					}
 					for i := 0; i < len(tags); i++ {
 						tag := tags[i]
 						item, err := gtk.CheckMenuItemNew()
 						if err != nil {
+							reportError(err)
 							panic(err)
 						}
 						item.SetLabel(tag.Name)
@@ -145,7 +147,8 @@ func (p *PopupMenu) setupEvents() {
 				"Cancel", gtk.RESPONSE_CANCEL,
 			)
 			if err != nil {
-				panic(err)
+				reportError(err)
+				return
 			}
 			defer dialog.Destroy()
 
@@ -162,18 +165,21 @@ func (p *PopupMenu) setupEvents() {
 			fileName := dialog.GetFilename()
 			file, err := os.ReadFile(fileName)
 			if err != nil {
-				fmt.Printf("Could not read the file due to this %s error \n", err)
+				reportError(err)
+				return
 			}
 			image := &data.Image{Data: file}
 			err = p.mainWindow.database.InsertImage(image)
 			if err != nil {
-				panic(err)
+				reportError(err)
+				return
 			}
 
 			movie.ImageId = image.Id
 			err = p.mainWindow.database.UpdateMovie(movie)
 			if err != nil {
-				panic(err)
+				reportError(err)
+				return
 			}
 		},
 	)

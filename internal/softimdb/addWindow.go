@@ -110,6 +110,7 @@ func (a *AddWindow) fillList(list *gtk.ListBox, paths []string) {
 		label, err := gtk.LabelNew(paths[i])
 		label.SetHAlign(gtk.ALIGN_START)
 		if err != nil {
+			reportError(err)
 			panic(err)
 		}
 		list.Add(label)
@@ -123,6 +124,14 @@ func (a *AddWindow) fillList(list *gtk.ListBox, paths []string) {
 }
 
 func (a *AddWindow) ignorePathButtonClicked() {
+	msg := "Are you sure you want to ignore this folder?"
+	response := a.framework.Gtk.Title(applicationTitle).Text(msg).
+		QuestionIcon().YesNoButtons().Show()
+
+	if response == gtk.RESPONSE_NO {
+		return
+	}
+
 	row := a.list.GetSelectedRow()
 	if row == nil {
 		return
@@ -149,34 +158,37 @@ func (a *AddWindow) ignorePathButtonClicked() {
 }
 
 func (a *AddWindow) addMovieButtonClicked() {
-	fw := framework.NewFramework()
 
 	url := a.getEntryText(a.imdbUrlEntry)
 	if url == "" {
-		fw.Gtk.Title("SoftIMDB").Text("IMDB Url cannot be empty").ErrorIcon().OkButton().Show()
+		a.framework.Gtk.Title(applicationTitle).Text("IMDB Url cannot be empty").
+			ErrorIcon().OkButton().Show()
 		return
 	}
 	moviePath := a.getEntryText(a.moviePathEntry)
 	if moviePath == "" {
-		fw.Gtk.Title("SoftIMDB").Text("Movie path cannot be empty").ErrorIcon().OkButton().Show()
+		a.framework.Gtk.Title(applicationTitle).Text("Movie path cannot be empty").
+			ErrorIcon().OkButton().Show()
 		return
 	}
 
 	key, err := imdb.NewApiKeyManagerFromStandardPath()
 	if err != nil {
-		fw.Gtk.Title("SoftIMDB").Text("Failed to create new api key manager").ErrorIcon().OkButton().Show()
+		a.framework.Gtk.Title(applicationTitle).Text("Failed to create new api key manager").
+			ErrorIcon().OkButton().Show()
 		return
 	}
 
 	id := a.getEntryText(a.imdbIdEntry)
 	if id == "" {
-		fw.Gtk.Title("SoftIMDB").Text("IMDB id cannot be empty").ErrorIcon().OkButton().Show()
+		a.framework.Gtk.Title(applicationTitle).Text("IMDB id cannot be empty").
+			ErrorIcon().OkButton().Show()
 		return
 	}
 	manager := imdb.NewImdb(key)
 	info, err := manager.Title(id)
 	if err != nil {
-		fw.Gtk.Title("SoftIMDB").
+		a.framework.Gtk.Title(applicationTitle).
 			Text(fmt.Sprintf("Failed to retrieve movie information : \n\n%v", err)).
 			ErrorIcon().OkButton().Show()
 		return
@@ -184,7 +196,7 @@ func (a *AddWindow) addMovieButtonClicked() {
 
 	movie, err := newMovieInfoFromImdb(info)
 	if err != nil {
-		fw.Gtk.Title("SoftIMDB").Text(err.Error()).ErrorIcon().OkButton().Show()
+		reportError(err)
 		panic(err)
 	}
 
@@ -199,13 +211,14 @@ func (a *AddWindow) saveMovieInfo(info *MovieInfo, _ *data.Movie) {
 	info.toDatabase(newMovie)
 	err := a.database.InsertMovie(newMovie)
 	if err != nil {
-		// TODO : Error handling
+		reportError(err)
 		panic(err)
 	}
 
 	// Get selected row and remove it
 	row := a.list.GetSelectedRow()
 	if row == nil {
+		reportError(err)
 		return
 	}
 
@@ -257,7 +270,9 @@ func (a *AddWindow) getIdFromUrl(url string) (string, error) {
 	re := regexp.MustCompile(`tt\d{7,8}`)
 	matches := re.FindAll([]byte(url), -1)
 	if len(matches) == 0 {
-		return "", errors.New("invalid imdb URL")
+		err := errors.New("invalid imdb URL")
+		reportError(err)
+		return "", err
 	}
 	return string(matches[0]), nil
 }
@@ -265,6 +280,7 @@ func (a *AddWindow) getIdFromUrl(url string) (string, error) {
 func (a *AddWindow) imdbURLChanged() {
 	text, err := a.imdbUrlEntry.GetText()
 	if err != nil {
+		reportError(err)
 		panic(err)
 	}
 	if text == "" {
@@ -272,6 +288,7 @@ func (a *AddWindow) imdbURLChanged() {
 	}
 	id, err := a.getIdFromUrl(text)
 	if err != nil {
+		reportError(err)
 		panic(err)
 	}
 	a.imdbIdEntry.SetText(id)
