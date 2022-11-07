@@ -161,6 +161,7 @@ func (m *MainWindow) setupMenu(window *gtk.ApplicationWindow) {
 	menuSortByName = m.builder.GetObject("menuSortByName").(*gtk.RadioMenuItem)
 	menuSortByRating := m.builder.GetObject("menuSortByRating").(*gtk.RadioMenuItem)
 	menuSortByYear := m.builder.GetObject("menuSortByYear").(*gtk.RadioMenuItem)
+	menuSortById := m.builder.GetObject("menuSortById").(*gtk.RadioMenuItem)
 	menuSortByName.Connect(
 		"activate", func() {
 			if menuSortByName.GetActive() {
@@ -184,6 +185,15 @@ func (m *MainWindow) setupMenu(window *gtk.ApplicationWindow) {
 			if menuSortByYear.GetActive() {
 				fmt.Println("Sort by year")
 				sortBy = sortByYear
+				m.refresh(searchFor, selectedGenreId, m.getSortBy())
+			}
+		},
+	)
+	menuSortById.Connect(
+		"activate", func() {
+			if menuSortById.GetActive() {
+				fmt.Println("Sort by id")
+				sortBy = sortById
 				m.refresh(searchFor, selectedGenreId, m.getSortBy())
 			}
 		},
@@ -417,6 +427,8 @@ func (m *MainWindow) getSortBy() string {
 		sort = "imdb_rating"
 	case sortByYear:
 		sort = "year"
+	case sortById:
+		sort = "id"
 	}
 
 	switch sortOrder {

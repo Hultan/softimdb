@@ -231,9 +231,6 @@ func (a *AddWindow) saveMovieInfo(info *MovieInfo, _ *data.Movie) {
 	a.imdbUrlEntry.SetText("")
 	a.imdbIdEntry.SetText("")
 	a.moviePathEntry.SetText("")
-
-	a.window.Destroy()
-	a.window = nil
 }
 
 func (a *AddWindow) getEntryText(entry *gtk.Entry) string {
@@ -246,6 +243,9 @@ func (a *AddWindow) getEntryText(entry *gtk.Entry) string {
 
 func (a *AddWindow) rowActivated() {
 	row := a.list.GetSelectedRow()
+	if row == nil {
+		return
+	}
 	labelObj, err := row.GetChild()
 	if err != nil {
 		return
