@@ -328,6 +328,25 @@ func (m *MainWindow) setupToolBar() {
 	// Search entry
 	m.searchEntry = m.builder.GetObject("searchEntry").(*gtk.Entry)
 	_ = m.searchEntry.Connect("activate", m.searchButtonClicked)
+
+	// Sort by buttons
+	sortByNameButton := m.builder.GetObject("sortByName").(*gtk.ToolButton)
+	_ = sortByNameButton.Connect(
+		"clicked", func() {
+			sortBy = sortByName
+			sortOrder = sortAscending
+			m.refresh("", -1, m.getSortBy())
+		},
+	)
+
+	sortByIdButton := m.builder.GetObject("sortById").(*gtk.ToolButton)
+	_ = sortByIdButton.Connect(
+		"clicked", func() {
+			sortBy = sortById
+			sortOrder = sortDescending
+			m.refresh("", -1, m.getSortBy())
+		},
+	)
 }
 
 func (m *MainWindow) openAboutDialog() {
