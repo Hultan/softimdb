@@ -217,7 +217,7 @@ func (a *AddWindow) saveMovieInfo(info *MovieInfo, _ *data.Movie) {
 	err := a.database.InsertMovie(newMovie)
 	if err != nil {
 		reportError(err)
-		panic(err)
+		return
 	}
 
 	// Get selected row and remove it

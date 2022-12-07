@@ -119,9 +119,11 @@ func (d *Database) GetTagsForMovie(movie *Movie) ([]Tag, error) {
 
 	var tags []Tag
 
+	// TODO :  DO NOT LOAD EACH TAG INDIVIDUALLY HERE!!
+	// Load all the tags once instead
+
 	// Get tags for movieTags
 	for i := range movieTags {
-		// Get tag id:s for movie
 		var tag Tag
 		if result := db.Where("id=?", movieTags[i].TagId).Find(&tag); result.Error != nil {
 			return nil, result.Error

@@ -172,31 +172,40 @@ func (d *Database) InsertMovie(movie *Movie) error {
 		return err
 	}
 
-	// Insert image
-	if movie.HasImage && len(movie.Image) > 0 {
-		image := Image{Data: movie.Image}
-		err = d.InsertImage(&image)
-		if err != nil {
-			return err
-		}
-		movie.ImageId = image.Id
-	}
-
-	if result := db.Create(movie); result.Error != nil {
-		return result.Error
-	}
-
-	// Handle tags
-	for i := range movie.Tags {
-		tag, err := d.GetOrInsertTag(&movie.Tags[i])
-		if err != nil {
-			return err
+	err = db.Transaction(func(tx *gorm.DB) error {
+		// Insert image
+		if movie.HasImage && len(movie.Image) > 0 {
+			image := Image{Data: movie.Image}
+			err = d.InsertImage(&image)
+			if err != nil {
+				return err
+			}
+			movie.ImageId = image.Id
 		}
 
-		err = d.InsertMovieTag(movie, tag)
-		if err != nil {
-			return err
+		if result := db.Create(movie); result.Error != nil {
+			return result.Error
 		}
+
+		// Handle tags
+		for i := range movie.Tags {
+			tag, err := d.GetOrInsertTag(&movie.Tags[i])
+			if err != nil {
+				return err
+			}
+
+			err = d.InsertMovieTag(movie, tag)
+			if err != nil {
+				return err
+			}
+		}
+
+		return nil
+	})
+
+	// Check transaction error
+	if err != nil {
+		return err
 	}
 
 	return nil
