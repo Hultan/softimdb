@@ -21,6 +21,9 @@ func DatabaseNew(useTestDB bool) *Database {
 	database := new(Database)
 	database.UseTestDatabase = useTestDB
 	database.cache = ImageCacheNew()
+
+	tagCache = NewTagCache()
+
 	return database
 }
 

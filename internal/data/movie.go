@@ -218,46 +218,55 @@ func (d *Database) UpdateMovie(movie *Movie) error {
 		return err
 	}
 
-	if result := db.Model(&movie).Update("title", movie.Title); result.Error != nil {
-		return result.Error
-	}
-
-	if result := db.Model(&movie).Update("sub_title", movie.SubTitle); result.Error != nil {
-		return result.Error
-	}
-
-	if result := db.Model(&movie).Update("story_line", movie.StoryLine); result.Error != nil {
-		return result.Error
-	}
-
-	if result := db.Model(&movie).Update("imdb_rating", movie.ImdbRating); result.Error != nil {
-		return result.Error
-	}
-
-	if result := db.Model(&movie).Update("year", movie.Year); result.Error != nil {
-		return result.Error
-	}
-
-	if result := db.Model(&movie).Update("image_id", movie.ImageId); result.Error != nil {
-		return result.Error
-	}
-
-	// Handle tags
-	for i := range movie.Tags {
-		tag, err := d.GetOrInsertTag(&movie.Tags[i])
-		if err != nil {
-			return err
+	err = db.Transaction(func(tx *gorm.DB) error {
+		if result := db.Model(&movie).Update("title", movie.Title); result.Error != nil {
+			return result.Error
 		}
 
-		err = d.RemoveMovieTag(movie, tag)
-		if err != nil {
-			return err
+		if result := db.Model(&movie).Update("sub_title", movie.SubTitle); result.Error != nil {
+			return result.Error
 		}
 
-		err = d.InsertMovieTag(movie, tag)
-		if err != nil {
-			return err
+		if result := db.Model(&movie).Update("story_line", movie.StoryLine); result.Error != nil {
+			return result.Error
 		}
+
+		if result := db.Model(&movie).Update("imdb_rating", movie.ImdbRating); result.Error != nil {
+			return result.Error
+		}
+
+		if result := db.Model(&movie).Update("year", movie.Year); result.Error != nil {
+			return result.Error
+		}
+
+		if result := db.Model(&movie).Update("image_id", movie.ImageId); result.Error != nil {
+			return result.Error
+		}
+
+		// Handle tags
+		for i := range movie.Tags {
+			tag, err := d.GetOrInsertTag(&movie.Tags[i])
+			if err != nil {
+				return err
+			}
+
+			err = d.RemoveMovieTag(movie, tag)
+			if err != nil {
+				return err
+			}
+
+			err = d.InsertMovieTag(movie, tag)
+			if err != nil {
+				return err
+			}
+		}
+
+		return nil
+	})
+
+	// Check transaction error
+	if err != nil {
+		return err
 	}
 
 	return nil
