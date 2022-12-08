@@ -1,6 +1,7 @@
 package softimdb
 
 import (
+	_ "embed"
 	"fmt"
 	"log"
 	"os"
@@ -17,6 +18,9 @@ import (
 	"github.com/hultan/softimdb/internal/imdb"
 	"github.com/hultan/softteam/framework"
 )
+
+//go:embed assets/application.png
+var applicationIcon []byte
 
 const configFile = "/home/per/.config/softteam/softimdb/config.json"
 
@@ -52,6 +56,8 @@ func NewMainWindow() *MainWindow {
 	return mainForm
 }
 
+const exitCodeSetupError = 1
+
 // OpenMainWindow : Opens the MainWindow window
 func (m *MainWindow) OpenMainWindow(app *gtk.Application) {
 	m.application = app
@@ -68,6 +74,12 @@ func (m *MainWindow) OpenMainWindow(app *gtk.Application) {
 
 	// Get the main window from the glade file
 	m.window = m.builder.GetObject("mainWindow").(*gtk.ApplicationWindow)
+	pix, err := gdk.PixbufNewFromBytesOnly(applicationIcon)
+	if err != nil {
+		_, _ = fmt.Fprintln(os.Stderr, err)
+		os.Exit(exitCodeSetupError)
+	}
+	m.window.SetIcon(pix)
 
 	// Set up main window
 	m.window.SetApplication(app)
