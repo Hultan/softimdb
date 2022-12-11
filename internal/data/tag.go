@@ -1,6 +1,8 @@
 package data
 
 import (
+	"strings"
+
 	"gorm.io/gorm"
 )
 
@@ -59,6 +61,8 @@ func (d *Database) GetOrInsertTag(tag *Tag) (*Tag, error) {
 	if existingTag != nil {
 		return existingTag, nil
 	}
+
+	tag.Name = strings.Trim(tag.Name, " \t\n")
 
 	// If it does not, create it
 	if result := db.Create(tag); result.Error != nil {
