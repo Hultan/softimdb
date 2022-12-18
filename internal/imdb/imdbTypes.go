@@ -32,9 +32,14 @@ type Movie struct {
 	Year      string `json:"year"`
 	ImageURL  string `json:"image"`
 	StoryLine string `json:"plot"`
-	Genres    string `json:"genres"`
-	Rating    string `json:"imDbRating"`
-	URL       string
+	Wikipedia struct {
+		PlotShort struct {
+			PlainText string `json:"plainText"`
+		} `json:"plotShort"`
+	} `json:"wikipedia"`
+	Genres string `json:"genres"`
+	Rating string `json:"imDbRating"`
+	URL    string
 
 	ErrorMessage string `json:"errorMessage"`
 }

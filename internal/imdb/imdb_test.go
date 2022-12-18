@@ -88,8 +88,8 @@ func TestImdb_Title(t *testing.T) {
 			if !strings.Contains(got.ImageURL, "MV5BMjAxMzY3NjcxNF5BMl5BanBnXkFtZTcwNTI5OTM0Mw@@._V1_Ratio0.6762_AL_.jpg") {
 				t.Errorf("Title returned wrong image url = %v, want = %v", got.ImageURL, "https://m.media-amazon.com/images/M/MV5BMjAxMzY3NjcxNF5BMl5BanBnXkFtZTcwNTI5OTM0Mw@@._V1_Ratio0.6762_AL_.jpg")
 			}
-			if !strings.HasPrefix(got.StoryLine, "A thief who steals corporate secrets through") {
-				t.Errorf("Title returned wrong story line = %v, want = %v", got.StoryLine, "A thief who steals corporate secrets through")
+			if !strings.HasPrefix(got.Wikipedia.PlotShort.PlainText, "Inception is a 2010 science fiction action film") {
+				t.Errorf("Title returned wrong story line = %v, want = %v", got.Wikipedia.PlotShort.PlainText, "Inception is a 2010 science fiction action film")
 			}
 			if got.Genres != "Action, Adventure, Sci-Fi" {
 				t.Errorf("Title returned wrong genres = %v, want = %v", got.Genres, "Action, Adventure, Sci-Fi")

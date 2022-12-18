@@ -31,7 +31,7 @@ func newMovieInfoFromImdb(movie *imdb.Movie) (*MovieInfo, error) {
 		return nil, err
 	}
 
-	return &MovieInfo{
+	info := &MovieInfo{
 		title:           movie.Title,
 		storyLine:       movie.StoryLine,
 		year:            movie.Year,
@@ -41,7 +41,15 @@ func newMovieInfoFromImdb(movie *imdb.Movie) (*MovieInfo, error) {
 		tags:            movie.Genres,
 		image:           image,
 		imageHasChanged: false,
-	}, nil
+	}
+
+	if movie.Wikipedia.PlotShort.PlainText != "" {
+		info.storyLine = movie.Wikipedia.PlotShort.PlainText
+	} else {
+		info.storyLine = movie.StoryLine
+	}
+
+	return info, nil
 }
 
 func newMovieInfoFromDatabase(movie *data.Movie) (*MovieInfo, error) {

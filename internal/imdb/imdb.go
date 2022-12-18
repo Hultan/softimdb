@@ -17,7 +17,7 @@ func NewImdb(manager *ApiKeyManager) *Imdb {
 
 // URLs
 const searchMoviesURL = "https://imdb-api.com/en/API/SearchMovie/{APIKEY}/{SEARCH}"
-const titleURL = "https://imdb-api.com/en/API/Title/{APIKEY}/{ID}"
+const titleURL = "https://imdb-api.com/en/API/Title/{APIKEY}/{ID}/Wikipedia"
 
 func (i *Imdb) SearchMovies(searchString string) (*MovieResults, error) {
 	parameters := []parameter{{"{APIKEY}", i.api.GetApiKey()}, {"{SEARCH}", searchString}}
@@ -79,7 +79,9 @@ func makeApiCall(url string) ([]byte, error) {
 
 	// Perform GET request
 	res, err := client.Do(req)
-	defer res.Body.Close()
+	defer func(Body io.ReadCloser) {
+		_ = Body.Close()
+	}(res.Body)
 
 	// Read the entire body (JSON)
 	body, err := io.ReadAll(res.Body)
