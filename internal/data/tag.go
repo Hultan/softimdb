@@ -23,6 +23,8 @@ func (t *Tag) TableName() string {
 
 // GetTagByName returns a tag by name.
 func (d *Database) GetTagByName(name string) (*Tag, error) {
+	name = strings.Trim(name, " \t\n")
+
 	// Check tag cache
 	t := tagCache.GetByName(name)
 	if t != nil {
@@ -123,7 +125,7 @@ func (d *Database) GetTags() ([]Tag, error) {
 	}
 
 	// Fill tag cache
-	for i, _ := range tags {
+	for i := range tags {
 		tagCache.Add(&tags[i])
 	}
 
