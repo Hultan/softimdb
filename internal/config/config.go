@@ -7,8 +7,28 @@ import (
 )
 
 type Config struct {
-	Nas    string
-	Folder string
+	Nas      NasSection      `json:"nas"`
+	Database DatabaseSection `json:"database"`
+	Imdb     ImdbSection     `json:"imdb"`
+}
+
+type NasSection struct {
+	Address  string `json:"address"`
+	Folder   string `json:"folder"`
+	User     string `json:"user"`
+	Password string `json:"password"`
+}
+
+type DatabaseSection struct {
+	Server   string `json:"server"`
+	Database string `json:"database"`
+	Port     int    `json:"port"`
+	User     string `json:"user"`
+	Password string `json:"password"`
+}
+
+type ImdbSection struct {
+	ApiKey string `json:"apiKey"`
 }
 
 // LoadConfig : Loads the config

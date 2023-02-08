@@ -4,12 +4,15 @@ import (
 	"errors"
 	"io"
 	"os"
-	"path"
+
+	"github.com/hultan/softimdb/internal/config"
+	"github.com/hultan/softteam/framework"
 )
 
 // IMDB API Key
 const testApiKey = "k_12345678"
-const apiKeyFileName = ".imdb_api_key"
+
+const configFile = "/home/per/.config/softteam/softimdb/config.json"
 
 var InvalidKeyError = errors.New("apikey is invalid")
 var apiKeyLength = len(testApiKey)
@@ -18,27 +21,21 @@ type ApiKeyManager struct {
 	apiKey string
 }
 
-func NewApiKeyManager(key string) (*ApiKeyManager, error) {
-	if !validateKey(key) {
-		return nil, InvalidKeyError
+func NewApiKeyManager() (*ApiKeyManager, error) {
+	// Load config file
+	cnf, err := config.LoadConfig(configFile)
+	if err != nil {
+		panic(err)
+	}
+	fw := framework.NewFramework()
+	key, err := fw.Crypto.Decrypt(cnf.Imdb.ApiKey)
+	if err != nil {
+		panic(err)
 	}
 	return &ApiKeyManager{apiKey: key}, nil
 }
 
-func NewApiKeyManagerFromStandardPath() (*ApiKeyManager, error) {
-	userHome, err := getUserHome()
-	if err != nil {
-		return nil, err
-	}
-	apiKeyFile := path.Join(userHome, apiKeyFileName)
-	return NewApiKeyManagerFromPath(apiKeyFile)
-}
-
-func NewApiKeyManagerFromPath(apiKeyFilePath string) (*ApiKeyManager, error) {
-	key, err := getApiKeyFromFile(apiKeyFilePath)
-	if err != nil {
-		return nil, err
-	}
+func NewApiKeyManagerByKey(key string) (*ApiKeyManager, error) {
 	if !validateKey(key) {
 		return nil, InvalidKeyError
 	}

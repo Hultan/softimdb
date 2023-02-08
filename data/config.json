@@ -1,4 +1,18 @@
 {
-  "nas": "192.168.1.100",
-  "folder" : "videos"
+  "nas": {
+    "address"  : "192.168.1.100",
+    "folder"   : "Videos",
+    "user"     : "per",
+    "password" : "af369291fd685ae5f125f50ef45ca8ed40a07539d438fbb5c7b2e6de67743021bfcda7fd"
+  },
+  "database": {
+    "server"   : "192.168.1.100",
+    "database" : "softimdb",
+    "port"     : 3306,
+    "user"     : "per",
+    "password" : "614bd47b0ee62426012925c9fb790fbcbdf22824a3eb5e8a343bbbd0fdafc01453da405f"
+  },
+  "imdb": {
+    "apiKey"   : "be98a9b4b9673e50ce0ba348d7292821d214a401a759634c982f0c7dda03c02b"
+  }
 }

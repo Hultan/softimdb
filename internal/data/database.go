@@ -6,6 +6,7 @@ import (
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 
+	"github.com/hultan/softimdb/internal/config"
 	"github.com/hultan/softteam/framework"
 )
 
@@ -14,13 +15,15 @@ type Database struct {
 	db              *gorm.DB
 	cache           *ImageCache
 	UseTestDatabase bool
+	config          *config.Config
 }
 
 // DatabaseNew creates a new SoftIMDB Database object.
-func DatabaseNew(useTestDB bool) *Database {
+func DatabaseNew(useTestDB bool, config *config.Config) *Database {
 	database := new(Database)
 	database.UseTestDatabase = useTestDB
 	database.cache = ImageCacheNew()
+	database.config = config
 
 	tagCache = NewTagCache()
 
@@ -41,15 +44,6 @@ func (d *Database) CloseDatabase() {
 	return
 }
 
-func (d *Database) getPassword() string {
-	fw := framework.NewFramework()
-	passwordDecrypted, err := fw.Crypto.Decrypt(passwordEncrypted)
-	if err != nil {
-		return ""
-	}
-	return passwordDecrypted
-}
-
 func (d *Database) getDatabase() (*gorm.DB, error) {
 	// d.CloseDatabase()
 
@@ -64,14 +58,29 @@ func (d *Database) getDatabase() (*gorm.DB, error) {
 }
 
 func (d *Database) openDatabase() (*gorm.DB, error) {
+	fw := framework.NewFramework()
+	passwordDecrypted, err := fw.Crypto.Decrypt(d.config.Database.Password)
+	if err != nil {
+		panic(err)
+	}
 
-	var connectionString = fmt.Sprintf("%s:%s@tcp(%s:%v)/%s?parseTime=True",
-		userName, d.getPassword(), serverIP, portNumber, constDatabaseName)
+	var connectionString = fmt.Sprintf(
+		"%s:%s@tcp(%s:%v)/%s?parseTime=True",
+		d.config.Database.User,
+		passwordDecrypted,
+		d.config.Database.Server,
+		d.config.Database.Port,
+		d.config.Database.Database,
+	)
 
-	db, err := gorm.Open(mysql.New(mysql.Config{
-		DriverName: "mysql",
-		DSN:        connectionString,
-	}), &gorm.Config{})
+	db, err := gorm.Open(
+		mysql.New(
+			mysql.Config{
+				DriverName: "mysql",
+				DSN:        connectionString,
+			},
+		), &gorm.Config{},
+	)
 	if err != nil {
 		return nil, err
 	}

@@ -18,11 +18,6 @@ type Manager struct {
 	database *data.Database
 }
 
-const credentialsFile = "/home/per/.config/softteam/softimdb/.credentials"
-
-// const IpNas = "192.168.1.200"
-// const FolderNas = "videos"
-
 // ManagerNew creates a new Manager.
 func ManagerNew(database *data.Database) *Manager {
 	manager := new(Manager)
@@ -38,13 +33,13 @@ func (m Manager) Disconnect() {
 // GetMovies returns a list of movie paths on the NAS.
 func (m Manager) GetMovies(config *config.Config) *[]string {
 	session := make(map[string]string)
-	session["Username"] = "per"
-	session["Password"] = m.getPassword()
+	session["Username"] = config.Nas.User
+	session["Password"] = m.getPassword(config.Nas.Password)
 	session["Domain"] = ""
 
-	client := connectClient(config.Nas, config.Folder, session)
+	client := connectClient(config.Nas.Address, config.Nas.Folder, session)
 
-	fs, err := client.Mount(config.Folder)
+	fs, err := client.Mount(config.Nas.Folder)
 	if err != nil {
 		return nil
 	}
@@ -53,7 +48,7 @@ func (m Manager) GetMovies(config *config.Config) *[]string {
 	}()
 
 	// Get ignored paths
-	db := data.DatabaseNew(false)
+	db := data.DatabaseNew(false, config)
 	ignoredPaths, err := db.GetAllIgnoredPaths()
 	if err != nil {
 		panic(err)
@@ -90,12 +85,9 @@ func (m Manager) removeMoviePaths(dirs *[]string, moviePaths *[]string) *[]strin
 	return result
 }
 
-func (m Manager) getPassword() string {
+func (m Manager) getPassword(encrypted string) string {
 	fw := framework.NewFramework()
-	encrypted, err := fw.IO.ReadAllText(credentialsFile)
-	if err != nil {
-		panic(err)
-	}
+
 	password, err := fw.Crypto.Decrypt(encrypted)
 	if err != nil {
 		panic(err)

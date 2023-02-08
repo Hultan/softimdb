@@ -93,8 +93,16 @@ func (m *MainWindow) OpenMainWindow(app *gtk.Application) {
 	// StoryLine label
 	m.storyLineLabel = m.builder.GetObject("storyLineLabel").(*gtk.Label)
 
+	// Load config file
+	cnf, err := config.LoadConfig(configFile)
+	if err != nil {
+		reportError(err)
+		panic(err)
+	}
+	m.config = cnf
+
 	// Open database
-	m.database = data.DatabaseNew(false)
+	m.database = data.DatabaseNew(false, cnf)
 
 	// Toolbar
 	m.setupToolBar()
@@ -127,14 +135,6 @@ func (m *MainWindow) OpenMainWindow(app *gtk.Application) {
 
 	// Fill movie list box
 	m.refreshButtonClicked()
-
-	// Load config file
-	cnf, err := config.LoadConfig(configFile)
-	if err != nil {
-		reportError(err)
-		panic(err)
-	}
-	m.config = cnf
 
 	// Show the main window
 	m.window.ShowAll()
@@ -315,7 +315,7 @@ func (m *MainWindow) getSelectedMovie() *data.Movie {
 }
 
 func (m *MainWindow) openMovieDirectoryInNemo(movie *data.Movie) {
-	path := fmt.Sprintf("smb://%s/%s/%s", m.config.Nas, m.config.Folder, movie.MoviePath)
+	path := fmt.Sprintf("smb://%s/%s/%s", m.config.Nas.Address, m.config.Nas.Folder, movie.MoviePath)
 	// path := "smb://192.168.1.100/Videos/" + movie.MoviePath
 	m.framework.Process.OpenInNemo(path)
 }
@@ -513,7 +513,7 @@ func (m *MainWindow) fillTagsMenu(menu *gtk.MenuItem) {
 
 func (m *MainWindow) playMovie(movie *data.Movie) {
 	go func() {
-		path := fmt.Sprintf("smb://%s/%s/%s", m.config.Nas, m.config.Folder, movie.MoviePath)
+		path := fmt.Sprintf("smb://%s/%s/%s", m.config.Nas.Address, m.config.Nas.Folder, movie.MoviePath)
 		cmd := fmt.Sprintf("find %s -type f -exec du -h {} + | sort -r | head -n1", path)
 		file, err := m.executeCommand("bash", "-c", cmd)
 		if err != nil {
@@ -545,7 +545,7 @@ func (m *MainWindow) refreshIMDB() {
 		return
 	}
 
-	a, err := imdb.NewApiKeyManagerFromStandardPath()
+	a, err := imdb.NewApiKeyManager()
 	if err != nil {
 		reportError(err)
 		panic(err)

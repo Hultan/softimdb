@@ -172,7 +172,7 @@ func (a *AddWindow) addMovieButtonClicked() {
 		return
 	}
 
-	key, err := imdb.NewApiKeyManagerFromStandardPath()
+	key, err := imdb.NewApiKeyManager()
 	if err != nil {
 		a.framework.Gtk.Title(applicationTitle).Text("Failed to create new api key manager").
 			ErrorIcon().OkButton().Show()
