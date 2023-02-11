@@ -591,7 +591,7 @@ func (m *MainWindow) editMovieInfo() {
 func (m *MainWindow) saveMovieInfo(movieInfo *MovieInfo, movie *data.Movie) {
 	movieInfo.toDatabase(movie)
 
-	err := m.database.UpdateMovie(movie)
+	err := m.database.UpdateMovie(movie, true)
 	if err != nil {
 		reportError(err)
 		return

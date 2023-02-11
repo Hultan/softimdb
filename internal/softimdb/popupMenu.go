@@ -176,7 +176,7 @@ func (p *PopupMenu) setupEvents() {
 			}
 
 			movie.ImageId = image.Id
-			err = p.mainWindow.database.UpdateMovie(movie)
+			err = p.mainWindow.database.UpdateMovie(movie, false)
 			if err != nil {
 				reportError(err)
 				return

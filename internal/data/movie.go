@@ -172,36 +172,38 @@ func (d *Database) InsertMovie(movie *Movie) error {
 		return err
 	}
 
-	err = db.Transaction(func(tx *gorm.DB) error {
-		// Insert image
-		if movie.HasImage && len(movie.Image) > 0 {
-			image := Image{Data: movie.Image}
-			err = d.InsertImage(&image)
-			if err != nil {
-				return err
-			}
-			movie.ImageId = image.Id
-		}
-
-		if result := db.Create(movie); result.Error != nil {
-			return result.Error
-		}
-
-		// Handle tags
-		for i := range movie.Tags {
-			tag, err := d.GetOrInsertTag(&movie.Tags[i])
-			if err != nil {
-				return err
+	err = db.Transaction(
+		func(tx *gorm.DB) error {
+			// Insert image
+			if movie.HasImage && len(movie.Image) > 0 {
+				image := Image{Data: movie.Image}
+				err = d.InsertImage(&image)
+				if err != nil {
+					return err
+				}
+				movie.ImageId = image.Id
 			}
 
-			err = d.InsertMovieTag(movie, tag)
-			if err != nil {
-				return err
+			if result := db.Create(movie); result.Error != nil {
+				return result.Error
 			}
-		}
 
-		return nil
-	})
+			// Handle tags
+			for i := range movie.Tags {
+				tag, err := d.GetOrInsertTag(&movie.Tags[i])
+				if err != nil {
+					return err
+				}
+
+				err = d.InsertMovieTag(movie, tag)
+				if err != nil {
+					return err
+				}
+			}
+
+			return nil
+		},
+	)
 
 	// Check transaction error
 	if err != nil {
@@ -212,57 +214,67 @@ func (d *Database) InsertMovie(movie *Movie) error {
 }
 
 // UpdateMovie update a movie.
-func (d *Database) UpdateMovie(movie *Movie) error {
+func (d *Database) UpdateMovie(movie *Movie, updateTags bool) error {
 	db, err := d.getDatabase()
 	if err != nil {
 		return err
 	}
 
-	err = db.Transaction(func(tx *gorm.DB) error {
-		if result := db.Model(&movie).Update("title", movie.Title); result.Error != nil {
-			return result.Error
-		}
-
-		if result := db.Model(&movie).Update("sub_title", movie.SubTitle); result.Error != nil {
-			return result.Error
-		}
-
-		if result := db.Model(&movie).Update("story_line", movie.StoryLine); result.Error != nil {
-			return result.Error
-		}
-
-		if result := db.Model(&movie).Update("imdb_rating", movie.ImdbRating); result.Error != nil {
-			return result.Error
-		}
-
-		if result := db.Model(&movie).Update("year", movie.Year); result.Error != nil {
-			return result.Error
-		}
-
-		if result := db.Model(&movie).Update("image_id", movie.ImageId); result.Error != nil {
-			return result.Error
-		}
-
-		// Handle tags
-		for i := range movie.Tags {
-			tag, err := d.GetOrInsertTag(&movie.Tags[i])
-			if err != nil {
-				return err
+	err = db.Transaction(
+		func(tx *gorm.DB) error {
+			if result := db.Model(&movie).Update("title", movie.Title); result.Error != nil {
+				return result.Error
 			}
 
-			err = d.RemoveMovieTag(movie, tag)
-			if err != nil {
-				return err
+			if result := db.Model(&movie).Update("sub_title", movie.SubTitle); result.Error != nil {
+				return result.Error
 			}
 
-			err = d.InsertMovieTag(movie, tag)
-			if err != nil {
-				return err
+			if result := db.Model(&movie).Update("story_line", movie.StoryLine); result.Error != nil {
+				return result.Error
 			}
-		}
 
-		return nil
-	})
+			if result := db.Model(&movie).Update("imdb_rating", movie.ImdbRating); result.Error != nil {
+				return result.Error
+			}
+
+			if result := db.Model(&movie).Update("imdb_url", movie.ImdbUrl); result.Error != nil {
+				return result.Error
+			}
+
+			if result := db.Model(&movie).Update("year", movie.Year); result.Error != nil {
+				return result.Error
+			}
+
+			if result := db.Model(&movie).Update("image_id", movie.ImageId); result.Error != nil {
+				return result.Error
+			}
+
+			if !updateTags {
+				return nil
+			}
+
+			// Handle tags
+			for i := range movie.Tags {
+				tag, err := d.GetOrInsertTag(&movie.Tags[i])
+				if err != nil {
+					return err
+				}
+
+				err = d.RemoveMovieTag(movie, tag)
+				if err != nil {
+					return err
+				}
+
+				err = d.InsertMovieTag(movie, tag)
+				if err != nil {
+					return err
+				}
+			}
+
+			return nil
+		},
+	)
 
 	// Check transaction error
 	if err != nil {
