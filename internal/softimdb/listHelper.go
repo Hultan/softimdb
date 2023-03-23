@@ -43,13 +43,8 @@ func (l *ListHelper) CreateMovieCard(movie *data.Movie) *gtk.Frame {
 		reportError(err)
 		panic(err)
 	}
-	titleLabel.SetMarkup(
-		`<span font="Sans Regular 14" foreground="#111111"><b>` + cleanString(movie.Title) + `</b></span> 
-<span font="Sans Regular 10" foreground="#111111"><b>` + cleanString(movie.SubTitle) + `</b></span>
-<span font="Sans Regular 10" foreground="#DDDDDD">` + fmt.Sprintf("%v", movie.Year) + ` - ` + fmt.Sprintf(
-			"Imdb : %v", movie.ImdbRating,
-		) + `</span>`,
-	)
+	titleLabel.SetJustify(gtk.JUSTIFY_CENTER)
+	titleLabel.SetMarkup(getMarkup(movie))
 	nameBox.PackStart(titleLabel, true, false, 5)
 	box.PackStart(nameBox, false, false, 5)
 
@@ -94,4 +89,34 @@ func (l *ListHelper) CreateMovieCard(movie *data.Movie) *gtk.Frame {
 	box.Add(label)
 
 	return frame
+}
+
+func getMarkup(movie *data.Movie) string {
+	s := ""
+
+	// Title
+	s += `<span font="Sans Regular 14" foreground="#111111"><b>`
+	s += cleanString(movie.Title)
+	s += `</b></span>`
+	s += "\n"
+
+	// Subtitle
+	s += `<span font="Sans Regular 10" foreground="#111111"><b>`
+	s += cleanString(movie.SubTitle)
+	s += `</b></span>`
+	s += "\n"
+
+	// Year & ratings
+	s += `<span font="Sans Regular 10" foreground="#DDDDDD">`
+	s += fmt.Sprintf("%v", movie.Year)
+	s += `</span> - <span font="Sans Regular 10" foreground="#AAAA00">`
+	s += fmt.Sprintf("Imdb rating : %v", movie.ImdbRating)
+	s += `</span>`
+	if movie.MyRating > 0 {
+		s += ` - <span font="Sans Regular 10" foreground="#DDDDDD">`
+		s += fmt.Sprintf("My rating: %v/5", movie.MyRating)
+		s += `</span>`
+	}
+
+	return s
 }
