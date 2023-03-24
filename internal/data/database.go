@@ -6,8 +6,8 @@ import (
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 
+	"github.com/hultan/crypto"
 	"github.com/hultan/softimdb/internal/config"
-	"github.com/hultan/softteam/framework"
 )
 
 // Database represents a connection to the SoftIMDB database.
@@ -58,8 +58,8 @@ func (d *Database) getDatabase() (*gorm.DB, error) {
 }
 
 func (d *Database) openDatabase() (*gorm.DB, error) {
-	fw := framework.NewFramework()
-	passwordDecrypted, err := fw.Crypto.Decrypt(d.config.Database.Password)
+	c := &crypto.Crypto{}
+	passwordDecrypted, err := c.Decrypt(d.config.Database.Password)
 	if err != nil {
 		panic(err)
 	}

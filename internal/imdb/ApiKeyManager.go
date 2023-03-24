@@ -5,8 +5,8 @@ import (
 	"io"
 	"os"
 
+	"github.com/hultan/crypto"
 	"github.com/hultan/softimdb/internal/config"
-	"github.com/hultan/softteam/framework"
 )
 
 // IMDB API Key
@@ -27,8 +27,8 @@ func NewApiKeyManager() (*ApiKeyManager, error) {
 	if err != nil {
 		panic(err)
 	}
-	fw := framework.NewFramework()
-	key, err := fw.Crypto.Decrypt(cnf.Imdb.ApiKey)
+	c := &crypto.Crypto{}
+	key, err := c.Decrypt(cnf.Imdb.ApiKey)
 	if err != nil {
 		panic(err)
 	}

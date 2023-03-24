@@ -9,24 +9,27 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"syscall"
 
 	"github.com/gotk3/gotk3/gdk"
 	"github.com/gotk3/gotk3/gtk"
 
+	"github.com/hultan/softimdb/internal/builder"
 	"github.com/hultan/softimdb/internal/config"
 	"github.com/hultan/softimdb/internal/data"
 	"github.com/hultan/softimdb/internal/imdb"
-	"github.com/hultan/softteam/framework"
 )
 
 //go:embed assets/application.png
 var applicationIcon []byte
 
+//go:embed assets/main.glade
+var mainGlade string
+
 const configFile = "/home/per/.config/softteam/softimdb/config.json"
 
 type MainWindow struct {
-	builder   *framework.GtkBuilder
-	framework *framework.Framework
+	builder *builder.Builder
 
 	application    *gtk.Application
 	window         *gtk.ApplicationWindow
@@ -63,14 +66,7 @@ func (m *MainWindow) OpenMainWindow(app *gtk.Application) {
 	m.application = app
 
 	// Create a new softBuilder
-	fw := framework.NewFramework()
-	m.framework = fw
-	builder, err := fw.Gtk.CreateBuilder("main.glade")
-	if err != nil {
-		reportError(err)
-		panic(err)
-	}
-	m.builder = builder
+	m.builder = builder.NewBuilder(mainGlade)
 
 	// Get the main window from the glade file
 	m.window = m.builder.GetObject("mainWindow").(*gtk.ApplicationWindow)
@@ -256,7 +252,7 @@ func (m *MainWindow) fillMovieList(searchFor string, categoryId int, sortBy stri
 	}
 
 	listHelper := ListHelperNew()
-	m.framework.Gtk.ClearFlowBox(m.movieList)
+	clearFlowBox(m.movieList)
 
 	for i := range movies {
 		movie := movies[i]
@@ -317,7 +313,7 @@ func (m *MainWindow) getSelectedMovie() *data.Movie {
 func (m *MainWindow) openMovieDirectoryInNemo(movie *data.Movie) {
 	path := fmt.Sprintf("smb://%s/%s/%s", m.config.Nas.Address, m.config.Nas.Folder, movie.MoviePath)
 	// path := "smb://192.168.1.100/Videos/" + movie.MoviePath
-	m.framework.Process.OpenInNemo(path)
+	openInNemo(path)
 }
 
 func (m *MainWindow) setupToolBar() {
@@ -372,7 +368,7 @@ func (m *MainWindow) openAboutDialog() {
 		about.SetVersion(applicationVersion)
 		about.SetCopyright(applicationCopyRight)
 
-		image, err := gdk.PixbufNewFromFile(m.framework.Resource.GetResourcePath("application.png"))
+		image, err := gdk.PixbufNewFromBytesOnly(applicationIcon)
 		if err == nil {
 			about.SetLogo(image)
 		}
@@ -396,7 +392,7 @@ func (m *MainWindow) openAboutDialog() {
 
 func (m *MainWindow) openAddWindowClicked() {
 	if m.addWindow == nil {
-		m.addWindow = AddWindowNew(m.framework)
+		m.addWindow = AddWindowNew()
 	}
 
 	m.addWindow.OpenForm(m.builder, m.database, m.config)
@@ -520,7 +516,7 @@ func (m *MainWindow) playMovie(movie *data.Movie) {
 			reportError(err)
 			panic(err)
 		}
-		m.framework.Process.Open("smplayer", file)
+		openProcess("smplayer", file)
 	}()
 }
 
@@ -696,4 +692,45 @@ func (m *MainWindow) getTags(tags []string) []data.Tag {
 	}
 
 	return dataTags
+}
+
+// ClearFlowBox : Clears a gtk.FlowBox
+func clearFlowBox(list *gtk.FlowBox) {
+	children := list.GetChildren()
+	if children == nil {
+		return
+	}
+	var i uint = 0
+	for i < children.Length() {
+		widget, _ := children.NthData(i).(*gtk.Widget)
+		list.Remove(widget)
+		i++
+	}
+}
+
+// openInNemo : Opens a new nemo instance with the specified folder opened
+func openInNemo(path string) {
+	openProcess("nemo", path)
+}
+
+// openProcess : Opens a command with the specified arguments
+func openProcess(command string, args ...string) string {
+
+	cmd := exec.Command(command, args...)
+	// Forces the new process to detach from the GitDiscover process
+	// so that it does not die when GitDiscover dies
+	cmd.SysProcAttr = &syscall.SysProcAttr{
+		Setpgid: true,
+	}
+
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		log.Println(err)
+	}
+	err = cmd.Process.Release()
+	if err != nil {
+		log.Println(err)
+	}
+
+	return string(output)
 }

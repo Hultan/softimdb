@@ -7,6 +7,7 @@ import (
 	"github.com/gotk3/gotk3/gdk"
 	"github.com/gotk3/gotk3/gtk"
 
+	"github.com/hultan/softimdb/internal/builder"
 	"github.com/hultan/softimdb/internal/data"
 	"github.com/hultan/softteam/framework"
 )
@@ -31,7 +32,7 @@ func NewMovieWindow(info *MovieInfo, movie *data.Movie, saveCallback func(*Movie
 	return &MovieWindow{movieInfo: info, movie: movie, saveCallback: saveCallback}
 }
 
-func (m *MovieWindow) OpenForm(_ *framework.GtkBuilder, parent gtk.IWindow) {
+func (m *MovieWindow) OpenForm(_ *builder.Builder, parent gtk.IWindow) {
 	if m.window == nil {
 		fw := framework.NewFramework()
 		builder, err := fw.Gtk.CreateBuilder("main.glade")

@@ -5,7 +5,7 @@ import (
 	"html"
 	"os"
 
-	"github.com/hultan/softteam/framework"
+	"github.com/hultan/dialog"
 )
 
 func cleanString(text string) string {
@@ -14,8 +14,7 @@ func cleanString(text string) string {
 }
 
 func reportError(err error) {
-	fw := framework.NewFramework()
 	_, _ = fmt.Fprintln(os.Stderr, err)
-	fw.Gtk.Title(applicationTitle).Text(err.Error()).
+	dialog.Title(applicationTitle).Text(err.Error()).
 		ErrorIcon().OkButton().Show()
 }

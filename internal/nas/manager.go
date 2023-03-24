@@ -8,9 +8,9 @@ import (
 
 	"github.com/hirochachacha/go-smb2"
 
+	"github.com/hultan/crypto"
 	"github.com/hultan/softimdb/internal/config"
 	"github.com/hultan/softimdb/internal/data"
-	"github.com/hultan/softteam/framework"
 )
 
 // Manager represents a NAS manager.
@@ -73,11 +73,10 @@ func (m Manager) GetMovies(config *config.Config) *[]string {
 func (m Manager) removeMoviePaths(dirs *[]string, moviePaths *[]string) *[]string {
 	var result = &[]string{}
 
-	fw := framework.NewFramework()
 	for i := range *dirs {
 		dir := (*dirs)[i]
 
-		if !fw.Slice.ContainsString(*moviePaths, dir) {
+		if !containsString(*moviePaths, dir) {
 			*result = append(*result, dir)
 		}
 	}
@@ -85,10 +84,21 @@ func (m Manager) removeMoviePaths(dirs *[]string, moviePaths *[]string) *[]strin
 	return result
 }
 
-func (m Manager) getPassword(encrypted string) string {
-	fw := framework.NewFramework()
+// containsString : Returns true if the slice contains the string
+//
+//	in find, otherwise returns false.
+func containsString(slice []string, find string) bool {
+	for _, a := range slice {
+		if a == find {
+			return true
+		}
+	}
+	return false
+}
 
-	password, err := fw.Crypto.Decrypt(encrypted)
+func (m Manager) getPassword(encrypted string) string {
+	c := &crypto.Crypto{}
+	password, err := c.Decrypt(encrypted)
 	if err != nil {
 		panic(err)
 	}

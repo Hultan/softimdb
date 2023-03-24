@@ -7,15 +7,15 @@ import (
 
 	"github.com/gotk3/gotk3/gtk"
 
+	"github.com/hultan/dialog"
+	"github.com/hultan/softimdb/internal/builder"
 	"github.com/hultan/softimdb/internal/config"
 	"github.com/hultan/softimdb/internal/data"
 	"github.com/hultan/softimdb/internal/imdb"
 	"github.com/hultan/softimdb/internal/nas"
-	"github.com/hultan/softteam/framework"
 )
 
 type AddWindow struct {
-	framework      *framework.Framework
 	window         *gtk.Window
 	list           *gtk.ListBox
 	imdbUrlEntry   *gtk.Entry
@@ -24,16 +24,15 @@ type AddWindow struct {
 	movieWindow    *MovieWindow
 	database       *data.Database
 	config         *config.Config
-	builder        *framework.GtkBuilder
+	builder        *builder.Builder
 }
 
-func AddWindowNew(framework *framework.Framework) *AddWindow {
+func AddWindowNew() *AddWindow {
 	a := new(AddWindow)
-	a.framework = framework
 	return a
 }
 
-func (a *AddWindow) OpenForm(builder *framework.GtkBuilder, database *data.Database, config *config.Config) {
+func (a *AddWindow) OpenForm(builder *builder.Builder, database *data.Database, config *config.Config) {
 	a.builder = builder
 	if a.window == nil {
 		// Get the extra window from glade
@@ -81,10 +80,15 @@ func (a *AddWindow) OpenForm(builder *framework.GtkBuilder, database *data.Datab
 	moviePaths := nasManager.GetMovies(a.config)
 	if moviePaths == nil {
 		a.window.ShowAll()
-		message := "Failed to access NAS, is it unlocked?"
-		dialog := gtk.MessageDialogNew(nil, gtk.DIALOG_MODAL, gtk.MESSAGE_ERROR, gtk.BUTTONS_OK, message)
-		dialog.Run()
-		dialog.Destroy()
+
+		dialog.Title("Error").
+			ErrorIcon().
+			Text("Failed to access NAS, is it unlocked?").
+			Show()
+		// message := "Failed to access NAS, is it unlocked?"
+		// dialog := gtk.MessageDialogNew(nil, gtk.DIALOG_MODAL, gtk.MESSAGE_ERROR, gtk.BUTTONS_OK, message)
+		// dialog.Run()
+		// dialog.Destroy()
 		return
 	}
 	nasManager.Disconnect()
@@ -92,7 +96,7 @@ func (a *AddWindow) OpenForm(builder *framework.GtkBuilder, database *data.Datab
 	// Paths list
 	a.list = builder.GetObject("pathsList").(*gtk.ListBox)
 	_ = a.list.Connect("row-activated", a.rowActivated)
-	a.framework.Gtk.ClearListBox(a.list)
+	clearListBox(a.list)
 	a.fillList(a.list, *moviePaths)
 
 	// Show the window
@@ -125,9 +129,11 @@ func (a *AddWindow) fillList(list *gtk.ListBox, paths []string) {
 
 func (a *AddWindow) ignorePathButtonClicked() {
 	msg := "Are you sure you want to ignore this folder?"
-	response := a.framework.Gtk.Title(applicationTitle).Text(msg).
+	response, err := dialog.Title(applicationTitle).Text(msg).
 		QuestionIcon().YesNoButtons().Show()
-
+	if err != nil {
+		panic(err)
+	}
 	if response == gtk.RESPONSE_NO {
 		return
 	}
@@ -161,34 +167,35 @@ func (a *AddWindow) addMovieButtonClicked() {
 
 	url := a.getEntryText(a.imdbUrlEntry)
 	if url == "" {
-		a.framework.Gtk.Title(applicationTitle).Text("IMDB Url cannot be empty").
+
+		dialog.Title(applicationTitle).Text("IMDB Url cannot be empty").
 			ErrorIcon().OkButton().Show()
 		return
 	}
 	moviePath := a.getEntryText(a.moviePathEntry)
 	if moviePath == "" {
-		a.framework.Gtk.Title(applicationTitle).Text("Movie path cannot be empty").
+		dialog.Title(applicationTitle).Text("Movie path cannot be empty").
 			ErrorIcon().OkButton().Show()
 		return
 	}
 
 	key, err := imdb.NewApiKeyManager()
 	if err != nil {
-		a.framework.Gtk.Title(applicationTitle).Text("Failed to create new api key manager").
+		dialog.Title(applicationTitle).Text("Failed to create new api key manager").
 			ErrorIcon().OkButton().Show()
 		return
 	}
 
 	id := a.getEntryText(a.imdbIdEntry)
 	if id == "" {
-		a.framework.Gtk.Title(applicationTitle).Text("IMDB id cannot be empty").
+		dialog.Title(applicationTitle).Text("IMDB id cannot be empty").
 			ErrorIcon().OkButton().Show()
 		return
 	}
 	manager := imdb.NewImdb(key)
 	info, err := manager.Title(id)
 	if err != nil {
-		a.framework.Gtk.Title(applicationTitle).
+		dialog.Title(applicationTitle).
 			Text(fmt.Sprintf("Failed to retrieve movie information : \n\n%v", err)).
 			ErrorIcon().OkButton().Show()
 		return
@@ -296,4 +303,18 @@ func (a *AddWindow) imdbURLChanged() {
 		return
 	}
 	a.imdbIdEntry.SetText(id)
+}
+
+// clearListBox : Clears a gtk.ListBox
+func clearListBox(list *gtk.ListBox) {
+	children := list.GetChildren()
+	if children == nil {
+		return
+	}
+	var i uint = 0
+	for i < children.Length() {
+		widget, _ := children.NthData(i).(*gtk.Widget)
+		list.Remove(widget)
+		i++
+	}
 }
