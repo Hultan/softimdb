@@ -106,24 +106,41 @@ func (m Manager) getPassword(encrypted string) string {
 }
 
 func readDirectoryEx(fs *smb2.Share, pathName string, ignoredPaths []*data.IgnoredPath, dirs *[]string) {
-	files, err := fs.ReadDir(pathName)
+	// TODO : We should be able to read the dirs this way now? Much faster!!!
+	//f, err := os.Open("/home/per/media/videos/")
+	//if err != nil {
+	//	fmt.Println(1, err)
+	//	return
+	//}
+	//names, err := f.Readdirnames(0)
+	//if err != nil {
+	//	fmt.Println(2, err)
+	//	return
+	//}
+	//fmt.Println(names)
+	//
+	//return
+
+	entries, err := fs.ReadDir(pathName)
 	if err != nil {
 		return
 	}
-	for _, file := range files {
-		if !file.IsDir() {
+
+	for _, entry := range entries {
+		if !entry.IsDir() {
 			continue
 		}
 
-		currentPath := path.Join(pathName, file.Name())
-		ignore := getIgnorePath(ignoredPaths, currentPath)
+		currentDir := path.Join(pathName, entry.Name())
+
+		ignore := getIgnorePath(ignoredPaths, currentDir)
 		if ignore != nil && ignore.IgnoreCompletely {
 			continue
 		}
 		if ignore == nil {
-			*dirs = append(*dirs, currentPath)
+			*dirs = append(*dirs, currentDir)
 		}
-		readDirectoryEx(fs, path.Join(pathName, file.Name()), ignoredPaths, dirs)
+		readDirectoryEx(fs, path.Join(pathName, entry.Name()), ignoredPaths, dirs)
 	}
 }
 

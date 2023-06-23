@@ -9,7 +9,6 @@ import (
 
 	"github.com/hultan/softimdb/internal/builder"
 	"github.com/hultan/softimdb/internal/data"
-	"github.com/hultan/softteam/framework"
 )
 
 type MovieWindow struct {
@@ -32,15 +31,8 @@ func NewMovieWindow(info *MovieInfo, movie *data.Movie, saveCallback func(*Movie
 	return &MovieWindow{movieInfo: info, movie: movie, saveCallback: saveCallback}
 }
 
-func (m *MovieWindow) OpenForm(_ *builder.Builder, parent gtk.IWindow) {
+func (m *MovieWindow) OpenForm(builder *builder.Builder, parent gtk.IWindow) {
 	if m.window == nil {
-		fw := framework.NewFramework()
-		builder, err := fw.Gtk.CreateBuilder("main.glade")
-		if err != nil {
-			reportError(err)
-			panic(err)
-		}
-
 		// Get the extra window from glade
 		movieWindow := builder.GetObject("movieWindow").(*gtk.Window)
 
