@@ -70,12 +70,6 @@ func (m *MainWindow) OpenMainWindow(app *gtk.Application) {
 
 	// Get the main window from the glade file
 	m.window = m.builder.GetObject("mainWindow").(*gtk.ApplicationWindow)
-	pix, err := gdk.PixbufNewFromBytesOnly(applicationIcon)
-	if err != nil {
-		_, _ = fmt.Fprintln(os.Stderr, err)
-		os.Exit(exitCodeSetupError)
-	}
-	m.window.SetIcon(pix)
 
 	// Set up main window
 	m.window.SetApplication(app)
