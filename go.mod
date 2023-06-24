@@ -5,7 +5,7 @@ go 1.17
 require (
 	github.com/gotk3/gotk3 v0.6.1
 	github.com/hirochachacha/go-smb2 v1.0.10
-	github.com/hultan/crypto v0.0.0-20230324113703-0074680ca8ca
+	github.com/hultan/crypto v1.0.0
 	github.com/hultan/dialog v1.0.2
 	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646
 	gorm.io/driver/mysql v1.1.1
