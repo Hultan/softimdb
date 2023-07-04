@@ -59,8 +59,6 @@ func NewMainWindow() *MainWindow {
 	return mainForm
 }
 
-const exitCodeSetupError = 1
-
 // OpenMainWindow : Opens the MainWindow window
 func (m *MainWindow) OpenMainWindow(app *gtk.Application) {
 	m.application = app

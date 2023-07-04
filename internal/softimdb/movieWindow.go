@@ -135,7 +135,12 @@ func (m *MovieWindow) okButtonClicked() {
 	id, err := getIdFromUrl(m.movieInfo.imdbUrl)
 	if err != nil {
 		msg := fmt.Sprintf("Failed to retrieve IMDB id from url : %s", err)
-		dialog.Title("Invalid IMDB url...").Text(msg).ErrorIcon().OkButton().Show()
+		_, err = dialog.Title("Invalid IMDB url...").Text(msg).ErrorIcon().OkButton().Show()
+
+		if err != nil {
+			fmt.Printf("Error : %s", err)
+		}
+
 		return
 	}
 	m.movieInfo.imdbId = id
@@ -146,7 +151,12 @@ func (m *MovieWindow) okButtonClicked() {
 	rating, err := strconv.Atoi(ratingText)
 	if err != nil || rating < 0 || rating > 5 {
 		msg := fmt.Sprintf("Invalid my rating : %s (error : %s)", ratingText, err)
-		dialog.Title("Invalid my rating...").Text(msg).ErrorIcon().OkButton().Show()
+		_, err = dialog.Title("Invalid my rating...").Text(msg).ErrorIcon().OkButton().Show()
+
+		if err != nil {
+			fmt.Printf("Error : %s", err)
+		}
+
 		return
 	}
 	m.movieInfo.myRating = rating

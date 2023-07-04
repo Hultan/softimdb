@@ -1,8 +1,8 @@
 package softimdb
 
 import (
+	"fmt"
 	"github.com/gotk3/gotk3/gtk"
-
 	"github.com/hultan/dialog"
 	"github.com/hultan/softimdb/internal/builder"
 	"github.com/hultan/softimdb/internal/config"
@@ -68,14 +68,14 @@ func (a *AddWindow) OpenForm(builder *builder.Builder, database *data.Database, 
 	if moviePaths == nil {
 		a.window.ShowAll()
 
-		dialog.Title("Error").
+		_, err := dialog.Title("Error").
 			ErrorIcon().
 			Text("Failed to access NAS, is it unlocked?").
 			Show()
-		// message := "Failed to access NAS, is it unlocked?"
-		// dialog := gtk.MessageDialogNew(nil, gtk.DIALOG_MODAL, gtk.MESSAGE_ERROR, gtk.BUTTONS_OK, message)
-		// dialog.Run()
-		// dialog.Destroy()
+
+		if err != nil {
+			fmt.Printf("Error : %s", err)
+		}
 		return
 	}
 	nasManager.Disconnect()
@@ -151,8 +151,13 @@ func (a *AddWindow) ignorePathButtonClicked() {
 func (a *AddWindow) addMovieButtonClicked() {
 	moviePath := a.getEntryText(a.moviePathEntry)
 	if moviePath == "" {
-		dialog.Title(applicationTitle).Text("Movie path cannot be empty").
+		_, err := dialog.Title(applicationTitle).Text("Movie path cannot be empty").
 			ErrorIcon().OkButton().Show()
+
+		if err != nil {
+			fmt.Printf("Error : %s", err)
+		}
+
 		return
 	}
 
