@@ -4,8 +4,6 @@ import (
 	"strings"
 
 	"gorm.io/gorm"
-
-	"github.com/hultan/softimdb/internal/imdb"
 )
 
 // Movie represents a movie in the database.
@@ -309,33 +307,4 @@ func (d *Database) getMovieImage(movie *Movie) {
 		movie.Image = image.Data
 		movie.HasImage = true
 	}
-}
-
-func (d *Database) FromIMDB(movie *imdb.Movie) (*Movie, error) {
-	var tags []Tag
-	for _, genre := range movie.GetGenres() {
-		tags = append(tags, Tag{Id: 0, Name: genre, IsPrivate: false, Movies: nil})
-	}
-
-	poster, err := movie.GetPoster()
-	if err != nil {
-		return nil, err
-	}
-
-	return &Movie{
-		Id:         0,
-		Title:      movie.Title,
-		SubTitle:   "",
-		Year:       movie.GetYear(),
-		ImdbRating: float32(movie.GetRating()),
-		ImdbUrl:    movie.GetURL(),
-		ImdbID:     movie.Id,
-		StoryLine:  movie.StoryLine,
-		MoviePath:  "",
-		Tags:       tags,
-
-		ImageId:  0,
-		Image:    poster,
-		HasImage: true,
-	}, nil
 }

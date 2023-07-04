@@ -1,25 +1,18 @@
 package softimdb
 
 import (
-	"errors"
-	"fmt"
-	"regexp"
-
 	"github.com/gotk3/gotk3/gtk"
 
 	"github.com/hultan/dialog"
 	"github.com/hultan/softimdb/internal/builder"
 	"github.com/hultan/softimdb/internal/config"
 	"github.com/hultan/softimdb/internal/data"
-	"github.com/hultan/softimdb/internal/imdb"
 	"github.com/hultan/softimdb/internal/nas"
 )
 
 type AddWindow struct {
 	window         *gtk.Window
 	list           *gtk.ListBox
-	imdbUrlEntry   *gtk.Entry
-	imdbIdEntry    *gtk.Entry
 	moviePathEntry *gtk.Entry
 	movieWindow    *MovieWindow
 	database       *data.Database
@@ -60,13 +53,7 @@ func (a *AddWindow) OpenForm(builder *builder.Builder, database *data.Database, 
 		addMovieButton := builder.GetObject("addMovieButton").(*gtk.Button)
 		_ = addMovieButton.Connect("clicked", a.addMovieButtonClicked)
 
-		// IMDB Url and Movie Path entry
-		entry := builder.GetObject("imdbEntry").(*gtk.Entry)
-		a.imdbUrlEntry = entry
-		_ = entry.Connect("changed", a.imdbURLChanged)
-		entry = builder.GetObject("imdbIdEntry").(*gtk.Entry)
-		a.imdbIdEntry = entry
-		entry = builder.GetObject("moviePathEntry").(*gtk.Entry)
+		entry := builder.GetObject("moviePathEntry").(*gtk.Entry)
 		a.moviePathEntry = entry
 
 		// Store reference to database and window
@@ -101,8 +88,6 @@ func (a *AddWindow) OpenForm(builder *builder.Builder, database *data.Database, 
 
 	// Show the window
 	a.window.ShowAll()
-
-	a.imdbUrlEntry.GrabFocus()
 }
 
 func (a *AddWindow) closeWindow() {
@@ -164,14 +149,6 @@ func (a *AddWindow) ignorePathButtonClicked() {
 }
 
 func (a *AddWindow) addMovieButtonClicked() {
-
-	url := a.getEntryText(a.imdbUrlEntry)
-	if url == "" {
-
-		dialog.Title(applicationTitle).Text("IMDB Url cannot be empty").
-			ErrorIcon().OkButton().Show()
-		return
-	}
 	moviePath := a.getEntryText(a.moviePathEntry)
 	if moviePath == "" {
 		dialog.Title(applicationTitle).Text("Movie path cannot be empty").
@@ -179,40 +156,12 @@ func (a *AddWindow) addMovieButtonClicked() {
 		return
 	}
 
-	key, err := imdb.NewApiKeyManager()
-	if err != nil {
-		dialog.Title(applicationTitle).Text("Failed to create new api key manager").
-			ErrorIcon().OkButton().Show()
-		return
-	}
-
-	id := a.getEntryText(a.imdbIdEntry)
-	if id == "" {
-		dialog.Title(applicationTitle).Text("IMDB id cannot be empty").
-			ErrorIcon().OkButton().Show()
-		return
-	}
-	manager := imdb.NewImdb(key)
-	info, err := manager.Title(id)
-	if err != nil {
-		dialog.Title(applicationTitle).
-			Text(fmt.Sprintf("Failed to retrieve movie information : \n\n%v", err)).
-			ErrorIcon().OkButton().Show()
-		return
-	}
-
-	movie, err := newMovieInfoFromImdb(info)
-	if err != nil {
-		reportError(err)
-		panic(err)
-	}
-
-	if len(movie.image) > 0 {
-		movie.imageHasChanged = true
+	info := &MovieInfo{
+		path: moviePath,
 	}
 
 	// Open movie dialog here
-	win := NewMovieWindow(movie, nil, a.saveMovieInfo)
+	win := NewMovieWindow(info, nil, a.saveMovieInfo)
 	win.OpenForm(a.builder, a.window)
 	a.movieWindow = win
 }
@@ -220,7 +169,6 @@ func (a *AddWindow) addMovieButtonClicked() {
 func (a *AddWindow) saveMovieInfo(info *MovieInfo, _ *data.Movie) {
 	newMovie := &data.Movie{}
 	info.toDatabase(newMovie)
-	newMovie.MoviePath = a.getEntryText(a.moviePathEntry)
 	err := a.database.InsertMovie(newMovie)
 	if err != nil {
 		reportError(err)
@@ -235,8 +183,6 @@ func (a *AddWindow) saveMovieInfo(info *MovieInfo, _ *data.Movie) {
 	}
 
 	a.list.Remove(row)
-	a.imdbUrlEntry.SetText("")
-	a.imdbIdEntry.SetText("")
 	a.moviePathEntry.SetText("")
 }
 
@@ -274,35 +220,6 @@ func (a *AddWindow) getTags(tags []string) []data.Tag {
 	}
 
 	return dataTags
-}
-
-func (a *AddWindow) getIdFromUrl(url string) (string, error) {
-	// Get the IMDB id from the URL.
-	// Starts with tt and ends with 7 or 8 digits.
-	re := regexp.MustCompile(`tt\d{7,8}`)
-	matches := re.FindAll([]byte(url), -1)
-	if len(matches) == 0 {
-		err := errors.New("invalid imdb URL")
-		return "", err
-	}
-	return string(matches[0]), nil
-}
-
-func (a *AddWindow) imdbURLChanged() {
-	text, err := a.imdbUrlEntry.GetText()
-	if err != nil {
-		reportError(err)
-		panic(err)
-	}
-	if text == "" {
-		return
-	}
-	id, err := a.getIdFromUrl(text)
-	if err != nil {
-		reportError(err)
-		return
-	}
-	a.imdbIdEntry.SetText(id)
 }
 
 // clearListBox : Clears a gtk.ListBox

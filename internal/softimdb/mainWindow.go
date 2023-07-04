@@ -2,10 +2,11 @@ package softimdb
 
 import (
 	_ "embed"
+	"errors"
 	"fmt"
 	"log"
-	"os"
 	"os/exec"
+	"regexp"
 	"runtime"
 	"strconv"
 	"strings"
@@ -17,7 +18,6 @@ import (
 	"github.com/hultan/softimdb/internal/builder"
 	"github.com/hultan/softimdb/internal/config"
 	"github.com/hultan/softimdb/internal/data"
-	"github.com/hultan/softimdb/internal/imdb"
 )
 
 //go:embed assets/application.png
@@ -230,12 +230,8 @@ func (m *MainWindow) setupMenu(window *gtk.ApplicationWindow) {
 	m.fillTagsMenu(menuTags)
 
 	// Tools menu
-	menuToolsRefresh := m.builder.GetObject("mnuToolsRefreshIMDBData").(*gtk.MenuItem)
-	_ = menuToolsRefresh.Connect("activate", m.refreshIMDB)
 	menuToolsOpenIMDB := m.builder.GetObject("mnuToolsIOpenIMDB").(*gtk.MenuItem)
 	_ = menuToolsOpenIMDB.Connect("activate", m.openIMDB)
-	menuToolsUpdateImage := m.builder.GetObject("mnuToolsUpdateImage").(*gtk.MenuItem)
-	_ = menuToolsUpdateImage.Connect("activate", m.updateImage)
 }
 
 func (m *MainWindow) fillMovieList(searchFor string, categoryId int, sortBy string) {
@@ -431,8 +427,6 @@ func (m *MainWindow) keyPressEvent(_ *gtk.ApplicationWindow, event *gdk.Event) {
 	switch {
 	case keyEvent.KeyVal() == gdk.KEY_f && ctrl:
 		m.searchEntry.GrabFocus()
-	case keyEvent.KeyVal() == gdk.KEY_F5 && ctrl:
-		m.refreshIMDB()
 	case keyEvent.KeyVal() == gdk.KEY_a && ctrl:
 		m.openAddWindowClicked()
 	}
@@ -527,39 +521,6 @@ func (m *MainWindow) executeCommand(command string, arguments ...string) (string
 	return string(out), nil
 }
 
-func (m *MainWindow) refreshIMDB() {
-	var err error
-
-	selectedMovie := m.getSelectedMovie()
-	if selectedMovie == nil {
-		return
-	}
-
-	a, err := imdb.NewApiKeyManager()
-	if err != nil {
-		reportError(err)
-		panic(err)
-	}
-
-	manager := imdb.NewImdb(a)
-	info, err := manager.Title(selectedMovie.ImdbID)
-	if err != nil {
-		reportError(err)
-		return
-	}
-
-	movieInfo, err := newMovieInfoFromImdb(info)
-	if err != nil {
-		reportError(err)
-		panic(err)
-	}
-
-	// Open movie dialog here
-	win := NewMovieWindow(movieInfo, selectedMovie, m.saveMovieInfo)
-	win.OpenForm(m.builder, m.window)
-	m.movieWindow = win
-}
-
 func (m *MainWindow) editMovieInfo() {
 	selectedMovie := m.getSelectedMovie()
 	if selectedMovie == nil {
@@ -634,45 +595,6 @@ func (m *MainWindow) openBrowser(url string) {
 
 }
 
-func (m *MainWindow) updateImage() {
-	selectedMovie := m.getSelectedMovie()
-	if selectedMovie == nil {
-		return
-	}
-
-	dialog, err := gtk.FileChooserDialogNewWith2Buttons(
-		"Choose new image...", m.window, gtk.FILE_CHOOSER_ACTION_OPEN, "Ok", gtk.RESPONSE_OK,
-		"Cancel", gtk.RESPONSE_CANCEL,
-	)
-	if err != nil {
-		panic(err)
-	}
-	defer dialog.Destroy()
-
-	response := dialog.Run()
-	if response == gtk.RESPONSE_CANCEL {
-		return
-	}
-
-	fileName := dialog.GetFilename()
-	bytes, err := os.ReadFile(fileName)
-	if err != nil {
-		fmt.Printf("Could not read the file due to this %s error \n", err)
-	}
-
-	movieImage, err := m.database.GetImage(selectedMovie.ImageId)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	movieImage.Data = bytes
-	err = m.database.UpdateImage(movieImage)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-}
-
 func (m *MainWindow) updateCountLabel(i int) {
 	m.countLabel.SetText(fmt.Sprintf("Number of videos : %d", i))
 }
@@ -727,4 +649,16 @@ func openProcess(command string, args ...string) string {
 	}
 
 	return string(output)
+}
+
+func getIdFromUrl(url string) (string, error) {
+	// Get the IMDB id from the URL.
+	// Starts with tt and ends with 7 or 8 digits.
+	re := regexp.MustCompile(`tt\d{7,8}`)
+	matches := re.FindAll([]byte(url), -1)
+	if len(matches) == 0 {
+		err := errors.New("invalid imdb URL")
+		return "", err
+	}
+	return string(matches[0]), nil
 }

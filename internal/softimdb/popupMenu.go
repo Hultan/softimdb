@@ -1,8 +1,6 @@
 package softimdb
 
 import (
-	"os"
-
 	"github.com/gotk3/gotk3/gdk"
 	"github.com/gotk3/gotk3/gtk"
 
@@ -17,9 +15,7 @@ type PopupMenu struct {
 	popupOpenFolder    *gtk.MenuItem
 	popupOpenIMDB      *gtk.MenuItem
 	popupOpenMovieInfo *gtk.MenuItem
-	popupRefreshIMDB   *gtk.MenuItem
 	popupPlayMovie     *gtk.MenuItem
-	popupUpdateImage   *gtk.MenuItem
 }
 
 func NewPopupMenu(window *MainWindow) *PopupMenu {
@@ -35,9 +31,7 @@ func (p *PopupMenu) Setup() {
 	p.popupOpenFolder = p.mainWindow.builder.GetObject("popupOpenFolder").(*gtk.MenuItem)
 	p.popupOpenIMDB = p.mainWindow.builder.GetObject("popupOpenIMDBPage").(*gtk.MenuItem)
 	p.popupOpenMovieInfo = p.mainWindow.builder.GetObject("popupOpenMovieInfo").(*gtk.MenuItem)
-	p.popupRefreshIMDB = p.mainWindow.builder.GetObject("popupRefreshIMDB").(*gtk.MenuItem)
 	p.popupPlayMovie = p.mainWindow.builder.GetObject("popupPlayMovie").(*gtk.MenuItem)
-	p.popupUpdateImage = p.mainWindow.builder.GetObject("popupUpdateImage").(*gtk.MenuItem)
 
 	p.setupEvents()
 }
@@ -124,12 +118,6 @@ func (p *PopupMenu) setupEvents() {
 		},
 	)
 
-	p.popupRefreshIMDB.Connect(
-		"activate", func() {
-			p.mainWindow.refreshIMDB()
-		},
-	)
-
 	p.popupPlayMovie.Connect(
 		"activate", func() {
 			movie := p.mainWindow.getSelectedMovie()
@@ -137,50 +125,6 @@ func (p *PopupMenu) setupEvents() {
 				return
 			}
 			p.mainWindow.playMovie(movie)
-		},
-	)
-
-	p.popupUpdateImage.Connect(
-		"activate", func() {
-			dialog, err := gtk.FileChooserDialogNewWith2Buttons(
-				"Choose new image...", p.mainWindow.window, gtk.FILE_CHOOSER_ACTION_OPEN, "Ok", gtk.RESPONSE_OK,
-				"Cancel", gtk.RESPONSE_CANCEL,
-			)
-			if err != nil {
-				reportError(err)
-				return
-			}
-			defer dialog.Destroy()
-
-			response := dialog.Run()
-			if response == gtk.RESPONSE_CANCEL {
-				return
-			}
-
-			movie := p.mainWindow.getSelectedMovie()
-			if movie == nil {
-				return
-			}
-
-			fileName := dialog.GetFilename()
-			file, err := os.ReadFile(fileName)
-			if err != nil {
-				reportError(err)
-				return
-			}
-			image := &data.Image{Data: file}
-			err = p.mainWindow.database.InsertImage(image)
-			if err != nil {
-				reportError(err)
-				return
-			}
-
-			movie.ImageId = image.Id
-			err = p.mainWindow.database.UpdateMovie(movie, false)
-			if err != nil {
-				reportError(err)
-				return
-			}
 		},
 	)
 }

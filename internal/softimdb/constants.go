@@ -1,10 +1,14 @@
 package softimdb
 
-const applicationTitle = "SoftImdb"
-const applicationVersion = "v 1.9.9"
-const applicationCopyRight = "©SoftTeam AB, 2020"
-const listMargin = 3
-const listSpacing = 0
+const (
+	applicationTitle     = "SoftImdb"
+	applicationVersion   = "v 2.0.0"
+	applicationCopyRight = "©SoftTeam AB, 2020"
+	listMargin           = 3
+	listSpacing          = 0
+	imageWidth           = 190
+	imageHeight          = 280
+)
 
 const (
 	sortByName = iota

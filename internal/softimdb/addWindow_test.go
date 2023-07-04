@@ -24,8 +24,7 @@ func TestAddWindow_getIdFromUrl(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(
 			tt.name, func(t *testing.T) {
-				a := AddWindow{}
-				got, err := a.getIdFromUrl(tt.args.url)
+				got, err := getIdFromUrl(tt.args.url)
 				if (err != nil) != tt.wantErr {
 					t.Errorf("getIdFromUrl() error = %v, wantErr %v", err, tt.wantErr)
 					return

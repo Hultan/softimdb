@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/hultan/softimdb/internal/data"
-	"github.com/hultan/softimdb/internal/imdb"
 )
 
 type MovieInfo struct {
@@ -23,33 +22,6 @@ type MovieInfo struct {
 	tags            string // Info field only
 	image           []byte
 	imageHasChanged bool
-}
-
-func newMovieInfoFromImdb(movie *imdb.Movie) (*MovieInfo, error) {
-	image, err := movie.GetPoster()
-	if err != nil {
-		return nil, err
-	}
-
-	info := &MovieInfo{
-		title:           movie.Title,
-		storyLine:       movie.StoryLine,
-		year:            movie.Year,
-		imdbRating:      movie.Rating,
-		imdbUrl:         movie.GetURL(),
-		imdbId:          movie.Id,
-		tags:            movie.Genres,
-		image:           image,
-		imageHasChanged: false,
-	}
-
-	if movie.Wikipedia.PlotShort.PlainText != "" {
-		info.storyLine = movie.Wikipedia.PlotShort.PlainText
-	} else {
-		info.storyLine = movie.StoryLine
-	}
-
-	return info, nil
 }
 
 func newMovieInfoFromDatabase(movie *data.Movie) (*MovieInfo, error) {

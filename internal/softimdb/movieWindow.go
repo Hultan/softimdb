@@ -1,7 +1,14 @@
 package softimdb
 
 import (
+	bytes "bytes"
 	"fmt"
+	"github.com/hultan/dialog"
+	"github.com/nfnt/resize"
+	"image"
+	_ "image/jpeg"
+	"image/png"
+	_ "image/png"
 	"os"
 
 	"github.com/gotk3/gotk3/gdk"
@@ -13,6 +20,8 @@ import (
 
 type MovieWindow struct {
 	window         *gtk.Window
+	pathEntry      *gtk.Entry
+	imdbUrlEntry   *gtk.Entry
 	titleEntry     *gtk.Entry
 	subTitleEntry  *gtk.Entry
 	yearEntry      *gtk.Entry
@@ -28,6 +37,9 @@ type MovieWindow struct {
 }
 
 func NewMovieWindow(info *MovieInfo, movie *data.Movie, saveCallback func(*MovieInfo, *data.Movie)) *MovieWindow {
+	if info == nil {
+		info = &MovieInfo{}
+	}
 	return &MovieWindow{movieInfo: info, movie: movie, saveCallback: saveCallback}
 }
 
@@ -54,6 +66,8 @@ func (m *MovieWindow) OpenForm(builder *builder.Builder, parent gtk.IWindow) {
 		_ = button.Connect("clicked", m.closeWindow)
 
 		// Entries and images
+		m.imdbUrlEntry = builder.GetObject("imdbUrlEntry").(*gtk.Entry)
+		m.pathEntry = builder.GetObject("pathEntry").(*gtk.Entry)
 		m.titleEntry = builder.GetObject("titleEntry").(*gtk.Entry)
 		m.subTitleEntry = builder.GetObject("subTitleEntry").(*gtk.Entry)
 		m.yearEntry = builder.GetObject("yearEntry").(*gtk.Entry)
@@ -65,6 +79,7 @@ func (m *MovieWindow) OpenForm(builder *builder.Builder, parent gtk.IWindow) {
 		eventBox.Connect("button-press-event", m.onImageClick)
 
 		// Fill form with data
+		m.pathEntry.SetText(m.movieInfo.path)
 		m.titleEntry.SetText(m.movieInfo.title)
 		m.subTitleEntry.SetText(m.movieInfo.subTitle)
 		m.yearEntry.SetText(fmt.Sprintf("%d", m.movieInfo.getYear()))
@@ -77,10 +92,11 @@ func (m *MovieWindow) OpenForm(builder *builder.Builder, parent gtk.IWindow) {
 		m.storyLineEntry.SetBuffer(buffer)
 		m.ratingEntry.SetText(m.movieInfo.imdbRating)
 		m.genresEntry.SetText(m.movieInfo.tags)
-		m.genresEntry.SetEditable(false)
 
 		// Poster
-		m.updateImage(m.movieInfo.image)
+		if m.movieInfo.image != nil {
+			m.updateImage(m.movieInfo.image)
+		}
 
 		// Store reference to database and window
 		m.window = movieWindow
@@ -89,7 +105,7 @@ func (m *MovieWindow) OpenForm(builder *builder.Builder, parent gtk.IWindow) {
 	// Show the window
 	m.window.ShowAll()
 
-	m.titleEntry.GrabFocus()
+	m.imdbUrlEntry.GrabFocus()
 }
 
 func (m *MovieWindow) closeWindow() {
@@ -106,6 +122,15 @@ func (m *MovieWindow) getEntryText(entry *gtk.Entry) string {
 
 func (m *MovieWindow) okButtonClicked() {
 	// Fill fields
+	m.movieInfo.path = m.getEntryText(m.pathEntry)
+	m.movieInfo.imdbUrl = m.getEntryText(m.imdbUrlEntry)
+	id, err := getIdFromUrl(m.movieInfo.imdbUrl)
+	if err != nil {
+		msg := fmt.Sprintf("Failed to retrieve IMDB id from url : %s", err)
+		dialog.Title("Invalid IMDB url...").Text(msg).ErrorIcon().OkButton().Show()
+		return
+	}
+	m.movieInfo.imdbId = id
 	m.movieInfo.title = m.getEntryText(m.titleEntry)
 	m.movieInfo.subTitle = m.getEntryText(m.subTitleEntry)
 	m.movieInfo.year = m.getEntryText(m.yearEntry)
@@ -121,13 +146,11 @@ func (m *MovieWindow) okButtonClicked() {
 		panic(err)
 	}
 	m.movieInfo.storyLine = storyLine
-
-	// TODO : Fix editing of tags/genres
-	// m.movieInfo.Tags = m.getEntryText(m.genresEntry)
-
+	m.movieInfo.tags = m.getEntryText(m.genresEntry)
 	// Poster is set when clicking on the image
 
 	m.saveCallback(m.movieInfo, m.movie)
+
 	m.window.Hide()
 }
 
@@ -148,22 +171,60 @@ func (m *MovieWindow) onImageClick() {
 	}
 
 	fileName := dialog.GetFilename()
-	bytes, err := os.ReadFile(fileName)
+	data, err := os.ReadFile(fileName)
 	if err != nil {
 		reportError(err)
 		return
 	}
 
-	m.updateImage(bytes)
-	m.movieInfo.image = bytes
+	data = m.checkImageSize(data)
+	if data == nil || len(data) == 0 {
+		return
+	}
+	m.updateImage(data)
+	m.movieInfo.image = data
 	m.movieInfo.imageHasChanged = true
 }
 
+// updateImage updates the GtkImage
 func (m *MovieWindow) updateImage(image []byte) {
+	// Image size: 190x280
 	pix, err := gdk.PixbufNewFromBytesOnly(image)
 	if err != nil {
 		reportError(err)
 		panic(err)
 	}
 	m.posterImage.SetFromPixbuf(pix)
+}
+
+// checkImageSize makes sure that the size of the image is 190x280 and returns it
+func (m *MovieWindow) checkImageSize(data []byte) []byte {
+	pix, err := gdk.PixbufNewFromBytesOnly(data)
+	if err != nil {
+		reportError(err)
+		panic(err)
+	}
+	width, height := pix.GetWidth(), pix.GetHeight()
+	if width != imageWidth || height != imageHeight {
+		return m.resizeImage(data)
+	}
+
+	return data
+}
+
+// resizeImage resizes the image to 190x280 and converts it to a PNG file
+func (m *MovieWindow) resizeImage(data []byte) []byte {
+	img, _, err := image.Decode(bytes.NewReader(data))
+	if err != nil {
+		reportError(err)
+		return nil
+	}
+	imgResized := resize.Resize(imageWidth, imageHeight, img, resize.Lanczos2)
+	buf := new(bytes.Buffer)
+	err = png.Encode(buf, imgResized)
+	if err != nil {
+		reportError(err)
+		return nil
+	}
+	return buf.Bytes()
 }

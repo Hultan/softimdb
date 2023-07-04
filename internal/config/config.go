@@ -9,7 +9,6 @@ import (
 type Config struct {
 	Nas      NasSection      `json:"nas"`
 	Database DatabaseSection `json:"database"`
-	Imdb     ImdbSection     `json:"imdb"`
 }
 
 type NasSection struct {
@@ -25,10 +24,6 @@ type DatabaseSection struct {
 	Port     int    `json:"port"`
 	User     string `json:"user"`
 	Password string `json:"password"`
-}
-
-type ImdbSection struct {
-	ApiKey string `json:"apiKey"`
 }
 
 // LoadConfig : Loads the config
