@@ -7,15 +7,7 @@ import (
 )
 
 type Config struct {
-	Nas      NasSection      `json:"nas"`
 	Database DatabaseSection `json:"database"`
-}
-
-type NasSection struct {
-	Address  string `json:"address"`
-	Folder   string `json:"folder"`
-	User     string `json:"user"`
-	Password string `json:"password"`
 }
 
 type DatabaseSection struct {

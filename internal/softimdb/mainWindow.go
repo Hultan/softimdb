@@ -5,7 +5,9 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"os"
 	"os/exec"
+	"path"
 	"regexp"
 	"runtime"
 	"strconv"
@@ -299,9 +301,7 @@ func (m *MainWindow) getSelectedMovie() *data.Movie {
 }
 
 func (m *MainWindow) openMovieDirectoryInNemo(movie *data.Movie) {
-	path := fmt.Sprintf("smb://%s/%s/%s", m.config.Nas.Address, m.config.Nas.Folder, movie.MoviePath)
-	// path := "smb://192.168.1.100/Videos/" + movie.MoviePath
-	openInNemo(path)
+	openInNemo(fmt.Sprintf("/home/per/media/videos/%s", movie.MoviePath))
 }
 
 func (m *MainWindow) setupToolBar() {
@@ -495,15 +495,36 @@ func (m *MainWindow) fillTagsMenu(menu *gtk.MenuItem) {
 
 func (m *MainWindow) playMovie(movie *data.Movie) {
 	go func() {
-		path := fmt.Sprintf("smb://%s/%s/%s", m.config.Nas.Address, m.config.Nas.Folder, movie.MoviePath)
-		cmd := fmt.Sprintf("find %s -type f -exec du -h {} + | sort -r | head -n1", path)
-		file, err := m.executeCommand("bash", "-c", cmd)
+		moviePath := fmt.Sprintf("/home/per/media/videos/%s", movie.MoviePath)
+		movieName, err := m.getMovieName(moviePath)
 		if err != nil {
 			reportError(err)
-			panic(err)
+			return
 		}
-		openProcess("smplayer", file)
+		if movieName == "" {
+			m.openMovieDirectoryInNemo(movie)
+			return
+		}
+		moviePath = path.Join(moviePath, movieName)
+		openProcess("smplayer", moviePath)
 	}()
+}
+
+func (m *MainWindow) getMovieName(path string) (string, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return "", err
+	}
+	files, err := f.Readdirnames(0)
+	if err != nil {
+		return "", err
+	}
+	for _, file := range files {
+		if strings.HasSuffix(file, "mkv") {
+			return file, nil
+		}
+	}
+	return "", nil
 }
 
 func (m *MainWindow) executeCommand(command string, arguments ...string) (string, error) {

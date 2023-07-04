@@ -78,7 +78,6 @@ func (a *AddWindow) OpenForm(builder *builder.Builder, database *data.Database, 
 		}
 		return
 	}
-	nasManager.Disconnect()
 
 	// Paths list
 	a.list = builder.GetObject("pathsList").(*gtk.ListBox)

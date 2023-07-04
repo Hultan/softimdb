@@ -1,22 +1,24 @@
 package nas
 
 import (
-	"fmt"
-	"net"
-	"path"
+	"io/fs"
+	"path/filepath"
 	"strings"
-
-	"github.com/hirochachacha/go-smb2"
 
 	"github.com/hultan/crypto"
 	"github.com/hultan/softimdb/internal/config"
 	"github.com/hultan/softimdb/internal/data"
 )
 
+const basePath = "/home/per/media/videos/"
+
 // Manager represents a NAS manager.
 type Manager struct {
 	database *data.Database
 }
+
+var dirs = &[]string{}
+var ignoredPaths []*data.IgnoredPath
 
 // ManagerNew creates a new Manager.
 func ManagerNew(database *data.Database) *Manager {
@@ -25,37 +27,21 @@ func ManagerNew(database *data.Database) *Manager {
 	return manager
 }
 
-// Disconnect closes the connection to the NAS.
-func (m Manager) Disconnect() {
-	m.database = nil
-}
-
 // GetMovies returns a list of movie paths on the NAS.
 func (m Manager) GetMovies(config *config.Config) *[]string {
-	session := make(map[string]string)
-	session["Username"] = config.Nas.User
-	session["Password"] = m.getPassword(config.Nas.Password)
-	session["Domain"] = ""
-
-	client := connectClient(config.Nas.Address, config.Nas.Folder, session)
-
-	fs, err := client.Mount(config.Nas.Folder)
-	if err != nil {
-		return nil
-	}
-	defer func() {
-		err = fs.Umount()
-	}()
+	var err error
 
 	// Get ignored paths
 	db := data.DatabaseNew(false, config)
-	ignoredPaths, err := db.GetAllIgnoredPaths()
+	ignoredPaths, err = db.GetAllIgnoredPaths()
 	if err != nil {
 		panic(err)
 	}
 
-	var dirs = &[]string{}
-	readDirectoryEx(fs, ".", ignoredPaths, dirs)
+	err = filepath.WalkDir(basePath, walk)
+	if err != nil {
+		panic(err)
+	}
 
 	// Get movie paths
 	moviePaths, err := db.GetAllMoviePaths()
@@ -68,6 +54,27 @@ func (m Manager) GetMovies(config *config.Config) *[]string {
 	db.CloseDatabase()
 
 	return result
+}
+
+func walk(_ string, d fs.DirEntry, err error) error {
+	if d.Name() == "videos" { // Skip main directory
+		return nil
+	}
+	if err != nil { // Skip on errors
+		return err
+	}
+	if !d.IsDir() { // Skip files
+		return nil
+	}
+
+	// Skip ignored paths
+	ignore := getIgnorePath(ignoredPaths, d.Name())
+	if ignore != nil {
+		return filepath.SkipDir
+	}
+	*dirs = append(*dirs, d.Name())
+
+	return nil
 }
 
 func (m Manager) removeMoviePaths(dirs *[]string, moviePaths *[]string) *[]string {
@@ -105,77 +112,11 @@ func (m Manager) getPassword(encrypted string) string {
 	return strings.Replace(password, "\n", "", -1)
 }
 
-func readDirectoryEx(fs *smb2.Share, pathName string, ignoredPaths []*data.IgnoredPath, dirs *[]string) {
-	// TODO : We should be able to read the dirs this way now? Much faster!!!
-	//f, err := os.Open("/home/per/media/videos/")
-	//if err != nil {
-	//	fmt.Println(1, err)
-	//	return
-	//}
-	//names, err := f.Readdirnames(0)
-	//if err != nil {
-	//	fmt.Println(2, err)
-	//	return
-	//}
-	//fmt.Println(names)
-	//
-	//return
-
-	entries, err := fs.ReadDir(pathName)
-	if err != nil {
-		return
-	}
-
-	for _, entry := range entries {
-		if !entry.IsDir() {
-			continue
-		}
-
-		currentDir := path.Join(pathName, entry.Name())
-
-		ignore := getIgnorePath(ignoredPaths, currentDir)
-		if ignore != nil && ignore.IgnoreCompletely {
-			continue
-		}
-		if ignore == nil {
-			*dirs = append(*dirs, currentDir)
-		}
-		readDirectoryEx(fs, path.Join(pathName, entry.Name()), ignoredPaths, dirs)
-	}
-}
-
 func getIgnorePath(paths []*data.IgnoredPath, name string) *data.IgnoredPath {
 	for i := range paths {
-		if paths[i].Path == name {
+		if strings.Contains(paths[i].Path, name) {
 			return paths[i]
 		}
 	}
 	return nil
-}
-
-func connectClient(host string, _ string, session map[string]string) *smb2.Client {
-	// Checks for a connection on port
-	conn, err := net.Dial("tcp", host+":445")
-	if err != nil {
-		panic(err)
-	}
-
-	// Smb auth
-	d := &smb2.Dialer{
-		Initiator: &smb2.NTLMInitiator{
-			User:     session["Username"],
-			Password: session["Password"],
-			Domain:   session["Domain"],
-		},
-	}
-
-	// Returns a client session
-	client, err := d.Dial(conn)
-	if err != nil {
-		fmt.Println("Connection failed")
-		client.Logoff()
-	} else {
-		fmt.Println("Connection Succeeded")
-	}
-	return client
 }

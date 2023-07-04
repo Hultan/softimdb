@@ -1,10 +1,4 @@
 {
-  "nas": {
-    "address"  : "192.168.1.100",
-    "folder"   : "Videos",
-    "user"     : "per",
-    "password" : "af369291fd685ae5f125f50ef45ca8ed40a07539d438fbb5c7b2e6de67743021bfcda7fd"
-  },
   "database": {
     "server"   : "192.168.1.100",
     "database" : "softimdb",
