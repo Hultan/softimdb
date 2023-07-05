@@ -10,8 +10,6 @@ import (
 	"github.com/hultan/softimdb/internal/data"
 )
 
-const basePath = "/home/per/media/videos/"
-
 // Manager represents a NAS manager.
 type Manager struct {
 	database *data.Database
@@ -38,7 +36,7 @@ func (m Manager) GetMovies(config *config.Config) *[]string {
 		panic(err)
 	}
 
-	err = filepath.WalkDir(basePath, walk)
+	err = filepath.WalkDir(config.RootDir, walk)
 	if err != nil {
 		panic(err)
 	}

@@ -301,7 +301,7 @@ func (m *MainWindow) getSelectedMovie() *data.Movie {
 }
 
 func (m *MainWindow) openMovieDirectoryInNemo(movie *data.Movie) {
-	openInNemo(fmt.Sprintf("/home/per/media/videos/%s", movie.MoviePath))
+	openInNemo(fmt.Sprintf("%s/%s", m.config.RootDir, movie.MoviePath))
 }
 
 func (m *MainWindow) setupToolBar() {
@@ -495,7 +495,7 @@ func (m *MainWindow) fillTagsMenu(menu *gtk.MenuItem) {
 
 func (m *MainWindow) playMovie(movie *data.Movie) {
 	go func() {
-		moviePath := fmt.Sprintf("/home/per/media/videos/%s", movie.MoviePath)
+		moviePath := fmt.Sprintf("%s/%s", m.config.RootDir, movie.MoviePath)
 		movieName, err := m.getMovieName(moviePath)
 		if err != nil {
 			reportError(err)

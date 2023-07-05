@@ -7,6 +7,7 @@ import (
 )
 
 type Config struct {
+	RootDir  string          `json:"rootDir"`
 	Database DatabaseSection `json:"database"`
 }
 

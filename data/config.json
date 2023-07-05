@@ -1,9 +1,10 @@
 {
+  "rootDir": "/home/per/media/videos/",
   "database": {
-    "server"   : "192.168.1.100",
-    "database" : "softimdb",
-    "port"     : 3306,
-    "user"     : "per",
-    "password" : "614bd47b0ee62426012925c9fb790fbcbdf22824a3eb5e8a343bbbd0fdafc01453da405f"
+    "server": "192.168.1.100",
+    "database": "softimdb",
+    "port": 3306,
+    "user": "per",
+    "password": "614bd47b0ee62426012925c9fb790fbcbdf22824a3eb5e8a343bbbd0fdafc01453da405f"
   }
 }
