@@ -16,7 +16,7 @@ func NewBuilder(glade string) *Builder {
 	if err != nil {
 		panic(err)
 	}
-	return &Builder{b}
+	return &Builder{builder: b}
 }
 
 // GetObject : Gets a gtk object by name
