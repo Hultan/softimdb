@@ -30,7 +30,10 @@ func main() {
 		if i >= 0 {
 			url := movie.ImdbUrl[:i+1]
 			movie.ImdbUrl = url
-			database.UpdateMovie(movie, false)
+			err = database.UpdateMovie(movie, false)
+			if err != nil {
+				log.Fatal(err)
+			}
 		}
 	}
 	database.CloseDatabase()

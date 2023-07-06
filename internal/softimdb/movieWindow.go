@@ -8,7 +8,6 @@ import (
 	"image"
 	_ "image/jpeg"
 	"image/png"
-	_ "image/png"
 	"log"
 	"os"
 	"strconv"

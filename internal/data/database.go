@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
+	"log"
 
 	"github.com/hultan/crypto"
 	"github.com/hultan/softimdb/internal/config"
@@ -36,7 +37,10 @@ func (d *Database) CloseDatabase() {
 	}
 
 	sqlDB, _ := d.db.DB()
-	sqlDB.Close()
+	err := sqlDB.Close()
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	d.db = nil
 
