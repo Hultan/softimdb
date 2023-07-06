@@ -2,6 +2,7 @@ package config
 
 import (
 	"encoding/json"
+	"log"
 	"os"
 )
 
@@ -25,7 +26,12 @@ func LoadConfig(path string) (*Config, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer configFile.Close()
+	defer func() {
+		err = configFile.Close()
+		if err != nil {
+			log.Fatal(err)
+		}
+	}()
 
 	config := &Config{}
 	err = json.NewDecoder(configFile).Decode(config)
