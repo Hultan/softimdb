@@ -8,7 +8,7 @@ import (
 	"github.com/hultan/softimdb/internal/data"
 )
 
-type MovieInfo struct {
+type movieInfo struct {
 	title     string
 	subTitle  string
 	storyLine string
@@ -27,8 +27,8 @@ type MovieInfo struct {
 	imageHasChanged bool
 }
 
-func newMovieInfoFromDatabase(movie *data.Movie) (*MovieInfo, error) {
-	return &MovieInfo{
+func newMovieInfoFromDatabase(movie *data.Movie) (*movieInfo, error) {
+	return &movieInfo{
 		title:           movie.Title,
 		subTitle:        movie.SubTitle,
 		storyLine:       movie.StoryLine,
@@ -45,7 +45,7 @@ func newMovieInfoFromDatabase(movie *data.Movie) (*MovieInfo, error) {
 	}, nil
 }
 
-func (m *MovieInfo) toDatabase(movie *data.Movie) {
+func (m *movieInfo) toDatabase(movie *data.Movie) {
 	movie.Title = m.title
 	movie.SubTitle = m.subTitle
 	movie.StoryLine = m.storyLine
@@ -64,7 +64,7 @@ func (m *MovieInfo) toDatabase(movie *data.Movie) {
 	}
 }
 
-func (m *MovieInfo) getImdbRating() float32 {
+func (m *movieInfo) getImdbRating() float32 {
 	rating, err := strconv.ParseFloat(m.imdbRating, 64)
 	if err != nil {
 		return 0.0
@@ -72,7 +72,7 @@ func (m *MovieInfo) getImdbRating() float32 {
 	return float32(rating)
 }
 
-func (m *MovieInfo) getYear() int {
+func (m *movieInfo) getYear() int {
 	year, err := strconv.Atoi(m.year)
 	if err != nil {
 		return 0
@@ -80,7 +80,7 @@ func (m *MovieInfo) getYear() int {
 	return year
 }
 
-func (m *MovieInfo) getTags(tags string) []data.Tag {
+func (m *movieInfo) getTags(tags string) []data.Tag {
 	var result []data.Tag
 	tagItems := strings.Split(tags, ",")
 	for _, item := range tagItems {

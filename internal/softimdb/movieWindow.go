@@ -19,7 +19,7 @@ import (
 	"github.com/hultan/softimdb/internal/data"
 )
 
-type MovieWindow struct {
+type movieWindow struct {
 	pathEntry          *gtk.Entry
 	imdbUrlEntry       *gtk.Entry
 	titleEntry         *gtk.Entry
@@ -32,20 +32,20 @@ type MovieWindow struct {
 	genresEntry        *gtk.Entry
 	posterImage        *gtk.Image
 
-	movieInfo *MovieInfo
+	movieInfo *movieInfo
 	movie     *data.Movie
 
-	saveCallback func(*MovieInfo, *data.Movie)
+	saveCallback func(*movieInfo, *data.Movie)
 }
 
-func NewMovieWindow(info *MovieInfo, movie *data.Movie, saveCallback func(*MovieInfo, *data.Movie)) *MovieWindow {
+func newMovieWindow(info *movieInfo, movie *data.Movie, saveCallback func(*movieInfo, *data.Movie)) *movieWindow {
 	if info == nil {
-		info = &MovieInfo{}
+		info = &movieInfo{}
 	}
-	return &MovieWindow{movieInfo: info, movie: movie, saveCallback: saveCallback}
+	return &movieWindow{movieInfo: info, movie: movie, saveCallback: saveCallback}
 }
 
-func (m *MovieWindow) OpenForm(builder *builder.Builder, parent gtk.IWindow) {
+func (m *movieWindow) openForm(builder *builder.Builder, parent gtk.IWindow) {
 	// Get the extra window from glade
 	wnd := builder.GetObject("movieWindow").(*gtk.Window)
 
@@ -117,7 +117,7 @@ func (m *MovieWindow) OpenForm(builder *builder.Builder, parent gtk.IWindow) {
 	m.imdbUrlEntry.GrabFocus()
 }
 
-func (m *MovieWindow) getEntryText(entry *gtk.Entry) string {
+func (m *movieWindow) getEntryText(entry *gtk.Entry) string {
 	text, err := entry.GetText()
 	if err != nil {
 		return ""
@@ -125,7 +125,7 @@ func (m *MovieWindow) getEntryText(entry *gtk.Entry) string {
 	return text
 }
 
-func (m *MovieWindow) saveMovie() {
+func (m *movieWindow) saveMovie() {
 	// Fill fields
 	m.movieInfo.path = m.getEntryText(m.pathEntry)
 	m.movieInfo.imdbUrl = m.getEntryText(m.imdbUrlEntry)
@@ -176,7 +176,7 @@ func (m *MovieWindow) saveMovie() {
 	m.saveCallback(m.movieInfo, m.movie)
 }
 
-func (m *MovieWindow) onImageClick() {
+func (m *movieWindow) onImageClick() {
 	dlg, err := gtk.FileChooserDialogNewWith2Buttons(
 		"Choose an image...", nil, gtk.FILE_CHOOSER_ACTION_OPEN, "Ok", gtk.RESPONSE_OK,
 		"Cancel", gtk.RESPONSE_CANCEL,
@@ -209,7 +209,7 @@ func (m *MovieWindow) onImageClick() {
 }
 
 // updateImage updates the GtkImage
-func (m *MovieWindow) updateImage(image []byte) {
+func (m *movieWindow) updateImage(image []byte) {
 	// Image size: 190x280
 	pix, err := gdk.PixbufNewFromBytesOnly(image)
 	if err != nil {
@@ -220,7 +220,7 @@ func (m *MovieWindow) updateImage(image []byte) {
 }
 
 // checkImageSize makes sure that the size of the image is 190x280 and returns it
-func (m *MovieWindow) checkImageSize(data []byte) []byte {
+func (m *movieWindow) checkImageSize(data []byte) []byte {
 	pix, err := gdk.PixbufNewFromBytesOnly(data)
 	if err != nil {
 		reportError(err)
@@ -235,7 +235,7 @@ func (m *MovieWindow) checkImageSize(data []byte) []byte {
 }
 
 // resizeImage resizes the image to 190x280 and converts it to a PNG file
-func (m *MovieWindow) resizeImage(imgData []byte) []byte {
+func (m *movieWindow) resizeImage(imgData []byte) []byte {
 	img, _, err := image.Decode(bytes.NewReader(imgData))
 	if err != nil {
 		reportError(err)

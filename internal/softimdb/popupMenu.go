@@ -9,8 +9,8 @@ import (
 	"github.com/hultan/softimdb/internal/data"
 )
 
-type PopupMenu struct {
-	mainWindow *MainWindow
+type popupMenu struct {
+	mainWindow *mainWindow
 	popupMenu  *gtk.Menu
 
 	popupTags          *gtk.MenuItem
@@ -20,13 +20,13 @@ type PopupMenu struct {
 	popupPlayMovie     *gtk.MenuItem
 }
 
-func NewPopupMenu(window *MainWindow) *PopupMenu {
-	menu := new(PopupMenu)
+func newPopupMenu(window *mainWindow) *popupMenu {
+	menu := new(popupMenu)
 	menu.mainWindow = window
 	return menu
 }
 
-func (p *PopupMenu) Setup() {
+func (p *popupMenu) setup() {
 	p.popupMenu = p.mainWindow.builder.GetObject("popupMenu").(*gtk.Menu)
 
 	p.popupTags = p.mainWindow.builder.GetObject("popupTags").(*gtk.MenuItem)
@@ -38,7 +38,7 @@ func (p *PopupMenu) Setup() {
 	p.setupEvents()
 }
 
-func (p *PopupMenu) setupEvents() {
+func (p *popupMenu) setupEvents() {
 	_ = p.mainWindow.window.Connect(
 		"button-release-event", func(window *gtk.ApplicationWindow, event *gdk.Event) {
 			buttonEvent := gdk.EventButtonNewFromEvent(event)
@@ -131,11 +131,11 @@ func (p *PopupMenu) setupEvents() {
 	)
 }
 
-func (p *PopupMenu) addTag(movie *data.Movie, tag *data.Tag) {
+func (p *popupMenu) addTag(movie *data.Movie, tag *data.Tag) {
 	movie.Tags = append(movie.Tags, *tag)
 }
 
-func (p *PopupMenu) removeTag(movie *data.Movie, tag *data.Tag) {
+func (p *popupMenu) removeTag(movie *data.Movie, tag *data.Tag) {
 	for i, t := range movie.Tags {
 		if t.Id == tag.Id {
 			movie.Tags = append(movie.Tags[:i], movie.Tags[i+1:]...)

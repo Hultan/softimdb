@@ -11,7 +11,7 @@ import (
 	"log"
 )
 
-type AddWindow struct {
+type addMovieWindow struct {
 	window         *gtk.Window
 	list           *gtk.ListBox
 	moviePathEntry *gtk.Entry
@@ -20,12 +20,12 @@ type AddWindow struct {
 	builder        *builder.Builder
 }
 
-func AddWindowNew() *AddWindow {
-	a := new(AddWindow)
+func newAddMovieWindow() *addMovieWindow {
+	a := new(addMovieWindow)
 	return a
 }
 
-func (a *AddWindow) OpenForm(builder *builder.Builder, database *data.Database, config *config.Config) {
+func (a *addMovieWindow) openForm(builder *builder.Builder, database *data.Database, config *config.Config) {
 	a.builder = builder
 	if a.window == nil {
 		// Get the extra window from glade
@@ -33,7 +33,6 @@ func (a *AddWindow) OpenForm(builder *builder.Builder, database *data.Database, 
 
 		// Set up the extra window
 		addWindow.SetTitle("Add movie window")
-		addWindow.HideOnDelete()
 		addWindow.SetModal(true)
 		addWindow.SetKeepAbove(true)
 		addWindow.SetPosition(gtk.WIN_POS_CENTER_ALWAYS)
@@ -89,11 +88,11 @@ func (a *AddWindow) OpenForm(builder *builder.Builder, database *data.Database, 
 	a.window.ShowAll()
 }
 
-func (a *AddWindow) closeWindow() {
+func (a *addMovieWindow) closeWindow() {
 	a.window.Hide()
 }
 
-func (a *AddWindow) fillList(list *gtk.ListBox, paths []string) {
+func (a *addMovieWindow) fillList(list *gtk.ListBox, paths []string) {
 	for i := range paths {
 		label, err := gtk.LabelNew(paths[i])
 		if err != nil {
@@ -111,7 +110,7 @@ func (a *AddWindow) fillList(list *gtk.ListBox, paths []string) {
 	a.rowActivated()
 }
 
-func (a *AddWindow) ignorePathButtonClicked() {
+func (a *addMovieWindow) ignorePathButtonClicked() {
 	msg := "Are you sure you want to ignore this folder?"
 	response, _ := dialog.Title(applicationTitle).Text(msg).
 		QuestionIcon().YesNoButtons().Show()
@@ -144,7 +143,7 @@ func (a *AddWindow) ignorePathButtonClicked() {
 	}
 }
 
-func (a *AddWindow) addMovieButtonClicked() {
+func (a *addMovieWindow) addMovieButtonClicked() {
 	moviePath := a.getEntryText(a.moviePathEntry)
 	if moviePath == "" {
 		_, err := dialog.Title(applicationTitle).Text("Movie path cannot be empty").
@@ -157,16 +156,16 @@ func (a *AddWindow) addMovieButtonClicked() {
 		return
 	}
 
-	info := &MovieInfo{
+	info := &movieInfo{
 		path: moviePath,
 	}
 
 	// Open movie dialog here
-	win := NewMovieWindow(info, nil, a.saveMovieInfo)
-	win.OpenForm(a.builder, a.window)
+	win := newMovieWindow(info, nil, a.saveMovieInfo)
+	win.openForm(a.builder, a.window)
 }
 
-func (a *AddWindow) saveMovieInfo(info *MovieInfo, _ *data.Movie) {
+func (a *addMovieWindow) saveMovieInfo(info *movieInfo, _ *data.Movie) {
 	newMovie := &data.Movie{}
 	info.toDatabase(newMovie)
 	err := a.database.InsertMovie(newMovie)
@@ -186,7 +185,7 @@ func (a *AddWindow) saveMovieInfo(info *MovieInfo, _ *data.Movie) {
 	a.moviePathEntry.SetText("")
 }
 
-func (a *AddWindow) getEntryText(entry *gtk.Entry) string {
+func (a *addMovieWindow) getEntryText(entry *gtk.Entry) string {
 	text, err := entry.GetText()
 	if err != nil {
 		return ""
@@ -194,7 +193,7 @@ func (a *AddWindow) getEntryText(entry *gtk.Entry) string {
 	return text
 }
 
-func (a *AddWindow) rowActivated() {
+func (a *addMovieWindow) rowActivated() {
 	row := a.list.GetSelectedRow()
 	if row == nil {
 		return
@@ -211,7 +210,7 @@ func (a *AddWindow) rowActivated() {
 	a.moviePathEntry.SetText(path)
 }
 
-func (a *AddWindow) getTags(tags []string) []data.Tag {
+func (a *addMovieWindow) getTags(tags []string) []data.Tag {
 	var dataTags []data.Tag
 
 	for _, tag := range tags {
