@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"gorm.io/gorm"
 	"io"
+	"log"
 	"os"
 	"path"
 )
@@ -63,7 +64,12 @@ func (d *Database) storeCachedImage(image *Image, cachePath string) {
 	if err != nil {
 		return
 	}
-	defer file.Close()
+	defer func() {
+		err = file.Close()
+		if err != nil {
+			log.Print(err)
+		}
+	}()
 
 	_, err = file.Write(image.Data)
 	if err != nil {
@@ -85,7 +91,12 @@ func (d *Database) getCachedImage(image *Image, cachePath string) error {
 	if err != nil {
 		return err
 	}
-	defer file.Close()
+	defer func() {
+		err = file.Close()
+		if err != nil {
+			log.Print(err)
+		}
+	}()
 
 	data, err := io.ReadAll(file)
 	if err != nil {

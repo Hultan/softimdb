@@ -27,7 +27,7 @@ func main() {
 
 	mainForm := softimdb.NewMainWindow()
 	// Hook up the activate event handler
-	_ = application.Connect("activate", mainForm.OpenMainWindow)
+	_ = application.Connect("activate", mainForm.Open)
 
 	// Start the application (and exit when it is done)
 	os.Exit(application.Run(nil))

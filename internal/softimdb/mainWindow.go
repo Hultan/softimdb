@@ -29,8 +29,6 @@ type mainWindow struct {
 
 	application                           *gtk.Application
 	window                                *gtk.ApplicationWindow
-	aboutDialog                           *gtk.AboutDialog
-	addWindow                             *addMovieWindow
 	movieList                             *gtk.FlowBox
 	storyLineLabel                        *gtk.Label
 	searchEntry                           *gtk.Entry
@@ -58,8 +56,8 @@ func NewMainWindow() *mainWindow {
 	return mainForm
 }
 
-// OpenMainWindow : Opens the mainWindow window
-func (m *mainWindow) OpenMainWindow(app *gtk.Application) {
+// Open : Opens the mainWindow window
+func (m *mainWindow) Open(app *gtk.Application) {
 	m.application = app
 
 	// Create a new softBuilder
@@ -123,20 +121,10 @@ func (m *mainWindow) OpenMainWindow(app *gtk.Application) {
 func (m *mainWindow) closeMainWindow() {
 	m.database.CloseDatabase()
 	m.window.Close()
-	if m.addWindow != nil {
-		m.addWindow.window.Close()
-	}
-	if m.aboutDialog != nil {
-		m.aboutDialog.Close()
-	}
-
 	m.movieList = nil
 	m.storyLineLabel = nil
-	m.addWindow = nil
-	m.aboutDialog = nil
 	m.window = nil
 	m.builder = nil
-
 	m.application.Quit()
 }
 
@@ -326,44 +314,36 @@ func (m *mainWindow) setupToolBar() {
 }
 
 func (m *mainWindow) openAboutDialog() {
-	if m.aboutDialog == nil {
-		about := m.builder.GetObject("aboutDialog").(*gtk.AboutDialog)
+	about := m.builder.GetObject("aboutDialog").(*gtk.AboutDialog)
 
-		about.SetDestroyWithParent(true)
-		about.SetTransientFor(m.window)
-		about.SetProgramName(applicationTitle)
-		about.SetComments("An application...")
-		about.SetVersion(applicationVersion)
-		about.SetCopyright(applicationCopyRight)
+	about.SetDestroyWithParent(true)
+	about.SetTransientFor(m.window)
+	about.SetProgramName(applicationTitle)
+	about.SetComments("An application...")
+	about.SetVersion(applicationVersion)
+	about.SetCopyright(applicationCopyRight)
 
-		image, err := gdk.PixbufNewFromBytesOnly(applicationIcon)
-		if err == nil {
-			about.SetLogo(image)
-		}
-
-		about.SetModal(true)
-		about.SetPosition(gtk.WIN_POS_CENTER)
-
-		_ = about.Connect(
-			"response", func(dialog *gtk.AboutDialog, responseId gtk.ResponseType) {
-				if responseId == gtk.RESPONSE_CANCEL || responseId == gtk.RESPONSE_DELETE_EVENT {
-					about.Hide()
-				}
-			},
-		)
-
-		m.aboutDialog = about
+	image, err := gdk.PixbufNewFromBytesOnly(applicationIcon)
+	if err == nil {
+		about.SetLogo(image)
 	}
 
-	m.aboutDialog.ShowAll()
+	about.SetModal(true)
+
+	_ = about.Connect(
+		"response", func(dialog *gtk.AboutDialog, responseId gtk.ResponseType) {
+			if responseId == gtk.RESPONSE_CANCEL || responseId == gtk.RESPONSE_DELETE_EVENT {
+				about.Hide()
+			}
+		},
+	)
+
+	about.ShowAll()
 }
 
 func (m *mainWindow) openAddWindowClicked() {
-	if m.addWindow == nil {
-		m.addWindow = newAddMovieWindow()
-	}
-
-	m.addWindow.openForm(m.builder, m.database, m.config)
+	win := newAddMovieWindow()
+	win.openForm(m.builder, m.database, m.config)
 }
 
 func (m *mainWindow) refreshButtonClicked() {
@@ -481,7 +461,7 @@ func (m *mainWindow) editMovieInfo() {
 
 	// Open movie dialog here
 	win := newMovieWindow(info, selectedMovie, m.saveMovieInfo)
-	win.openForm(m.builder, m.window)
+	win.open(m.builder, m.window)
 }
 
 func (m *mainWindow) saveMovieInfo(movieInfo *movieInfo, movie *data.Movie) {
