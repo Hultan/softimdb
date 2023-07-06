@@ -2,6 +2,7 @@ package nas
 
 import (
 	"io/fs"
+	"log"
 	"path/filepath"
 	"strings"
 
@@ -33,18 +34,18 @@ func (m Manager) GetMovies(config *config.Config) *[]string {
 	db := data.DatabaseNew(false, config)
 	ignoredPaths, err = db.GetAllIgnoredPaths()
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 
 	err = filepath.WalkDir(config.RootDir, walk)
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 
 	// Get movie paths
 	moviePaths, err := db.GetAllMoviePaths()
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 
 	result := m.removeMoviePaths(dirs, moviePaths)
@@ -105,7 +106,7 @@ func (m Manager) getPassword(encrypted string) string {
 	c := &crypto.Crypto{}
 	password, err := c.Decrypt(encrypted)
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 	return strings.Replace(password, "\n", "", -1)
 }

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log"
 	"strings"
 
 	"github.com/hultan/softimdb/internal/config"
@@ -13,7 +14,7 @@ func main() {
 	// Load config file
 	cnf, err := config.LoadConfig(configFile)
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 
 	// Open database
@@ -21,7 +22,7 @@ func main() {
 
 	movies, err := database.GetAllMovies("", -1, "id asc")
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 	for i := range movies {
 		movie := movies[i]

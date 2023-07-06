@@ -2,7 +2,6 @@ package data
 
 import (
 	"fmt"
-
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 
@@ -61,7 +60,7 @@ func (d *Database) openDatabase() (*gorm.DB, error) {
 	c := &crypto.Crypto{}
 	passwordDecrypted, err := c.Decrypt(d.config.Database.Password)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	var connectionString = fmt.Sprintf(

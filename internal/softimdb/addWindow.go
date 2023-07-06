@@ -8,13 +8,13 @@ import (
 	"github.com/hultan/softimdb/internal/config"
 	"github.com/hultan/softimdb/internal/data"
 	"github.com/hultan/softimdb/internal/nas"
+	"log"
 )
 
 type AddWindow struct {
 	window         *gtk.Window
 	list           *gtk.ListBox
 	moviePathEntry *gtk.Entry
-	movieWindow    *MovieWindow
 	database       *data.Database
 	config         *config.Config
 	builder        *builder.Builder
@@ -96,11 +96,11 @@ func (a *AddWindow) closeWindow() {
 func (a *AddWindow) fillList(list *gtk.ListBox, paths []string) {
 	for i := range paths {
 		label, err := gtk.LabelNew(paths[i])
-		label.SetHAlign(gtk.ALIGN_START)
 		if err != nil {
 			reportError(err)
-			panic(err)
+			log.Fatal(err)
 		}
+		label.SetHAlign(gtk.ALIGN_START)
 		list.Add(label)
 	}
 	// Select the first row, this won't crash if
@@ -113,11 +113,8 @@ func (a *AddWindow) fillList(list *gtk.ListBox, paths []string) {
 
 func (a *AddWindow) ignorePathButtonClicked() {
 	msg := "Are you sure you want to ignore this folder?"
-	response, err := dialog.Title(applicationTitle).Text(msg).
+	response, _ := dialog.Title(applicationTitle).Text(msg).
 		QuestionIcon().YesNoButtons().Show()
-	if err != nil {
-		panic(err)
-	}
 	if response == gtk.RESPONSE_NO {
 		return
 	}
@@ -167,7 +164,6 @@ func (a *AddWindow) addMovieButtonClicked() {
 	// Open movie dialog here
 	win := NewMovieWindow(info, nil, a.saveMovieInfo)
 	win.OpenForm(a.builder, a.window)
-	a.movieWindow = win
 }
 
 func (a *AddWindow) saveMovieInfo(info *MovieInfo, _ *data.Movie) {

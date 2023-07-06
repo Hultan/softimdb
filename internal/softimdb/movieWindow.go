@@ -9,6 +9,7 @@ import (
 	_ "image/jpeg"
 	"image/png"
 	_ "image/png"
+	"log"
 	"os"
 	"strconv"
 
@@ -20,7 +21,6 @@ import (
 )
 
 type MovieWindow struct {
-	window             *gtk.Window
 	pathEntry          *gtk.Entry
 	imdbUrlEntry       *gtk.Entry
 	titleEntry         *gtk.Entry
@@ -47,71 +47,73 @@ func NewMovieWindow(info *MovieInfo, movie *data.Movie, saveCallback func(*Movie
 }
 
 func (m *MovieWindow) OpenForm(builder *builder.Builder, parent gtk.IWindow) {
-	if m.window == nil {
-		// Get the extra window from glade
-		movieWindow := builder.GetObject("movieWindow").(*gtk.Window)
+	// Get the extra window from glade
+	wnd := builder.GetObject("movieWindow").(*gtk.Window)
 
-		// Set up the extra window
-		movieWindow.SetTitle("Movie info window")
-		movieWindow.HideOnDelete()
-		movieWindow.SetTransientFor(parent)
-		movieWindow.SetModal(true)
-		movieWindow.SetKeepAbove(true)
-		movieWindow.SetPosition(gtk.WIN_POS_CENTER_ALWAYS)
+	// Set up the extra window
+	wnd.SetTitle("Movie info window")
+	wnd.SetTransientFor(parent)
+	wnd.SetModal(true)
+	wnd.SetKeepAbove(true)
+	wnd.SetPosition(gtk.WIN_POS_CENTER_ALWAYS)
 
-		// Hook up the destroy event
-		_ = movieWindow.Connect("delete-event", m.cancelButtonClicked)
+	// Hook up the destroy event
+	_ = wnd.Connect("delete-event", func() {
+		wnd.Destroy()
+		wnd = nil
+	})
 
-		// Buttons
-		button := builder.GetObject("okButton").(*gtk.Button)
-		_ = button.Connect("clicked", m.okButtonClicked)
-		button = builder.GetObject("cancelButton").(*gtk.Button)
-		_ = button.Connect("clicked", m.cancelButtonClicked)
+	// Buttons
+	button := builder.GetObject("okButton").(*gtk.Button)
+	_ = button.Connect("clicked", func() {
+		m.saveMovie()
+		wnd.Destroy()
+		wnd = nil
+	})
+	button = builder.GetObject("cancelButton").(*gtk.Button)
+	_ = button.Connect("clicked", func() {
+		wnd.Destroy()
+		wnd = nil
+	})
 
-		// Entries and images
-		m.imdbUrlEntry = builder.GetObject("imdbUrlEntry").(*gtk.Entry)
-		m.pathEntry = builder.GetObject("pathEntry").(*gtk.Entry)
-		m.titleEntry = builder.GetObject("titleEntry").(*gtk.Entry)
-		m.subTitleEntry = builder.GetObject("subTitleEntry").(*gtk.Entry)
-		m.yearEntry = builder.GetObject("yearEntry").(*gtk.Entry)
-		m.myRatingEntry = builder.GetObject("myRatingEntry").(*gtk.Entry)
-		m.toWatchCheckButton = builder.GetObject("toWatchCheckButton").(*gtk.CheckButton)
-		m.storyLineEntry = builder.GetObject("storyLineTextView").(*gtk.TextView)
-		m.ratingEntry = builder.GetObject("ratingEntry").(*gtk.Entry)
-		m.genresEntry = builder.GetObject("genresEntry").(*gtk.Entry)
-		m.posterImage = builder.GetObject("posterImage").(*gtk.Image)
-		eventBox := builder.GetObject("imageEventBox").(*gtk.EventBox)
-		eventBox.Connect("button-press-event", m.onImageClick)
+	// Entries and images
+	m.imdbUrlEntry = builder.GetObject("imdbUrlEntry").(*gtk.Entry)
+	m.pathEntry = builder.GetObject("pathEntry").(*gtk.Entry)
+	m.titleEntry = builder.GetObject("titleEntry").(*gtk.Entry)
+	m.subTitleEntry = builder.GetObject("subTitleEntry").(*gtk.Entry)
+	m.yearEntry = builder.GetObject("yearEntry").(*gtk.Entry)
+	m.myRatingEntry = builder.GetObject("myRatingEntry").(*gtk.Entry)
+	m.toWatchCheckButton = builder.GetObject("toWatchCheckButton").(*gtk.CheckButton)
+	m.storyLineEntry = builder.GetObject("storyLineTextView").(*gtk.TextView)
+	m.ratingEntry = builder.GetObject("ratingEntry").(*gtk.Entry)
+	m.genresEntry = builder.GetObject("genresEntry").(*gtk.Entry)
+	m.posterImage = builder.GetObject("posterImage").(*gtk.Image)
+	eventBox := builder.GetObject("imageEventBox").(*gtk.EventBox)
+	eventBox.Connect("button-press-event", m.onImageClick)
 
-		// Fill form with data
-		m.imdbUrlEntry.SetText(m.movieInfo.imdbUrl)
-		m.pathEntry.SetText(m.movieInfo.path)
-		m.titleEntry.SetText(m.movieInfo.title)
-		m.subTitleEntry.SetText(m.movieInfo.subTitle)
-		m.yearEntry.SetText(fmt.Sprintf("%d", m.movieInfo.getYear()))
-		m.myRatingEntry.SetText(fmt.Sprintf("%d", m.movieInfo.myRating))
-		m.toWatchCheckButton.SetActive(m.movieInfo.toWatch)
-		buffer, err := gtk.TextBufferNew(nil)
-		if err != nil {
-			reportError(err)
-			panic(err)
-		}
-		buffer.SetText(m.movieInfo.storyLine)
-		m.storyLineEntry.SetBuffer(buffer)
-		m.ratingEntry.SetText(m.movieInfo.imdbRating)
-		m.genresEntry.SetText(m.movieInfo.tags)
-
-		// Poster
-		if m.movieInfo.image != nil {
-			m.updateImage(m.movieInfo.image)
-		}
-
-		// Store reference to database and window
-		m.window = movieWindow
+	// Fill form with data
+	m.imdbUrlEntry.SetText(m.movieInfo.imdbUrl)
+	m.pathEntry.SetText(m.movieInfo.path)
+	m.titleEntry.SetText(m.movieInfo.title)
+	m.subTitleEntry.SetText(m.movieInfo.subTitle)
+	m.yearEntry.SetText(fmt.Sprintf("%d", m.movieInfo.getYear()))
+	m.myRatingEntry.SetText(fmt.Sprintf("%d", m.movieInfo.myRating))
+	m.toWatchCheckButton.SetActive(m.movieInfo.toWatch)
+	buffer, err := gtk.TextBufferNew(nil)
+	if err != nil {
+		reportError(err)
+		log.Fatal(err)
+	}
+	buffer.SetText(m.movieInfo.storyLine)
+	m.storyLineEntry.SetBuffer(buffer)
+	m.ratingEntry.SetText(m.movieInfo.imdbRating)
+	m.genresEntry.SetText(m.movieInfo.tags)
+	if m.movieInfo.image != nil {
+		m.updateImage(m.movieInfo.image)
 	}
 
 	// Show the window
-	m.window.ShowAll()
+	wnd.ShowAll()
 
 	m.imdbUrlEntry.GrabFocus()
 }
@@ -124,7 +126,7 @@ func (m *MovieWindow) getEntryText(entry *gtk.Entry) string {
 	return text
 }
 
-func (m *MovieWindow) okButtonClicked() {
+func (m *MovieWindow) saveMovie() {
 	// Fill fields
 	m.movieInfo.path = m.getEntryText(m.pathEntry)
 	m.movieInfo.imdbUrl = m.getEntryText(m.imdbUrlEntry)
@@ -161,34 +163,28 @@ func (m *MovieWindow) okButtonClicked() {
 	buffer, err := m.storyLineEntry.GetBuffer()
 	if err != nil {
 		reportError(err)
-		panic(err)
+		log.Fatal(err)
 	}
 	storyLine, err := buffer.GetText(buffer.GetStartIter(), buffer.GetEndIter(), false)
 	if err != nil {
 		reportError(err)
-		panic(err)
+		log.Fatal(err)
 	}
 	m.movieInfo.storyLine = storyLine
 	m.movieInfo.tags = m.getEntryText(m.genresEntry)
 	// Poster is set when clicking on the image
 
 	m.saveCallback(m.movieInfo, m.movie)
-
-	m.window.Close()
-}
-
-func (m *MovieWindow) cancelButtonClicked() {
-	m.window.Close()
 }
 
 func (m *MovieWindow) onImageClick() {
 	dlg, err := gtk.FileChooserDialogNewWith2Buttons(
-		"Choose an image...", m.window, gtk.FILE_CHOOSER_ACTION_OPEN, "Ok", gtk.RESPONSE_OK,
+		"Choose an image...", nil, gtk.FILE_CHOOSER_ACTION_OPEN, "Ok", gtk.RESPONSE_OK,
 		"Cancel", gtk.RESPONSE_CANCEL,
 	)
 	if err != nil {
 		reportError(err)
-		panic(err)
+		return
 	}
 	defer dlg.Destroy()
 
@@ -219,7 +215,7 @@ func (m *MovieWindow) updateImage(image []byte) {
 	pix, err := gdk.PixbufNewFromBytesOnly(image)
 	if err != nil {
 		reportError(err)
-		panic(err)
+		return
 	}
 	m.posterImage.SetFromPixbuf(pix)
 }
@@ -229,7 +225,7 @@ func (m *MovieWindow) checkImageSize(data []byte) []byte {
 	pix, err := gdk.PixbufNewFromBytesOnly(data)
 	if err != nil {
 		reportError(err)
-		panic(err)
+		log.Fatal(err)
 	}
 	width, height := pix.GetWidth(), pix.GetHeight()
 	if width != imageWidth || height != imageHeight {

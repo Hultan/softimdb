@@ -3,6 +3,7 @@ package softimdb
 import (
 	"github.com/gotk3/gotk3/gdk"
 	"github.com/gotk3/gotk3/gtk"
+	"log"
 	"path"
 
 	"github.com/hultan/softimdb/internal/data"
@@ -50,19 +51,19 @@ func (p *PopupMenu) setupEvents() {
 				menu, err := gtk.MenuNew()
 				if err != nil {
 					reportError(err)
-					panic(err)
+					log.Fatal(err)
 				} else {
 					tags, err := p.mainWindow.database.GetTags()
 					if err != nil {
 						reportError(err)
-						panic(err)
+						return
 					}
 					for i := 0; i < len(tags); i++ {
 						tag := tags[i]
 						item, err := gtk.CheckMenuItemNew()
 						if err != nil {
 							reportError(err)
-							panic(err)
+							log.Fatal(err)
 						}
 						item.SetLabel(tag.Name)
 

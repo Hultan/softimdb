@@ -36,7 +36,6 @@ type MainWindow struct {
 	searchButton                          *gtk.ToolButton
 	popupMenu                             *PopupMenu
 	countLabel                            *gtk.Label
-	movieWindow                           *MovieWindow
 	database                              *data.Database
 	config                                *config.Config
 	menuNoTagItem                         *gtk.RadioMenuItem
@@ -222,7 +221,7 @@ func (m *MainWindow) fillMovieList(searchFor string, categoryId int, sortBy stri
 	movies, err := m.database.GetAllMovies(searchFor, categoryId, sortBy)
 	if err != nil {
 		reportError(err)
-		panic(err)
+		log.Fatal(err)
 	}
 
 	listHelper := ListHelperNew()
@@ -389,7 +388,7 @@ func (m *MainWindow) searchButtonClicked() {
 	search, err := m.searchEntry.GetText()
 	if err != nil {
 		reportError(err)
-		panic(err)
+		log.Fatal(err)
 	}
 	search = strings.Trim(search, " ")
 	searchFor = search
@@ -482,7 +481,6 @@ func (m *MainWindow) editMovieInfo() {
 	// Open movie dialog here
 	win := NewMovieWindow(movieInfo, selectedMovie, m.saveMovieInfo)
 	win.OpenForm(m.builder, m.window)
-	m.movieWindow = win
 }
 
 func (m *MainWindow) saveMovieInfo(movieInfo *MovieInfo, movie *data.Movie) {
@@ -507,9 +505,6 @@ func (m *MainWindow) saveMovieInfo(movieInfo *MovieInfo, movie *data.Movie) {
 			return
 		}
 	}
-
-	m.movieWindow.window.Destroy()
-	m.movieWindow = nil
 }
 
 func (m *MainWindow) openIMDB() {
