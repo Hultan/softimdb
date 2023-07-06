@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/gotk3/gotk3/gdk"
 	"github.com/gotk3/gotk3/gtk"
+	"github.com/hultan/dialog"
 	"log"
 	"path"
 	"strconv"
@@ -493,17 +494,17 @@ func (m *mainWindow) saveMovieInfo(movieInfo *movieInfo, movie *data.Movie) {
 	}
 
 	if movieInfo.imageHasChanged {
-		image, err := m.database.GetImage(movie.ImageId)
+		err = m.database.UpdateImage(movie, movieInfo.image)
 		if err != nil {
 			reportError(err)
 			return
 		}
-		image.Data = movieInfo.image
-		err = m.database.UpdateImage(image)
-		if err != nil {
-			reportError(err)
-			return
-		}
+		// TODO : Remove after update cache
+		_, _ = dialog.
+			Title("Restart needed!").
+			Text("You need to restart the application to see the image change.").
+			OkButton().
+			Show()
 	}
 }
 

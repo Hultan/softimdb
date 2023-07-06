@@ -2,6 +2,7 @@ package data
 
 import (
 	"fmt"
+	"gorm.io/gorm"
 	"io"
 	"os"
 	"path"
@@ -107,15 +108,34 @@ func (d *Database) InsertImage(image *Image) error {
 	return nil
 }
 
-// UpdateImage updates an image.
-func (d *Database) UpdateImage(image *Image) error {
+// UpdateImage removes an image from the database.
+func (d *Database) UpdateImage(movie *Movie, imageData []byte) error {
 	db, err := d.getDatabase()
 	if err != nil {
 		return err
 	}
 
-	if result := db.Model(&image).Update("Data", image.Data); result.Error != nil {
-		return result.Error
+	err = db.Transaction(
+		func(tx *gorm.DB) error {
+			if result := db.Delete(&Image{}, movie.ImageId); result.Error != nil {
+				return result.Error
+			}
+			image := &Image{Data: imageData}
+			if result := db.Create(image); result.Error != nil {
+				return result.Error
+			}
+			if result := db.Model(&movie).Update("image_id", image.Id); result.Error != nil {
+				return result.Error
+			}
+			// TODO : Update cache
+
+			return nil
+		},
+	)
+
+	// Check transaction error
+	if err != nil {
+		return err
 	}
 
 	return nil

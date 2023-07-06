@@ -47,32 +47,29 @@ func newMovieWindow(info *movieInfo, movie *data.Movie, saveCallback func(*movie
 
 func (m *movieWindow) openForm(builder *builder.Builder, parent gtk.IWindow) {
 	// Get the extra window from glade
-	wnd := builder.GetObject("movieWindow").(*gtk.Window)
+	win := builder.GetObject("movieWindow").(*gtk.Window)
 
 	// Set up the extra window
-	wnd.SetTitle("Movie info window")
-	wnd.SetTransientFor(parent)
-	wnd.SetModal(true)
-	wnd.SetKeepAbove(true)
-	wnd.SetPosition(gtk.WIN_POS_CENTER_ALWAYS)
+	win.SetTitle("Movie info window")
+	win.SetTransientFor(parent)
+	win.SetModal(true)
+	win.SetKeepAbove(true)
+	win.SetPosition(gtk.WIN_POS_CENTER_ALWAYS)
 
 	// Hook up the destroy event
-	_ = wnd.Connect("delete-event", func() {
-		wnd.Destroy()
-		wnd = nil
+	_ = win.Connect("delete-event", func() {
+		win.Destroy()
 	})
 
 	// Buttons
 	button := builder.GetObject("okButton").(*gtk.Button)
 	_ = button.Connect("clicked", func() {
 		m.saveMovie()
-		wnd.Destroy()
-		wnd = nil
+		win.Destroy()
 	})
 	button = builder.GetObject("cancelButton").(*gtk.Button)
 	_ = button.Connect("clicked", func() {
-		wnd.Destroy()
-		wnd = nil
+		win.Destroy()
 	})
 
 	// Entries and images
@@ -112,7 +109,7 @@ func (m *movieWindow) openForm(builder *builder.Builder, parent gtk.IWindow) {
 	}
 
 	// Show the window
-	wnd.ShowAll()
+	win.Present()
 
 	m.imdbUrlEntry.GrabFocus()
 }

@@ -21,8 +21,7 @@ type addMovieWindow struct {
 }
 
 func newAddMovieWindow() *addMovieWindow {
-	a := new(addMovieWindow)
-	return a
+	return new(addMovieWindow)
 }
 
 func (a *addMovieWindow) openForm(builder *builder.Builder, database *data.Database, config *config.Config) {
@@ -38,19 +37,19 @@ func (a *addMovieWindow) openForm(builder *builder.Builder, database *data.Datab
 		addWindow.SetPosition(gtk.WIN_POS_CENTER_ALWAYS)
 
 		// Hook up the destroy event
-		_ = addWindow.Connect("delete-event", a.closeWindow)
+		_ = addWindow.Connect("delete-event", a.onCloseWindow)
 
 		// Close button
 		button := builder.GetObject("closeButton").(*gtk.Button)
-		_ = button.Connect("clicked", a.closeWindow)
+		_ = button.Connect("clicked", a.onCloseWindow)
 
 		// Ignore Path Button
 		ignoreButton := builder.GetObject("ignorePathButton").(*gtk.Button)
-		_ = ignoreButton.Connect("clicked", a.ignorePathButtonClicked)
+		_ = ignoreButton.Connect("clicked", a.onIgnorePathButtonClicked)
 
 		// Add Movie Button
 		addMovieButton := builder.GetObject("addMovieButton").(*gtk.Button)
-		_ = addMovieButton.Connect("clicked", a.addMovieButtonClicked)
+		_ = addMovieButton.Connect("clicked", a.onAddMovieButtonClicked)
 
 		entry := builder.GetObject("moviePathEntry").(*gtk.Entry)
 		a.moviePathEntry = entry
@@ -85,11 +84,11 @@ func (a *addMovieWindow) openForm(builder *builder.Builder, database *data.Datab
 	a.fillList(a.list, *moviePaths)
 
 	// Show the window
-	a.window.ShowAll()
+	a.window.Present()
 }
 
-func (a *addMovieWindow) closeWindow() {
-	a.window.Hide()
+func (a *addMovieWindow) onCloseWindow() {
+	a.window.Destroy()
 }
 
 func (a *addMovieWindow) fillList(list *gtk.ListBox, paths []string) {
@@ -110,7 +109,7 @@ func (a *addMovieWindow) fillList(list *gtk.ListBox, paths []string) {
 	a.rowActivated()
 }
 
-func (a *addMovieWindow) ignorePathButtonClicked() {
+func (a *addMovieWindow) onIgnorePathButtonClicked() {
 	msg := "Are you sure you want to ignore this folder?"
 	response, _ := dialog.Title(applicationTitle).Text(msg).
 		QuestionIcon().YesNoButtons().Show()
@@ -143,7 +142,7 @@ func (a *addMovieWindow) ignorePathButtonClicked() {
 	}
 }
 
-func (a *addMovieWindow) addMovieButtonClicked() {
+func (a *addMovieWindow) onAddMovieButtonClicked() {
 	moviePath := a.getEntryText(a.moviePathEntry)
 	if moviePath == "" {
 		_, err := dialog.Title(applicationTitle).Text("Movie path cannot be empty").

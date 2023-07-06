@@ -37,6 +37,8 @@ func (m Manager) GetMovies(config *config.Config) *[]string {
 		log.Fatal(err)
 	}
 
+	dirs = &[]string{}
+
 	err = filepath.WalkDir(config.RootDir, walk)
 	if err != nil {
 		log.Fatal(err)
