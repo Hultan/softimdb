@@ -3,6 +3,7 @@ package softimdb
 import (
 	"github.com/gotk3/gotk3/gdk"
 	"github.com/gotk3/gotk3/gtk"
+	"path"
 
 	"github.com/hultan/softimdb/internal/data"
 )
@@ -102,7 +103,7 @@ func (p *PopupMenu) setupEvents() {
 			if movie == nil {
 				return
 			}
-			p.mainWindow.openMovieDirectoryInNemo(movie)
+			openInNemo(path.Join(p.mainWindow.config.RootDir, movie.MoviePath))
 		},
 	)
 

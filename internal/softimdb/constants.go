@@ -11,13 +11,13 @@ const (
 )
 
 const (
-	sortByName = iota
-	sortByRating
-	sortByYear
-	sortById
+	sortByName   = "title"
+	sortByRating = "imdb_rating"
+	sortByYear   = "year"
+	sortById     = "id"
 )
 
 const (
-	sortAscending = iota
-	sortDescending
+	sortAscending  = "asc"
+	sortDescending = "desc"
 )

@@ -2,20 +2,13 @@ package softimdb
 
 import (
 	_ "embed"
-	"errors"
 	"fmt"
-	"log"
-	"os"
-	"os/exec"
-	"path"
-	"regexp"
-	"runtime"
-	"strconv"
-	"strings"
-	"syscall"
-
 	"github.com/gotk3/gotk3/gdk"
 	"github.com/gotk3/gotk3/gtk"
+	"log"
+	"path"
+	"strconv"
+	"strings"
 
 	"github.com/hultan/softimdb/internal/builder"
 	"github.com/hultan/softimdb/internal/config"
@@ -33,26 +26,30 @@ const configFile = "/home/per/.config/softteam/softimdb/config.json"
 type MainWindow struct {
 	builder *builder.Builder
 
-	application    *gtk.Application
-	window         *gtk.ApplicationWindow
-	aboutDialog    *gtk.AboutDialog
-	addWindow      *AddWindow
-	movieList      *gtk.FlowBox
-	storyLineLabel *gtk.Label
-	searchEntry    *gtk.Entry
-	searchButton   *gtk.ToolButton
-	popupMenu      *PopupMenu
-	countLabel     *gtk.Label
-	movieWindow    *MovieWindow
-	database       *data.Database
-	config         *config.Config
+	application                           *gtk.Application
+	window                                *gtk.ApplicationWindow
+	aboutDialog                           *gtk.AboutDialog
+	addWindow                             *AddWindow
+	movieList                             *gtk.FlowBox
+	storyLineLabel                        *gtk.Label
+	searchEntry                           *gtk.Entry
+	searchButton                          *gtk.ToolButton
+	popupMenu                             *PopupMenu
+	countLabel                            *gtk.Label
+	movieWindow                           *MovieWindow
+	database                              *data.Database
+	config                                *config.Config
+	menuNoTagItem                         *gtk.RadioMenuItem
+	menuSortByName, menuSortByRating      *gtk.RadioMenuItem
+	menuSortByYear, menuSortById          *gtk.RadioMenuItem
+	menuSortAscending, menuSortDescending *gtk.RadioMenuItem
 
 	movies map[int]*data.Movie
 }
 
-var sortBy, sortOrder, selectedGenreId int
+var sortBy, sortOrder string
+var searchGenreId int
 var searchFor string
-var noneItem, menuSortByName, menuSortAscending *gtk.RadioMenuItem
 
 // NewMainWindow : Creates a new MainWindow object
 func NewMainWindow() *MainWindow {
@@ -153,58 +150,58 @@ func (m *MainWindow) setupMenu(window *gtk.ApplicationWindow) {
 	_ = menuHelpAbout.Connect("activate", m.openAboutDialog)
 
 	// Sort menu
-	menuSortByName = m.builder.GetObject("menuSortByName").(*gtk.RadioMenuItem)
-	menuSortByRating := m.builder.GetObject("menuSortByRating").(*gtk.RadioMenuItem)
-	menuSortByYear := m.builder.GetObject("menuSortByYear").(*gtk.RadioMenuItem)
-	menuSortById := m.builder.GetObject("menuSortById").(*gtk.RadioMenuItem)
-	menuSortByName.Connect(
+	m.menuSortByName = m.builder.GetObject("menuSortByName").(*gtk.RadioMenuItem)
+	m.menuSortByName.Connect(
 		"activate", func() {
-			if menuSortByName.GetActive() {
+			if m.menuSortByName.GetActive() {
 				sortBy = sortByName
-				m.refresh(searchFor, selectedGenreId, m.getSortBy())
+				m.refresh(searchFor, searchGenreId, m.getSortBy())
 			}
 		},
 	)
-	menuSortByRating.Connect(
+	m.menuSortByRating = m.builder.GetObject("menuSortByRating").(*gtk.RadioMenuItem)
+	m.menuSortByRating.Connect(
 		"activate", func() {
-			if menuSortByRating.GetActive() {
+			if m.menuSortByRating.GetActive() {
 				sortBy = sortByRating
-				m.refresh(searchFor, selectedGenreId, m.getSortBy())
+				m.refresh(searchFor, searchGenreId, m.getSortBy())
 			}
 		},
 	)
-	menuSortByYear.Connect(
+	m.menuSortByYear = m.builder.GetObject("menuSortByYear").(*gtk.RadioMenuItem)
+	m.menuSortByYear.Connect(
 		"activate", func() {
-			if menuSortByYear.GetActive() {
+			if m.menuSortByYear.GetActive() {
 				sortBy = sortByYear
-				m.refresh(searchFor, selectedGenreId, m.getSortBy())
+				m.refresh(searchFor, searchGenreId, m.getSortBy())
 			}
 		},
 	)
-	menuSortById.Connect(
+	m.menuSortById = m.builder.GetObject("menuSortById").(*gtk.RadioMenuItem)
+	m.menuSortById.Connect(
 		"activate", func() {
-			if menuSortById.GetActive() {
+			if m.menuSortById.GetActive() {
 				sortBy = sortById
-				m.refresh(searchFor, selectedGenreId, m.getSortBy())
+				m.refresh(searchFor, searchGenreId, m.getSortBy())
 			}
 		},
 	)
 
-	menuSortAscending = m.builder.GetObject("menuSortAscending").(*gtk.RadioMenuItem)
-	menuSortDescending := m.builder.GetObject("menuSortDescending").(*gtk.RadioMenuItem)
-	menuSortAscending.Connect(
+	m.menuSortAscending = m.builder.GetObject("menuSortAscending").(*gtk.RadioMenuItem)
+	m.menuSortAscending.Connect(
 		"activate", func() {
-			if menuSortAscending.GetActive() {
+			if m.menuSortAscending.GetActive() {
 				sortOrder = sortAscending
-				m.refresh(searchFor, selectedGenreId, m.getSortBy())
+				m.refresh(searchFor, searchGenreId, m.getSortBy())
 			}
 		},
 	)
-	menuSortDescending.Connect(
+	m.menuSortDescending = m.builder.GetObject("menuSortDescending").(*gtk.RadioMenuItem)
+	m.menuSortDescending.Connect(
 		"activate", func() {
-			if menuSortDescending.GetActive() {
+			if m.menuSortDescending.GetActive() {
 				sortOrder = sortDescending
-				m.refresh(searchFor, selectedGenreId, m.getSortBy())
+				m.refresh(searchFor, searchGenreId, m.getSortBy())
 			}
 		},
 	)
@@ -285,10 +282,6 @@ func (m *MainWindow) getSelectedMovie() *data.Movie {
 		return nil
 	}
 	return m.movies[id]
-}
-
-func (m *MainWindow) openMovieDirectoryInNemo(movie *data.Movie) {
-	openInNemo(fmt.Sprintf("%s/%s", m.config.RootDir, movie.MoviePath))
 }
 
 func (m *MainWindow) setupToolBar() {
@@ -375,13 +368,13 @@ func (m *MainWindow) openAddWindowClicked() {
 
 func (m *MainWindow) refreshButtonClicked() {
 	searchFor = ""
-	selectedGenreId = -1
+	searchGenreId = -1
 	sortBy = sortByName
 	sortOrder = sortAscending
-	noneItem.SetActive(true)
-	menuSortByName.SetActive(true)
-	menuSortAscending.SetActive(true)
-	m.refresh(searchFor, selectedGenreId, m.getSortBy())
+	m.menuNoTagItem.SetActive(true)
+	m.menuSortByName.SetActive(true)
+	m.menuSortAscending.SetActive(true)
+	m.refresh(searchFor, searchGenreId, m.getSortBy())
 }
 
 func (m *MainWindow) refresh(search string, categoryId int, sortBy string) {
@@ -400,7 +393,7 @@ func (m *MainWindow) searchButtonClicked() {
 	}
 	search = strings.Trim(search, " ")
 	searchFor = search
-	m.refresh(searchFor, selectedGenreId, m.getSortBy())
+	m.refresh(searchFor, searchGenreId, m.getSortBy())
 }
 
 func (m *MainWindow) keyPressEvent(_ *gtk.ApplicationWindow, event *gdk.Event) {
@@ -419,38 +412,18 @@ func (m *MainWindow) keyPressEvent(_ *gtk.ApplicationWindow, event *gdk.Event) {
 }
 
 func (m *MainWindow) getSortBy() string {
-	var sort = ""
-
-	switch sortBy {
-	case sortByName:
-		sort = "title"
-	case sortByRating:
-		sort = "imdb_rating"
-	case sortByYear:
-		sort = "year"
-	case sortById:
-		sort = "id"
-	}
-
-	switch sortOrder {
-	case sortAscending:
-		sort += " asc"
-	case sortDescending:
-		sort += " desc"
-	}
-
-	return sort
+	return fmt.Sprintf("%s %s", sortBy, sortOrder)
 }
 
 func (m *MainWindow) fillTagsMenu(menu *gtk.MenuItem) {
 	tags, _ := m.database.GetTags()
 	sub, _ := gtk.MenuNew()
 	menu.SetSubmenu(sub)
-	noneItem, _ = gtk.RadioMenuItemNewWithLabel(nil, "None")
-	group, _ := noneItem.GetGroup()
-	noneItem.SetActive(true)
-	noneItem.SetName("-1")
-	sub.Add(noneItem)
+	m.menuNoTagItem, _ = gtk.RadioMenuItemNewWithLabel(nil, "None")
+	group, _ := m.menuNoTagItem.GetGroup()
+	m.menuNoTagItem.SetActive(true)
+	m.menuNoTagItem.SetName("-1")
+	sub.Add(m.menuNoTagItem)
 	sep, _ := gtk.SeparatorMenuItemNew()
 	sub.Add(sep)
 
@@ -462,20 +435,20 @@ func (m *MainWindow) fillTagsMenu(menu *gtk.MenuItem) {
 				if item.GetActive() {
 					name, _ := item.GetName()
 					i, _ := strconv.Atoi(name)
-					selectedGenreId = i
-					m.refresh(searchFor, selectedGenreId, m.getSortBy())
+					searchGenreId = i
+					m.refresh(searchFor, searchGenreId, m.getSortBy())
 				}
 			},
 		)
 		sub.Add(item)
 	}
-	noneItem.Connect(
+	m.menuNoTagItem.Connect(
 		"activate", func() {
-			if noneItem.GetActive() {
-				name, _ := noneItem.GetName()
+			if m.menuNoTagItem.GetActive() {
+				name, _ := m.menuNoTagItem.GetName()
 				i, _ := strconv.Atoi(name)
-				selectedGenreId = i
-				m.refresh(searchFor, selectedGenreId, m.getSortBy())
+				searchGenreId = i
+				m.refresh(searchFor, searchGenreId, m.getSortBy())
 			}
 		},
 	)
@@ -484,48 +457,18 @@ func (m *MainWindow) fillTagsMenu(menu *gtk.MenuItem) {
 func (m *MainWindow) playMovie(movie *data.Movie) {
 	go func() {
 		moviePath := fmt.Sprintf("%s/%s", m.config.RootDir, movie.MoviePath)
-		movieName, err := m.getMovieName(moviePath)
+		movieName, err := findMovieFile(moviePath)
 		if err != nil {
 			reportError(err)
 			return
 		}
 		if movieName == "" {
-			m.openMovieDirectoryInNemo(movie)
+			openInNemo(path.Join(m.config.RootDir, movie.MoviePath))
 			return
 		}
 		moviePath = path.Join(moviePath, movieName)
 		openProcess("smplayer", moviePath)
 	}()
-}
-
-func (m *MainWindow) getMovieName(path string) (string, error) {
-	f, err := os.Open(path)
-	if err != nil {
-		return "", err
-	}
-	files, err := f.Readdirnames(0)
-	if err != nil {
-		return "", err
-	}
-	for _, file := range files {
-		if strings.HasSuffix(file, "mkv") {
-			return file, nil
-		}
-	}
-	return "", nil
-}
-
-func (m *MainWindow) executeCommand(command string, arguments ...string) (string, error) {
-	cmd := exec.Command(command, arguments...)
-
-	// set the output to our variable
-	out, err := cmd.Output()
-	if err != nil {
-		reportError(err)
-		return "", err
-	}
-
-	return string(out), nil
 }
 
 func (m *MainWindow) editMovieInfo() {
@@ -579,93 +522,9 @@ func (m *MainWindow) openIMDB() {
 		return
 	}
 
-	m.openBrowser(v.ImdbUrl)
-}
-
-// https://gist.github.com/hyg/9c4afcd91fe24316cbf0
-func (m *MainWindow) openBrowser(url string) {
-	var err error
-
-	switch runtime.GOOS {
-	case "linux":
-		err = exec.Command("xdg-open", url).Start()
-	case "windows":
-		err = exec.Command("rundll32", "url.dll,FileProtocolHandler", url).Start()
-	case "darwin":
-		err = exec.Command("open", url).Start()
-	default:
-		err = fmt.Errorf("unsupported platform")
-	}
-	if err != nil {
-		log.Fatal(err)
-	}
-
+	openBrowser(v.ImdbUrl)
 }
 
 func (m *MainWindow) updateCountLabel(i int) {
 	m.countLabel.SetText(fmt.Sprintf("Number of videos : %d", i))
-}
-
-func (m *MainWindow) getTags(tags []string) []data.Tag {
-	var dataTags []data.Tag
-
-	for _, tag := range tags {
-		dataTag := data.Tag{Name: tag}
-		dataTags = append(dataTags, dataTag)
-	}
-
-	return dataTags
-}
-
-// ClearFlowBox : Clears a gtk.FlowBox
-func clearFlowBox(list *gtk.FlowBox) {
-	children := list.GetChildren()
-	if children == nil {
-		return
-	}
-	var i uint = 0
-	for i < children.Length() {
-		widget, _ := children.NthData(i).(*gtk.Widget)
-		list.Remove(widget)
-		i++
-	}
-}
-
-// openInNemo : Opens a new nemo instance with the specified folder opened
-func openInNemo(path string) {
-	openProcess("nemo", path)
-}
-
-// openProcess : Opens a command with the specified arguments
-func openProcess(command string, args ...string) string {
-
-	cmd := exec.Command(command, args...)
-	// Forces the new process to detach from the GitDiscover process
-	// so that it does not die when GitDiscover dies
-	cmd.SysProcAttr = &syscall.SysProcAttr{
-		Setpgid: true,
-	}
-
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		log.Println(err)
-	}
-	err = cmd.Process.Release()
-	if err != nil {
-		log.Println(err)
-	}
-
-	return string(output)
-}
-
-func getIdFromUrl(url string) (string, error) {
-	// Get the IMDB id from the URL.
-	// Starts with tt and ends with 7 or 8 digits.
-	re := regexp.MustCompile(`tt\d{7,8}`)
-	matches := re.FindAll([]byte(url), -1)
-	if len(matches) == 0 {
-		err := errors.New("invalid imdb URL")
-		return "", err
-	}
-	return string(matches[0]), nil
 }
