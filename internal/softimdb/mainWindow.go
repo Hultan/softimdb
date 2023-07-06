@@ -66,7 +66,11 @@ func (m *MainWindow) OpenMainWindow(app *gtk.Application) {
 	m.application = app
 
 	// Create a new softBuilder
-	m.builder = builder.NewBuilder(mainGlade)
+	b, err := builder.NewBuilder(mainGlade)
+	if err != nil {
+		log.Fatal(err)
+	}
+	m.builder = b
 
 	// Get the main window from the glade file
 	m.window = m.builder.GetObject("mainWindow").(*gtk.ApplicationWindow)
@@ -80,31 +84,27 @@ func (m *MainWindow) OpenMainWindow(app *gtk.Application) {
 	_ = m.window.Connect("destroy", m.closeMainWindow)
 	_ = m.window.Connect("key-press-event", m.keyPressEvent)
 
-	// StoryLine label
-	m.storyLineLabel = m.builder.GetObject("storyLineLabel").(*gtk.Label)
-
 	// Load config file
 	cnf, err := config.LoadConfig(configFile)
 	if err != nil {
 		reportError(err)
-		panic(err)
+		log.Fatal(err)
 	}
 	m.config = cnf
 
 	// Open database
 	m.database = data.DatabaseNew(false, cnf)
 
-	// Toolbar
+	// Misc GTK
 	m.setupToolBar()
-
-	// Popup menu
 	m.popupMenu = NewPopupMenu(m)
 	m.popupMenu.Setup()
-
-	// Menu
 	m.setupMenu(m.window)
+	m.storyLineLabel = m.builder.GetObject("storyLineLabel").(*gtk.Label)
+	versionLabel := m.builder.GetObject("versionLabel").(*gtk.Label)
+	versionLabel.SetText("Version : " + applicationVersion)
+	m.countLabel = m.builder.GetObject("countLabel").(*gtk.Label)
 
-	// MovieList
 	m.movieList = m.builder.GetObject("movieList").(*gtk.FlowBox)
 	m.movieList.SetSelectionMode(gtk.SELECTION_SINGLE)
 	m.movieList.SetRowSpacing(listSpacing)
@@ -118,15 +118,8 @@ func (m *MainWindow) OpenMainWindow(app *gtk.Application) {
 	_ = m.movieList.Connect("selected-children-changed", m.selectionChanged)
 	_ = m.movieList.Connect("child-activated", m.movieClicked)
 
-	// Status bar
-	versionLabel := m.builder.GetObject("versionLabel").(*gtk.Label)
-	versionLabel.SetText("Version : " + applicationVersion)
-	m.countLabel = m.builder.GetObject("countLabel").(*gtk.Label)
-
-	// Fill movie list box
 	m.refreshButtonClicked()
 
-	// Show the main window
 	m.window.ShowAll()
 }
 
@@ -167,7 +160,6 @@ func (m *MainWindow) setupMenu(window *gtk.ApplicationWindow) {
 	menuSortByName.Connect(
 		"activate", func() {
 			if menuSortByName.GetActive() {
-				fmt.Println("Sort by name")
 				sortBy = sortByName
 				m.refresh(searchFor, selectedGenreId, m.getSortBy())
 			}
@@ -176,7 +168,6 @@ func (m *MainWindow) setupMenu(window *gtk.ApplicationWindow) {
 	menuSortByRating.Connect(
 		"activate", func() {
 			if menuSortByRating.GetActive() {
-				fmt.Println("Sort by rating")
 				sortBy = sortByRating
 				m.refresh(searchFor, selectedGenreId, m.getSortBy())
 			}
@@ -185,7 +176,6 @@ func (m *MainWindow) setupMenu(window *gtk.ApplicationWindow) {
 	menuSortByYear.Connect(
 		"activate", func() {
 			if menuSortByYear.GetActive() {
-				fmt.Println("Sort by year")
 				sortBy = sortByYear
 				m.refresh(searchFor, selectedGenreId, m.getSortBy())
 			}
@@ -194,7 +184,6 @@ func (m *MainWindow) setupMenu(window *gtk.ApplicationWindow) {
 	menuSortById.Connect(
 		"activate", func() {
 			if menuSortById.GetActive() {
-				fmt.Println("Sort by id")
 				sortBy = sortById
 				m.refresh(searchFor, selectedGenreId, m.getSortBy())
 			}
@@ -206,7 +195,6 @@ func (m *MainWindow) setupMenu(window *gtk.ApplicationWindow) {
 	menuSortAscending.Connect(
 		"activate", func() {
 			if menuSortAscending.GetActive() {
-				fmt.Println("Sort ascending")
 				sortOrder = sortAscending
 				m.refresh(searchFor, selectedGenreId, m.getSortBy())
 			}
@@ -215,7 +203,6 @@ func (m *MainWindow) setupMenu(window *gtk.ApplicationWindow) {
 	menuSortDescending.Connect(
 		"activate", func() {
 			if menuSortDescending.GetActive() {
-				fmt.Println("Sort descending")
 				sortOrder = sortDescending
 				m.refresh(searchFor, selectedGenreId, m.getSortBy())
 			}
@@ -421,12 +408,13 @@ func (m *MainWindow) keyPressEvent(_ *gtk.ApplicationWindow, event *gdk.Event) {
 
 	ctrl := (keyEvent.State() & gdk.CONTROL_MASK) > 0
 
-	// Catch CTRL + f
 	switch {
 	case keyEvent.KeyVal() == gdk.KEY_f && ctrl:
 		m.searchEntry.GrabFocus()
 	case keyEvent.KeyVal() == gdk.KEY_a && ctrl:
 		m.openAddWindowClicked()
+	case keyEvent.KeyVal() == gdk.KEY_q || keyEvent.KeyVal() == gdk.KEY_Q:
+		m.closeMainWindow()
 	}
 }
 
