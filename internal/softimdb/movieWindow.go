@@ -60,13 +60,13 @@ func (m *MovieWindow) OpenForm(builder *builder.Builder, parent gtk.IWindow) {
 		movieWindow.SetPosition(gtk.WIN_POS_CENTER_ALWAYS)
 
 		// Hook up the destroy event
-		_ = movieWindow.Connect("delete-event", m.closeWindow)
+		_ = movieWindow.Connect("delete-event", m.cancelButtonClicked)
 
 		// Buttons
 		button := builder.GetObject("okButton").(*gtk.Button)
 		_ = button.Connect("clicked", m.okButtonClicked)
 		button = builder.GetObject("cancelButton").(*gtk.Button)
-		_ = button.Connect("clicked", m.closeWindow)
+		_ = button.Connect("clicked", m.cancelButtonClicked)
 
 		// Entries and images
 		m.imdbUrlEntry = builder.GetObject("imdbUrlEntry").(*gtk.Entry)
@@ -114,10 +114,6 @@ func (m *MovieWindow) OpenForm(builder *builder.Builder, parent gtk.IWindow) {
 	m.window.ShowAll()
 
 	m.imdbUrlEntry.GrabFocus()
-}
-
-func (m *MovieWindow) closeWindow() {
-	m.window.Hide()
 }
 
 func (m *MovieWindow) getEntryText(entry *gtk.Entry) string {
@@ -178,7 +174,11 @@ func (m *MovieWindow) okButtonClicked() {
 
 	m.saveCallback(m.movieInfo, m.movie)
 
-	m.window.Hide()
+	m.window.Close()
+}
+
+func (m *MovieWindow) cancelButtonClicked() {
+	m.window.Close()
 }
 
 func (m *MovieWindow) onImageClick() {

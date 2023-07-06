@@ -23,7 +23,7 @@ func cleanString(text string) string {
 
 func reportError(err error) {
 	_, _ = fmt.Fprintln(os.Stderr, err)
-	dialog.Title(applicationTitle).Text(err.Error()).
+	_, _ = dialog.Title(applicationTitle).Text(err.Error()).
 		ErrorIcon().OkButton().Show()
 }
 
@@ -111,4 +111,8 @@ func findMovieFile(path string) (string, error) {
 		}
 	}
 	return "", nil
+}
+
+func getSortBy() string {
+	return fmt.Sprintf("%s %s", sortBy, sortOrder)
 }
