@@ -386,7 +386,7 @@ func (m *mainWindow) onKeyPressEvent(_ *gtk.ApplicationWindow, event *gdk.Event)
 		m.searchEntry.GrabFocus()
 	case keyEvent.KeyVal() == gdk.KEY_a && ctrl:
 		m.openAddWindowClicked()
-	case keyEvent.KeyVal() == gdk.KEY_q || keyEvent.KeyVal() == gdk.KEY_Q:
+	case (keyEvent.KeyVal() == gdk.KEY_q || keyEvent.KeyVal() == gdk.KEY_Q) && ctrl:
 		m.closeMainWindow()
 	}
 }
