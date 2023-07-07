@@ -35,13 +35,13 @@ func (a *addMovieWindow) openForm(builder *builder.Builder, database *data.Datab
 	a.window.SetModal(true)
 	a.window.SetKeepAbove(true)
 	a.window.SetPosition(gtk.WIN_POS_CENTER_ALWAYS)
-
-	// Hook up the destroy event
-	_ = a.window.Connect("delete-event", a.onCloseWindow)
+	a.window.HideOnDelete()
 
 	// Close button
 	button := builder.GetObject("closeButton").(*gtk.Button)
-	_ = button.Connect("clicked", a.onCloseWindow)
+	_ = button.Connect("clicked", func() {
+		a.window.Hide()
+	})
 
 	// Ignore Path Button
 	ignoreButton := builder.GetObject("ignorePathButton").(*gtk.Button)
@@ -83,10 +83,6 @@ func (a *addMovieWindow) openForm(builder *builder.Builder, database *data.Datab
 
 	// Show the window
 	a.window.ShowAll()
-}
-
-func (a *addMovieWindow) onCloseWindow() {
-	a.window.Hide()
 }
 
 func (a *addMovieWindow) fillList(list *gtk.ListBox, paths []string) {

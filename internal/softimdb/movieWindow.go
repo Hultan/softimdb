@@ -56,11 +56,7 @@ func (m *movieWindow) open(builder *builder.Builder, parent gtk.IWindow) {
 	m.window.SetModal(true)
 	m.window.SetKeepAbove(true)
 	m.window.SetPosition(gtk.WIN_POS_CENTER_ALWAYS)
-
-	// Hook up the destroy event
-	_ = m.window.Connect("delete-event", func() {
-		m.window.Hide()
-	})
+	m.window.HideOnDelete()
 
 	// Buttons
 	button := builder.GetObject("okButton").(*gtk.Button)
