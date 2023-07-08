@@ -203,10 +203,6 @@ func (m *mainWindow) setupMenu(window *gtk.ApplicationWindow) {
 	// Tags menu
 	menuTags := m.builder.GetObject("menuTags").(*gtk.MenuItem)
 	m.fillTagsMenu(menuTags)
-
-	// Tools menu
-	menuToolsOpenIMDB := m.builder.GetObject("mnuToolsIOpenIMDB").(*gtk.MenuItem)
-	_ = menuToolsOpenIMDB.Connect("activate", m.openIMDB)
 }
 
 func (m *mainWindow) fillMovieList(searchFor string, categoryId int, sortBy string) {

@@ -289,37 +289,6 @@
               </object>
             </child>
             <child>
-              <object class="GtkMenuItem" id="mnuTools">
-                <property name="visible">True</property>
-                <property name="can-focus">False</property>
-                <property name="label" translatable="yes">Tools</property>
-                <property name="use-underline">True</property>
-                <child type="submenu">
-                  <object class="GtkMenu">
-                    <property name="visible">True</property>
-                    <property name="can-focus">False</property>
-                    <child>
-                      <object class="GtkMenuItem" id="mnuToolsIOpenIMDB">
-                        <property name="visible">True</property>
-                        <property name="can-focus">False</property>
-                        <property name="tooltip-text" translatable="yes">Ctrl + i</property>
-                        <property name="label" translatable="yes">Open IMDB page...</property>
-                        <property name="use-underline">True</property>
-                      </object>
-                    </child>
-                    <child>
-                      <object class="GtkMenuItem" id="mnuToolsUpdateImage">
-                        <property name="visible">True</property>
-                        <property name="can-focus">False</property>
-                        <property name="label" translatable="yes">Update image...</property>
-                        <property name="use-underline">True</property>
-                      </object>
-                    </child>
-                  </object>
-                </child>
-              </object>
-            </child>
-            <child>
               <object class="GtkMenuItem">
                 <property name="visible">True</property>
                 <property name="can-focus">False</property>
@@ -980,6 +949,20 @@
     <property name="visible">True</property>
     <property name="can-focus">False</property>
     <child>
+      <object class="GtkMenuItem" id="popupOpenMovieInfo">
+        <property name="visible">True</property>
+        <property name="can-focus">False</property>
+        <property name="label" translatable="yes">Open movie info...</property>
+        <property name="use-underline">True</property>
+      </object>
+    </child>
+    <child>
+      <object class="GtkSeparatorMenuItem">
+        <property name="visible">True</property>
+        <property name="can-focus">False</property>
+      </object>
+    </child>
+    <child>
       <object class="GtkMenuItem" id="popupPlayMovie">
         <property name="visible">True</property>
         <property name="can-focus">False</property>
@@ -997,7 +980,7 @@
       <object class="GtkMenuItem" id="popupOpenIMDBPage">
         <property name="visible">True</property>
         <property name="can-focus">False</property>
-        <property name="label" translatable="yes">Open IMDB Page in browser...</property>
+        <property name="label" translatable="yes">Open IMDB...</property>
         <property name="use-underline">True</property>
       </object>
     </child>
@@ -1006,15 +989,7 @@
         <property name="visible">True</property>
         <property name="can-focus">False</property>
         <property name="tooltip-text" translatable="yes">Open movie folder in nemo...</property>
-        <property name="label" translatable="yes">Open movie folder...</property>
-        <property name="use-underline">True</property>
-      </object>
-    </child>
-    <child>
-      <object class="GtkMenuItem" id="popupOpenMovieInfo">
-        <property name="visible">True</property>
-        <property name="can-focus">False</property>
-        <property name="label" translatable="yes">Open movie info dialog...</property>
+        <property name="label" translatable="yes">Open folder...</property>
         <property name="use-underline">True</property>
       </object>
     </child>
