@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/gotk3/gotk3/gtk"
 	"github.com/hultan/dialog"
-	"github.com/hultan/softimdb/internal/builder"
 	"github.com/hultan/softimdb/internal/config"
 	"github.com/hultan/softimdb/internal/data"
 	"github.com/hultan/softimdb/internal/nas"
@@ -12,53 +11,48 @@ import (
 )
 
 type addMovieWindow struct {
+	mainWindow     *mainWindow
 	window         *gtk.Window
 	list           *gtk.ListBox
 	moviePathEntry *gtk.Entry
 	database       *data.Database
 	config         *config.Config
-	builder        *builder.Builder
 }
 
-func newAddMovieWindow() *addMovieWindow {
-	return &addMovieWindow{}
-}
+func newAddMovieWindow(m *mainWindow, db *data.Database, cfg *config.Config) *addMovieWindow {
+	a := &addMovieWindow{
+		mainWindow: m,
+		database:   db,
+		config:     cfg,
+	}
 
-func (a *addMovieWindow) openForm(builder *builder.Builder, database *data.Database, config *config.Config) {
-	a.builder = builder
-
-	// Get the extra window from glade
-	a.window = builder.GetObject("addWindow").(*gtk.Window)
-
-	// Set up the extra window
+	a.window = m.builder.GetObject("addWindow").(*gtk.Window)
 	a.window.SetTitle("Add movie window")
 	a.window.SetModal(true)
 	a.window.SetKeepAbove(true)
 	a.window.SetPosition(gtk.WIN_POS_CENTER_ALWAYS)
 	a.window.HideOnDelete()
 
-	// Close button
-	button := builder.GetObject("closeButton").(*gtk.Button)
+	button := m.builder.GetObject("closeButton").(*gtk.Button)
 	_ = button.Connect("clicked", func() {
 		a.window.Hide()
 	})
-
-	// Ignore Path Button
-	ignoreButton := builder.GetObject("ignorePathButton").(*gtk.Button)
+	ignoreButton := m.builder.GetObject("ignorePathButton").(*gtk.Button)
 	_ = ignoreButton.Connect("clicked", a.onIgnorePathButtonClicked)
-
-	// Add Movie Button
-	addMovieButton := builder.GetObject("addMovieButton").(*gtk.Button)
+	addMovieButton := m.builder.GetObject("addMovieButton").(*gtk.Button)
 	_ = addMovieButton.Connect("clicked", a.onAddMovieButtonClicked)
 
-	entry := builder.GetObject("moviePathEntry").(*gtk.Entry)
+	entry := m.builder.GetObject("moviePathEntry").(*gtk.Entry)
 	a.moviePathEntry = entry
 
-	// Store reference to database and window
-	a.database = database
-	a.config = config
+	a.list = m.builder.GetObject("pathsList").(*gtk.ListBox)
+	_ = a.list.Connect("row-activated", a.rowActivated)
 
-	// Paths on NAS
+	return a
+}
+
+func (a *addMovieWindow) openForm() {
+	// Find new paths on NAS
 	nasManager := nas.ManagerNew(a.database)
 	moviePaths := nasManager.GetMovies(a.config)
 	if moviePaths == nil {
@@ -74,14 +68,9 @@ func (a *addMovieWindow) openForm(builder *builder.Builder, database *data.Datab
 		}
 		return
 	}
-
-	// Paths list
-	a.list = builder.GetObject("pathsList").(*gtk.ListBox)
-	_ = a.list.Connect("row-activated", a.rowActivated)
 	clearListBox(a.list)
 	a.fillList(a.list, *moviePaths)
 
-	// Show the window
 	a.window.ShowAll()
 }
 
@@ -154,8 +143,10 @@ func (a *addMovieWindow) onAddMovieButtonClicked() {
 	}
 
 	// Open movie dialog here
-	win := newMovieWindow(info, nil, a.saveMovieInfo)
-	win.open(a.builder, a.window)
+	if a.mainWindow.movieWin == nil {
+		a.mainWindow.movieWin = newMovieWindow(a.mainWindow.builder, a.window)
+	}
+	a.mainWindow.movieWin.open(info, nil, a.saveMovieInfo)
 }
 
 func (a *addMovieWindow) saveMovieInfo(info *movieInfo, _ *data.Movie) {

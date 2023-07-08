@@ -42,6 +42,9 @@ type mainWindow struct {
 	menuSortByYear, menuSortById          *gtk.RadioMenuItem
 	menuSortAscending, menuSortDescending *gtk.RadioMenuItem
 
+	movieWin    *movieWindow
+	addMovieWin *addMovieWindow
+
 	movies map[int]*data.Movie
 }
 
@@ -342,8 +345,10 @@ func (m *mainWindow) openAboutDialog() {
 }
 
 func (m *mainWindow) openAddWindowClicked() {
-	win := newAddMovieWindow()
-	win.openForm(m.builder, m.database, m.config)
+	if m.addMovieWin == nil {
+		m.addMovieWin = newAddMovieWindow(m, m.database, m.config)
+	}
+	m.addMovieWin.openForm()
 }
 
 func (m *mainWindow) refreshButtonClicked() {
@@ -460,8 +465,11 @@ func (m *mainWindow) editMovieInfo() {
 	}
 
 	// Open movie dialog here
-	win := newMovieWindow(info, selectedMovie, m.saveMovieInfo)
-	win.open(m.builder, m.window)
+	if m.movieWin == nil {
+		m.movieWin = newMovieWindow(m.builder, m.window)
+	}
+
+	m.movieWin.open(info, selectedMovie, m.saveMovieInfo)
 }
 
 func (m *mainWindow) saveMovieInfo(movieInfo *movieInfo, movie *data.Movie) {

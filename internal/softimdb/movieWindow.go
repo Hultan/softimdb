@@ -39,18 +39,10 @@ type movieWindow struct {
 	saveCallback func(*movieInfo, *data.Movie)
 }
 
-func newMovieWindow(info *movieInfo, movie *data.Movie, saveCallback func(*movieInfo, *data.Movie)) *movieWindow {
-	if info == nil {
-		info = &movieInfo{}
-	}
-	return &movieWindow{movieInfo: info, movie: movie, saveCallback: saveCallback}
-}
+func newMovieWindow(builder *builder.Builder, parent gtk.IWindow) *movieWindow {
+	m := &movieWindow{}
 
-func (m *movieWindow) open(builder *builder.Builder, parent gtk.IWindow) {
-	// Get the extra window from glade
 	m.window = builder.GetObject("movieWindow").(*gtk.Window)
-
-	// Set up the extra window
 	m.window.SetTitle("Movie info window")
 	m.window.SetTransientFor(parent)
 	m.window.SetModal(true)
@@ -58,7 +50,6 @@ func (m *movieWindow) open(builder *builder.Builder, parent gtk.IWindow) {
 	m.window.SetPosition(gtk.WIN_POS_CENTER_ALWAYS)
 	m.window.HideOnDelete()
 
-	// Buttons
 	button := builder.GetObject("okButton").(*gtk.Button)
 	_ = button.Connect("clicked", func() {
 		m.saveMovie()
@@ -69,7 +60,6 @@ func (m *movieWindow) open(builder *builder.Builder, parent gtk.IWindow) {
 		m.window.Hide()
 	})
 
-	// Entries and images
 	m.imdbUrlEntry = builder.GetObject("imdbUrlEntry").(*gtk.Entry)
 	m.pathEntry = builder.GetObject("pathEntry").(*gtk.Entry)
 	m.titleEntry = builder.GetObject("titleEntry").(*gtk.Entry)
@@ -83,6 +73,17 @@ func (m *movieWindow) open(builder *builder.Builder, parent gtk.IWindow) {
 	m.posterImage = builder.GetObject("posterImage").(*gtk.Image)
 	eventBox := builder.GetObject("imageEventBox").(*gtk.EventBox)
 	eventBox.Connect("button-press-event", m.onImageClick)
+
+	return m
+}
+
+func (m *movieWindow) open(info *movieInfo, movie *data.Movie, saveCallback func(*movieInfo, *data.Movie)) {
+	if info == nil {
+		info = &movieInfo{}
+	}
+	m.movie = movie
+	m.movieInfo = info
+	m.saveCallback = saveCallback
 
 	// Fill form with data
 	m.imdbUrlEntry.SetText(m.movieInfo.imdbUrl)
@@ -101,7 +102,9 @@ func (m *movieWindow) open(builder *builder.Builder, parent gtk.IWindow) {
 	m.storyLineEntry.SetBuffer(buffer)
 	m.ratingEntry.SetText(m.movieInfo.imdbRating)
 	m.genresEntry.SetText(m.movieInfo.tags)
-	if m.movieInfo.image != nil {
+	if m.movieInfo.image == nil {
+		m.posterImage.Clear()
+	} else {
 		m.updateImage(m.movieInfo.image)
 	}
 
