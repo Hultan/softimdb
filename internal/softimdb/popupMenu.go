@@ -110,23 +110,19 @@ func (p *popupMenu) setupEvents() {
 
 	p.popupOpenMovieInfo.Connect(
 		"activate", func() {
-			p.mainWindow.editMovieInfo()
+			p.mainWindow.onEditMovieInfoClicked()
 		},
 	)
 
 	p.popupOpenIMDB.Connect(
 		"activate", func() {
-			p.mainWindow.openIMDB()
+			p.mainWindow.onOpenIMDBClicked()
 		},
 	)
 
 	p.popupPlayMovie.Connect(
 		"activate", func() {
-			movie := p.mainWindow.getSelectedMovie()
-			if movie == nil {
-				return
-			}
-			p.mainWindow.playMovie(movie)
+			p.mainWindow.onPlayMovieClicked()
 		},
 	)
 }
