@@ -20,7 +20,7 @@ type Database struct {
 
 // DatabaseNew creates a new SoftIMDB Database object.
 func DatabaseNew(useTestDB bool, config *config.Config) *Database {
-	database := new(Database)
+	database := &Database{}
 	database.UseTestDatabase = useTestDB
 	database.cache = ImageCacheNew()
 	database.config = config
