@@ -431,7 +431,7 @@ func (m *mainWindow) onOpenAddWindowClicked() {
 	if m.addMovieWin == nil {
 		m.addMovieWin = newAddMovieWindow(m, m.database, m.config)
 	}
-	m.addMovieWin.openForm()
+	m.addMovieWin.open()
 }
 
 func (m *mainWindow) onRefreshButtonClicked() {

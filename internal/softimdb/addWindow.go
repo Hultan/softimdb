@@ -46,12 +46,12 @@ func newAddMovieWindow(m *mainWindow, db *data.Database, cfg *config.Config) *ad
 	a.moviePathEntry = entry
 
 	a.list = m.builder.GetObject("pathsList").(*gtk.ListBox)
-	_ = a.list.Connect("row-activated", a.rowActivated)
+	_ = a.list.Connect("row-activated", a.onRowActivated)
 
 	return a
 }
 
-func (a *addMovieWindow) openForm() {
+func (a *addMovieWindow) open() {
 	// Find new paths on NAS
 	nasManager := nas.ManagerNew(a.database)
 	moviePaths := nasManager.GetMovies(a.config)
@@ -89,7 +89,27 @@ func (a *addMovieWindow) fillList(list *gtk.ListBox, paths []string) {
 	// nil, and SelectRow can handle nil.
 	row := list.GetRowAtIndex(0)
 	list.SelectRow(row)
-	a.rowActivated()
+	a.onRowActivated()
+}
+
+func (a *addMovieWindow) saveMovieInfo(info *movieInfo, _ *data.Movie) {
+	newMovie := &data.Movie{}
+	info.toDatabase(newMovie)
+	err := a.database.InsertMovie(newMovie)
+	if err != nil {
+		reportError(err)
+		return
+	}
+
+	// Get selected row and remove it
+	row := a.list.GetSelectedRow()
+	if row == nil {
+		reportError(err)
+		return
+	}
+
+	a.list.Remove(row)
+	a.moviePathEntry.SetText("")
 }
 
 func (a *addMovieWindow) onIgnorePathButtonClicked() {
@@ -126,7 +146,7 @@ func (a *addMovieWindow) onIgnorePathButtonClicked() {
 }
 
 func (a *addMovieWindow) onAddMovieButtonClicked() {
-	moviePath := a.getEntryText(a.moviePathEntry)
+	moviePath := getEntryText(a.moviePathEntry)
 	if moviePath == "" {
 		_, err := dialog.Title(applicationTitle).Text("Movie path cannot be empty").
 			ErrorIcon().OkButton().Show()
@@ -149,35 +169,7 @@ func (a *addMovieWindow) onAddMovieButtonClicked() {
 	a.mainWindow.movieWin.open(info, nil, a.saveMovieInfo)
 }
 
-func (a *addMovieWindow) saveMovieInfo(info *movieInfo, _ *data.Movie) {
-	newMovie := &data.Movie{}
-	info.toDatabase(newMovie)
-	err := a.database.InsertMovie(newMovie)
-	if err != nil {
-		reportError(err)
-		return
-	}
-
-	// Get selected row and remove it
-	row := a.list.GetSelectedRow()
-	if row == nil {
-		reportError(err)
-		return
-	}
-
-	a.list.Remove(row)
-	a.moviePathEntry.SetText("")
-}
-
-func (a *addMovieWindow) getEntryText(entry *gtk.Entry) string {
-	text, err := entry.GetText()
-	if err != nil {
-		return ""
-	}
-	return text
-}
-
-func (a *addMovieWindow) rowActivated() {
+func (a *addMovieWindow) onRowActivated() {
 	row := a.list.GetSelectedRow()
 	if row == nil {
 		return
@@ -203,18 +195,4 @@ func (a *addMovieWindow) getTags(tags []string) []data.Tag {
 	}
 
 	return dataTags
-}
-
-// clearListBox : Clears a gtk.ListBox
-func clearListBox(list *gtk.ListBox) {
-	children := list.GetChildren()
-	if children == nil {
-		return
-	}
-	var i uint = 0
-	for i < children.Length() {
-		widget, _ := children.NthData(i).(*gtk.Widget)
-		list.Remove(widget)
-		i++
-	}
 }

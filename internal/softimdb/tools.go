@@ -1,10 +1,15 @@
 package softimdb
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
+	"github.com/gotk3/gotk3/gdk"
 	"github.com/gotk3/gotk3/gtk"
+	"github.com/nfnt/resize"
 	"html"
+	"image"
+	"image/png"
 	"log"
 	"os"
 	"os/exec"
@@ -25,20 +30,6 @@ func reportError(err error) {
 	_, _ = fmt.Fprintln(os.Stderr, err)
 	_, _ = dialog.Title(applicationTitle).Text(err.Error()).
 		ErrorIcon().OkButton().Show()
-}
-
-// ClearFlowBox : Clears a gtk.FlowBox
-func clearFlowBox(list *gtk.FlowBox) {
-	children := list.GetChildren()
-	if children == nil {
-		return
-	}
-	var i uint = 0
-	for i < children.Length() {
-		widget, _ := children.NthData(i).(*gtk.Widget)
-		list.Remove(widget)
-		i++
-	}
 }
 
 // openInNemo : Opens a new nemo instance with the specified folder opened
@@ -115,4 +106,78 @@ func findMovieFile(path string) (string, error) {
 
 func getSortBy() string {
 	return fmt.Sprintf("%s %s", sortBy, sortOrder)
+}
+
+func getEntryText(entry *gtk.Entry) string {
+	text, err := entry.GetText()
+	if err != nil {
+		return ""
+	}
+	return text
+}
+
+// clearListBox : Clears a gtk.ListBox
+func clearListBox(list *gtk.ListBox) {
+	children := list.GetChildren()
+	if children == nil {
+		return
+	}
+	var i uint = 0
+	for i < children.Length() {
+		widget, _ := children.NthData(i).(*gtk.Widget)
+		list.Remove(widget)
+		i++
+	}
+}
+
+// ClearFlowBox : Clears a gtk.FlowBox
+func clearFlowBox(list *gtk.FlowBox) {
+	children := list.GetChildren()
+	if children == nil {
+		return
+	}
+	var i uint = 0
+	for i < children.Length() {
+		widget, _ := children.NthData(i).(*gtk.Widget)
+		list.Remove(widget)
+		i++
+	}
+}
+
+// getCorrectImageSize makes sure that the size of the image is 190x280 and returns it
+func getCorrectImageSize(fileName string) []byte {
+	data, err := os.ReadFile(fileName)
+	if err != nil {
+		reportError(err)
+		log.Fatal(err)
+	}
+
+	pix, err := gdk.PixbufNewFromBytesOnly(data)
+	if err != nil {
+		reportError(err)
+		log.Fatal(err)
+	}
+	width, height := pix.GetWidth(), pix.GetHeight()
+	if width != imageWidth || height != imageHeight {
+		return resizeImage(data)
+	}
+
+	return data
+}
+
+// resizeImage resizes the image to 190x280 and converts it to a PNG file
+func resizeImage(imgData []byte) []byte {
+	img, _, err := image.Decode(bytes.NewReader(imgData))
+	if err != nil {
+		reportError(err)
+		return nil
+	}
+	imgResized := resize.Resize(imageWidth, imageHeight, img, resize.Lanczos2)
+	buf := new(bytes.Buffer)
+	err = png.Encode(buf, imgResized)
+	if err != nil {
+		reportError(err)
+		return nil
+	}
+	return buf.Bytes()
 }
