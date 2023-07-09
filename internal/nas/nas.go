@@ -6,7 +6,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/hultan/crypto"
 	"github.com/hultan/softimdb/internal/config"
 	"github.com/hultan/softimdb/internal/data"
 )
@@ -102,15 +101,6 @@ func containsString(slice []string, find string) bool {
 		}
 	}
 	return false
-}
-
-func (m Manager) getPassword(encrypted string) string {
-	c := &crypto.Crypto{}
-	password, err := c.Decrypt(encrypted)
-	if err != nil {
-		log.Fatal(err)
-	}
-	return strings.Replace(password, "\n", "", -1)
 }
 
 func getIgnorePath(paths []*data.IgnoredPath, name string) *data.IgnoredPath {
