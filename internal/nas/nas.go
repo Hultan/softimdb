@@ -1,13 +1,12 @@
 package nas
 
 import (
+	"github.com/hultan/softimdb/internal/config"
+	"github.com/hultan/softimdb/internal/data"
 	"io/fs"
 	"log"
 	"path/filepath"
 	"strings"
-
-	"github.com/hultan/softimdb/internal/config"
-	"github.com/hultan/softimdb/internal/data"
 )
 
 // Manager represents a NAS manager.
@@ -60,6 +59,9 @@ func walk(_ string, d fs.DirEntry, err error) error {
 	if d.Name() == "videos" { // Skip main directory
 		return nil
 	}
+	//if d.Name() == "SEARCH FOR ME!" { // Skip main directory
+	//	fmt.Println("SEARCH")
+	//}
 	if err != nil { // Skip on errors
 		return err
 	}
@@ -105,7 +107,7 @@ func containsString(slice []string, find string) bool {
 
 func getIgnorePath(paths []*data.IgnoredPath, name string) *data.IgnoredPath {
 	for i := range paths {
-		if strings.Contains(paths[i].Path, name) {
+		if strings.HasSuffix(paths[i].Path, name) {
 			return paths[i]
 		}
 	}
