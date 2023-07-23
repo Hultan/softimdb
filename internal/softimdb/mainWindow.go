@@ -22,6 +22,9 @@ var applicationIcon []byte
 //go:embed assets/main.glade
 var mainGlade string
 
+//go:embed assets/toWatch.png
+var toWatchIcon []byte
+
 const configFile = "/home/per/.config/softteam/softimdb/config.json"
 
 type mainWindow struct {
