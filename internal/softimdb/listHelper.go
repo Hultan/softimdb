@@ -18,7 +18,7 @@ func ListHelperNew() *ListHelper {
 }
 
 // CreateMovieCard creates a movie card (a gtk.Frame) to be placed in a gtk.FlowBox
-func (l *ListHelper) CreateMovieCard(movie *data.Movie, cssProvider *gtk.CssProvider) *gtk.Frame {
+func (l *ListHelper) CreateMovieCard(movie *data.Movie) *gtk.Frame {
 	// Create a gtk.Frame to contain the movie card and provide it with a border
 	frame, err := gtk.FrameNew("")
 	if err != nil {
@@ -35,14 +35,7 @@ func (l *ListHelper) CreateMovieCard(movie *data.Movie, cssProvider *gtk.CssProv
 	frame.Add(overlay)
 
 	// CSS
-	frameContext, err := frame.GetStyleContext()
-	if err != nil {
-		reportError(err)
-		log.Fatal(err)
-	}
-	frameContext.AddProvider(cssProvider, gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
-
-	box := createMovieBox(movie, cssProvider)
+	box := createMovieBox(movie)
 	overlay.AddOverlay(box)
 
 	// Add to watch flag (if needed)
@@ -53,21 +46,12 @@ func (l *ListHelper) CreateMovieCard(movie *data.Movie, cssProvider *gtk.CssProv
 
 	imdbRating := createIMDBRatingOverlay(movie)
 	overlay.AddOverlay(imdbRating)
-	imdbContext, err := imdbRating.GetStyleContext()
-	if err != nil {
-		reportError(err)
-		log.Fatal(err)
-	}
-	imdbContext.AddProvider(cssProvider, gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
 
 	myRating := createMyRatingOverlay(movie)
 	overlay.AddOverlay(myRating)
-	myContext, err := myRating.GetStyleContext()
-	if err != nil {
-		reportError(err)
-		log.Fatal(err)
-	}
-	myContext.AddProvider(cssProvider, gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
+
+	pack := createPackOverlay(movie)
+	overlay.AddOverlay(pack)
 
 	// This is to make sure that all cards have an equal height of 430 (even if they have a small image)
 	// and also to make sure that they have a minimal width, which makes the gtk.FlowBox to display four movies
@@ -78,7 +62,7 @@ func (l *ListHelper) CreateMovieCard(movie *data.Movie, cssProvider *gtk.CssProv
 }
 
 // createMovieBox creates a gtk.Box that contains all the information about a single movie
-func createMovieBox(movie *data.Movie, cssProvider *gtk.CssProvider) *gtk.Box {
+func createMovieBox(movie *data.Movie) *gtk.Box {
 	box, err := gtk.BoxNew(gtk.ORIENTATION_VERTICAL, 10)
 	if err != nil {
 		reportError(err)
@@ -86,13 +70,6 @@ func createMovieBox(movie *data.Movie, cssProvider *gtk.CssProvider) *gtk.Box {
 	}
 
 	info := createMovieInfoBox(movie)
-	infoContext, err := info.GetStyleContext()
-	if err != nil {
-		reportError(err)
-		log.Fatal(err)
-	}
-	infoContext.AddProvider(cssProvider, gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
-
 	box.PackStart(info, false, false, 5)
 
 	// Image
@@ -102,6 +79,16 @@ func createMovieBox(movie *data.Movie, cssProvider *gtk.CssProvider) *gtk.Box {
 	// Genres
 	label := createMovieGenresLabel(movie)
 	box.Add(label)
+
+	if movie.Pack != "" {
+		boxContext, err := box.GetStyleContext()
+		if err != nil {
+			reportError(err)
+			log.Fatal(err)
+		}
+
+		boxContext.AddClass("packBackground")
+	}
 
 	return box
 }
@@ -271,6 +258,47 @@ func getMyRatingMarkup(movie *data.Movie) string {
 		s += fmt.Sprintf("My rating: %v/5", movie.MyRating)
 		s += `</span>`
 	}
+
+	return s
+}
+
+// createPackOverlay creates a gtk.Label containing the pack name
+func createPackOverlay(movie *data.Movie) *gtk.Label {
+	label, err := gtk.LabelNew("")
+	if err != nil {
+		reportError(err)
+		log.Fatal(err)
+	}
+
+	if movie.Pack == "" {
+		return label
+	}
+
+	label.SetJustify(gtk.JUSTIFY_CENTER)
+	label.SetMarkup(getPackMarkup(movie))
+	label.SetName("packLabel")
+
+	label.SetHAlign(gtk.ALIGN_END)
+	label.SetVAlign(gtk.ALIGN_START)
+	label.SetMarginTop(92)
+
+	label.SetAngle(-90)
+
+	context, err := label.GetStyleContext()
+	if err != nil {
+		reportError(err)
+		log.Fatal(err)
+	}
+	context.AddClass("packLabel")
+
+	return label
+}
+
+// getPackMarkup returns the markup for my rating
+func getPackMarkup(movie *data.Movie) string {
+	s := `<span font="Sans Regular 12" foreground="#141103">`
+	s += fmt.Sprintf("Pack: %s", movie.Pack)
+	s += `</span>`
 
 	return s
 }

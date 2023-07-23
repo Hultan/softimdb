@@ -26,6 +26,7 @@ type movieWindow struct {
 	storyLineEntry     *gtk.TextView
 	ratingEntry        *gtk.Entry
 	genresEntry        *gtk.Entry
+	packEntry          *gtk.Entry
 	posterImage        *gtk.Image
 
 	movieInfo *movieInfo
@@ -65,6 +66,7 @@ func newMovieWindow(builder *builder.Builder, parent gtk.IWindow) *movieWindow {
 	m.storyLineEntry = builder.GetObject("storyLineTextView").(*gtk.TextView)
 	m.ratingEntry = builder.GetObject("ratingEntry").(*gtk.Entry)
 	m.genresEntry = builder.GetObject("genresEntry").(*gtk.Entry)
+	m.packEntry = builder.GetObject("packEntry").(*gtk.Entry)
 	m.posterImage = builder.GetObject("posterImage").(*gtk.Image)
 	eventBox := builder.GetObject("imageEventBox").(*gtk.EventBox)
 	eventBox.Connect("button-press-event", m.onImageClick)
@@ -97,6 +99,7 @@ func (m *movieWindow) open(info *movieInfo, movie *data.Movie, saveCallback func
 	m.storyLineEntry.SetBuffer(buffer)
 	m.ratingEntry.SetText(m.movieInfo.imdbRating)
 	m.genresEntry.SetText(m.movieInfo.tags)
+	m.packEntry.SetText(m.movieInfo.pack)
 	if m.movieInfo.image == nil {
 		m.posterImage.Clear()
 	} else {
@@ -125,6 +128,7 @@ func (m *movieWindow) saveMovie() {
 	m.movieInfo.imdbId = id
 	m.movieInfo.title = getEntryText(m.titleEntry)
 	m.movieInfo.subTitle = getEntryText(m.subTitleEntry)
+	m.movieInfo.pack = getEntryText(m.packEntry)
 	m.movieInfo.year = getEntryText(m.yearEntry)
 	ratingText := getEntryText(m.myRatingEntry)
 	rating, err := strconv.Atoi(ratingText)

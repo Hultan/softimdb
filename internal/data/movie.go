@@ -24,7 +24,8 @@ type Movie struct {
 	Image     []byte `gorm:"-"`
 	ImageId   int    `gorm:"column:image_id;"`
 	ImagePath string `gorm:"column:image_path;size:1024"` // Not used yet
-	ToWatch   bool   `gorm:"column:to_watch"`             // Not used yet
+	ToWatch   bool   `gorm:"column:to_watch"`
+	Pack      string `gorm:"column:pack"`
 }
 
 // TableName returns the name of the table.
@@ -75,8 +76,24 @@ func (d *Database) GetAllMovies(searchFor string, categoryId int, orderBy string
 	var movies []*Movie
 
 	var result *gorm.DB
-	if searchFor == "" && categoryId == -1 {
+	if strings.HasPrefix(orderBy, "pack") {
+		where := "pack is not null && pack!=''"
+		searchFor = ""
+		if result = db.Where(where).
+			Order(orderBy).
+			Find(&movies); result.Error != nil {
+			return nil, result.Error
+		}
+	} else if searchFor == "" && categoryId == -1 {
 		if result = db.Order(orderBy).Find(&movies); result.Error != nil {
+			return nil, result.Error
+		}
+	} else if strings.HasPrefix(searchFor, "pack") {
+		where := "pack is not null && pack!=''"
+		searchFor = ""
+		if result = db.Where(where).
+			Order(orderBy).
+			Find(&movies); result.Error != nil {
 			return nil, result.Error
 		}
 	} else if searchFor != "" && categoryId == -1 {
@@ -254,6 +271,10 @@ func (d *Database) UpdateMovie(movie *Movie, updateTags bool) error {
 			}
 
 			if result := db.Model(&movie).Update("image_id", movie.ImageId); result.Error != nil {
+				return result.Error
+			}
+
+			if result := db.Model(&movie).Update("pack", movie.Pack); result.Error != nil {
 				return result.Error
 			}
 

@@ -23,3 +23,16 @@ border {
     background: #f1e3ae;
     border-radius: 5px;
 }
+
+.packBackground {
+    background-image: none;
+    background-color: #585858;
+}
+
+.packLabel {
+    background-image: none;
+    background-color: #e3c75b;
+    padding: 5px;
+    min-height: 300px;
+    border-radius: 5px 0px 0px 5px;
+}

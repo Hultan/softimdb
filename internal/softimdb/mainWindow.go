@@ -46,6 +46,7 @@ type mainWindow struct {
 	menuNoTagItem                         *gtk.RadioMenuItem
 	menuSortByName, menuSortByRating      *gtk.RadioMenuItem
 	menuSortByYear, menuSortById          *gtk.RadioMenuItem
+	menuSortByPacksOnly                   *gtk.RadioMenuItem
 	menuSortAscending, menuSortDescending *gtk.RadioMenuItem
 
 	movieWin    *movieWindow
@@ -165,6 +166,15 @@ func (m *mainWindow) setupMenu(window *gtk.ApplicationWindow) {
 			}
 		},
 	)
+	m.menuSortByPacksOnly = m.builder.GetObject("menuSortByPacksOnly").(*gtk.RadioMenuItem)
+	m.menuSortByPacksOnly.Connect(
+		"activate", func() {
+			if m.menuSortById.GetActive() {
+				sortBy = sortByPacksOnly
+				m.refresh(searchFor, searchGenreId, getSortBy())
+			}
+		},
+	)
 
 	m.menuSortAscending = m.builder.GetObject("menuSortAscending").(*gtk.RadioMenuItem)
 	m.menuSortAscending.Connect(
@@ -209,10 +219,17 @@ func (m *mainWindow) fillMovieList(searchFor string, categoryId int, sortBy stri
 		log.Fatal(err)
 	}
 
+	screen, err := gdk.ScreenGetDefault()
+	if err != nil {
+		reportError(err)
+		log.Fatal(err)
+	}
+	gtk.AddProviderForScreen(screen, cssProvider, gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
+
 	for i := range movies {
 		movie := movies[i]
 		m.movies[movie.Id] = movie
-		card := listHelper.CreateMovieCard(movie, cssProvider)
+		card := listHelper.CreateMovieCard(movie)
 		m.movieList.Add(card)
 		card.SetName("movie_" + strconv.Itoa(movie.Id))
 	}
@@ -283,6 +300,15 @@ func (m *mainWindow) setupToolBar() {
 	_ = sortByIdButton.Connect(
 		"clicked", func() {
 			sortBy = sortById
+			sortOrder = sortDescending
+			m.refresh("", -1, getSortBy())
+		},
+	)
+
+	sortByPacksOnlyButton := m.builder.GetObject("sortByPacksOnly").(*gtk.ToolButton)
+	_ = sortByPacksOnlyButton.Connect(
+		"clicked", func() {
+			sortBy = sortByPacksOnly
 			sortOrder = sortDescending
 			m.refresh("", -1, getSortBy())
 		},
