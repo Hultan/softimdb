@@ -25,6 +25,9 @@ var mainGlade string
 //go:embed assets/toWatch.png
 var toWatchIcon []byte
 
+//go:embed assets/softimdb.css
+var mainCss string
+
 const configFile = "/home/per/.config/softteam/softimdb/config.json"
 
 type mainWindow struct {
@@ -200,12 +203,18 @@ func (m *mainWindow) fillMovieList(searchFor string, categoryId int, sortBy stri
 	listHelper := ListHelperNew()
 	clearFlowBox(m.movieList)
 
+	cssProvider, _ := gtk.CssProviderNew()
+	if err = cssProvider.LoadFromData(mainCss); err != nil {
+		reportError(err)
+		log.Fatal(err)
+	}
+
 	for i := range movies {
 		movie := movies[i]
 		m.movies[movie.Id] = movie
-		frame := listHelper.CreateMovieCard(movie)
-		m.movieList.Add(frame)
-		frame.SetName("frame_" + strconv.Itoa(movie.Id))
+		card := listHelper.CreateMovieCard(movie, cssProvider)
+		m.movieList.Add(card)
+		card.SetName("movie_" + strconv.Itoa(movie.Id))
 	}
 
 	m.updateCountLabel(len(movies))

@@ -18,9 +18,8 @@ func ListHelperNew() *ListHelper {
 }
 
 // CreateMovieCard creates a movie card (a gtk.Frame) to be placed in a gtk.FlowBox
-func (l *ListHelper) CreateMovieCard(movie *data.Movie) *gtk.Frame {
-	// TODO : Frame could be replaced with CSS border to the box?
-	// Create a frame (for the border)
+func (l *ListHelper) CreateMovieCard(movie *data.Movie, cssProvider *gtk.CssProvider) *gtk.Frame {
+	// Create a gtk.Frame to contain the movie card and provide it with a border
 	frame, err := gtk.FrameNew("")
 	if err != nil {
 		reportError(err)
@@ -35,7 +34,15 @@ func (l *ListHelper) CreateMovieCard(movie *data.Movie) *gtk.Frame {
 	}
 	frame.Add(overlay)
 
-	box := createMovieBox(movie)
+	// CSS
+	frameContext, err := frame.GetStyleContext()
+	if err != nil {
+		reportError(err)
+		log.Fatal(err)
+	}
+	frameContext.AddProvider(cssProvider, gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
+
+	box := createMovieBox(movie, cssProvider)
 	overlay.AddOverlay(box)
 
 	// Add to watch flag (if needed)
@@ -46,20 +53,32 @@ func (l *ListHelper) CreateMovieCard(movie *data.Movie) *gtk.Frame {
 
 	imdbRating := createIMDBRatingOverlay(movie)
 	overlay.AddOverlay(imdbRating)
+	imdbContext, err := imdbRating.GetStyleContext()
+	if err != nil {
+		reportError(err)
+		log.Fatal(err)
+	}
+	imdbContext.AddProvider(cssProvider, gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
 
 	myRating := createMyRatingOverlay(movie)
 	overlay.AddOverlay(myRating)
+	myContext, err := myRating.GetStyleContext()
+	if err != nil {
+		reportError(err)
+		log.Fatal(err)
+	}
+	myContext.AddProvider(cssProvider, gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
 
 	// This is to make sure that all cards have an equal height of 430 (even if they have a small image)
 	// and also to make sure that they have a minimal width, which makes the gtk.FlowBox to display four movies
 	// per row.
-	frame.SetSizeRequest(385, 430)
+	overlay.SetSizeRequest(385, 470)
 
 	return frame
 }
 
 // createMovieBox creates a gtk.Box that contains all the information about a single movie
-func createMovieBox(movie *data.Movie) *gtk.Box {
+func createMovieBox(movie *data.Movie, cssProvider *gtk.CssProvider) *gtk.Box {
 	box, err := gtk.BoxNew(gtk.ORIENTATION_VERTICAL, 10)
 	if err != nil {
 		reportError(err)
@@ -67,6 +86,13 @@ func createMovieBox(movie *data.Movie) *gtk.Box {
 	}
 
 	info := createMovieInfoBox(movie)
+	infoContext, err := info.GetStyleContext()
+	if err != nil {
+		reportError(err)
+		log.Fatal(err)
+	}
+	infoContext.AddProvider(cssProvider, gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
+
 	box.PackStart(info, false, false, 5)
 
 	// Image
@@ -80,7 +106,7 @@ func createMovieBox(movie *data.Movie) *gtk.Box {
 	return box
 }
 
-// createMovieInfoBox creates a box containing movie title, subtitle and year
+// createMovieInfoBox creates a box containing movie title, year and subtitle
 func createMovieInfoBox(movie *data.Movie) *gtk.Box {
 	box, err := gtk.BoxNew(gtk.ORIENTATION_HORIZONTAL, 5)
 	if err != nil {
@@ -94,25 +120,26 @@ func createMovieInfoBox(movie *data.Movie) *gtk.Box {
 	}
 	label.SetJustify(gtk.JUSTIFY_CENTER)
 	label.SetMarkup(getMovieInfoMarkup(movie))
+	label.SetSizeRequest(0, 48)
 	box.PackStart(label, true, false, 5)
+	box.SetName("titleBox")
 
 	return box
 }
 
-// getMovieInfoMarkup returns the markup for the title, subtitle for the movie
+// getMovieInfoMarkup returns the markup for the movie title, year and subtitle.
 func getMovieInfoMarkup(movie *data.Movie) string {
 	s := ""
 
-	// Title
-	s += `<span font="Sans Regular 16" foreground="#111111"><b>`
-	s += cleanString(movie.Title)
-	s += `</b></span>`
-	s += "\n"
+	// Title & Year
+	s += fmt.Sprintf(`<span font="Sans Regular 13" foreground="#141103"><b>%s</b></span>`, cleanString(movie.Title))
+	s += fmt.Sprintf(`<span font="Sans Regular 13" foreground="#141103"> (%d)</span>`, movie.Year)
 
 	// Subtitle
-	s += `<span font="Sans Regular 12" foreground="#111111"><b>`
-	s += cleanString(movie.SubTitle)
-	s += `</b></span>`
+	if movie.SubTitle != "" {
+		s += "\n"
+		s += fmt.Sprintf(`<span font="Sans Regular 12" foreground="#292207"><b>%s</b></span>`, cleanString(movie.SubTitle))
+	}
 
 	return s
 }
@@ -158,13 +185,8 @@ func createMovieGenresLabel(movie *data.Movie) *gtk.Label {
 		log.Fatal(err)
 	}
 
-	// Year
-	year := `<span font="Sans Regular 10" foreground="#AAAAAA">`
-	year += fmt.Sprintf("%v", movie.Year)
-	year += `</span> - `
-
 	s = `<span font="Sans Regular 10" foreground="#AAAAAA">` + s + `</span>`
-	label.SetMarkup(year + s)
+	label.SetMarkup(s)
 
 	return label
 }
@@ -183,8 +205,8 @@ func createToWatchOverlay() *gtk.Image {
 	}
 	image.SetVAlign(gtk.ALIGN_START)
 	image.SetHAlign(gtk.ALIGN_START)
-	image.SetMarginStart(10)
-	image.SetMarginTop(10)
+	image.SetMarginStart(23)
+	image.SetMarginTop(100)
 
 	return image
 }
@@ -198,6 +220,7 @@ func createIMDBRatingOverlay(movie *data.Movie) *gtk.Label {
 	}
 	label.SetJustify(gtk.JUSTIFY_CENTER)
 	label.SetMarkup(getIMDBRatingMarkup(movie))
+	label.SetName("imdbRatingBox")
 
 	label.SetHAlign(gtk.ALIGN_START)
 	label.SetVAlign(gtk.ALIGN_END)
@@ -209,8 +232,8 @@ func createIMDBRatingOverlay(movie *data.Movie) *gtk.Label {
 
 // getIMDBRatingMarkup returns the markup for the IMDB rating
 func getIMDBRatingMarkup(movie *data.Movie) string {
-	s := `<span font="Sans Regular 12" foreground="#AAAA00">`
-	s += fmt.Sprintf("Imdb rating : %v", movie.ImdbRating)
+	s := `<span font="Sans Regular 12" foreground="#141103">IMDB : `
+	s += fmt.Sprintf("%v", movie.ImdbRating)
 	s += `</span>   `
 
 	return s
@@ -223,12 +246,10 @@ func createMyRatingOverlay(movie *data.Movie) *gtk.Label {
 		reportError(err)
 		log.Fatal(err)
 	}
-	if movie.MyRating == 0 {
-		return label
-	}
 
 	label.SetJustify(gtk.JUSTIFY_CENTER)
 	label.SetMarkup(getMyRatingMarkup(movie))
+	label.SetName("myRatingBox")
 
 	label.SetHAlign(gtk.ALIGN_END)
 	label.SetVAlign(gtk.ALIGN_END)
@@ -240,9 +261,16 @@ func createMyRatingOverlay(movie *data.Movie) *gtk.Label {
 
 // getMyRatingMarkup returns the markup for my rating
 func getMyRatingMarkup(movie *data.Movie) string {
-	s := `<span font="Sans Regular 12" foreground="#AAAA00">`
-	s += fmt.Sprintf("My rating: %v/5", movie.MyRating)
-	s += `</span>`
+	var s string
+	if movie.MyRating == 0 {
+		s = `<span font="Sans Regular 12" foreground="#666666">`
+		s += fmt.Sprintf("My rating:    ")
+		s += `</span>`
+	} else {
+		s = `<span font="Sans Regular 12" foreground="#141103">`
+		s += fmt.Sprintf("My rating: %v/5", movie.MyRating)
+		s += `</span>`
+	}
 
 	return s
 }

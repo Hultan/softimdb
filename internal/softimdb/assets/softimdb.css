@@ -1,0 +1,25 @@
+border {
+    border: 2px solid #444444;
+    border-radius: 5px;
+}
+
+#titleBox {
+    margin: 10px 15px 10px 15px;
+    padding: 5px;
+    background: #faf6e6;
+    border-radius: 5px;
+}
+
+#imdbRatingBox {
+    margin: 10px 15px 10px 15px;
+    padding: 5px;
+    background: #f1e3ae;
+    border-radius: 5px;
+}
+
+#myRatingBox {
+    margin: 10px 15px 10px 15px;
+    padding: 5px;
+    background: #f1e3ae;
+    border-radius: 5px;
+}
