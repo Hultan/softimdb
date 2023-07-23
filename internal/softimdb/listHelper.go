@@ -44,8 +44,14 @@ func (l *ListHelper) CreateMovieCard(movie *data.Movie) *gtk.Frame {
 		overlay.AddOverlay(toWatchImage)
 	}
 
+	imdbRating := createIMDBRatingOverlay(movie)
+	overlay.AddOverlay(imdbRating)
+
+	myRating := createMyRatingOverlay(movie)
+	overlay.AddOverlay(myRating)
+
 	// This is to make sure that all cards have an equal height of 430 (even if they have a small image)
-	// and also to make sure that they have a minimal width, which makes the flowbox to display four movies
+	// and also to make sure that they have a minimal width, which makes the gtk.FlowBox to display four movies
 	// per row.
 	frame.SetSizeRequest(385, 430)
 
@@ -68,50 +74,47 @@ func createMovieBox(movie *data.Movie) *gtk.Box {
 	box.Add(image)
 
 	// Genres
-	label := createGenresLabel(movie)
+	label := createMovieGenresLabel(movie)
 	box.Add(label)
 
 	return box
 }
 
-// createMovieInfoBox creates a box containing movie title, year and IMDB rating
+// createMovieInfoBox creates a box containing movie title, subtitle and year
 func createMovieInfoBox(movie *data.Movie) *gtk.Box {
 	box, err := gtk.BoxNew(gtk.ORIENTATION_HORIZONTAL, 5)
 	if err != nil {
 		reportError(err)
 		log.Fatal(err)
 	}
-	titleLabel, err := gtk.LabelNew("")
-	if err != nil {
-		reportError(err)
-		log.Fatal(err)
-	}
-	titleLabel.SetJustify(gtk.JUSTIFY_CENTER)
-	titleLabel.SetMarkup(getMarkup(movie))
-	box.PackStart(titleLabel, true, false, 5)
-
-	return box
-}
-
-// createGenresLabel creates a gtk.Label containing all genres comma separated
-func createGenresLabel(movie *data.Movie) *gtk.Label {
-	var str string
-	for i := range movie.Tags {
-		tag := movie.Tags[i]
-		if str != "" {
-			str += ", "
-		}
-		str += tag.Name
-	}
 	label, err := gtk.LabelNew("")
 	if err != nil {
 		reportError(err)
 		log.Fatal(err)
 	}
-	str = `<span font="Sans Regular 10" foreground="#DDDDDD">` + str + `</span>`
-	label.SetMarkup(str)
+	label.SetJustify(gtk.JUSTIFY_CENTER)
+	label.SetMarkup(getMovieInfoMarkup(movie))
+	box.PackStart(label, true, false, 5)
 
-	return label
+	return box
+}
+
+// getMovieInfoMarkup returns the markup for the title, subtitle for the movie
+func getMovieInfoMarkup(movie *data.Movie) string {
+	s := ""
+
+	// Title
+	s += `<span font="Sans Regular 16" foreground="#111111"><b>`
+	s += cleanString(movie.Title)
+	s += `</b></span>`
+	s += "\n"
+
+	// Subtitle
+	s += `<span font="Sans Regular 12" foreground="#111111"><b>`
+	s += cleanString(movie.SubTitle)
+	s += `</b></span>`
+
+	return s
 }
 
 // createMovieImage creates a gtk.Image for the movie
@@ -138,6 +141,34 @@ func createMovieImage(movie *data.Movie) *gtk.Image {
 	return image
 }
 
+// createMovieGenresLabel creates a gtk.Label containing the movie release year and all genres comma separated
+func createMovieGenresLabel(movie *data.Movie) *gtk.Label {
+	var s string
+
+	for i := range movie.Tags {
+		tag := movie.Tags[i]
+		if s != "" {
+			s += ", "
+		}
+		s += tag.Name
+	}
+	label, err := gtk.LabelNew("")
+	if err != nil {
+		reportError(err)
+		log.Fatal(err)
+	}
+
+	// Year
+	year := `<span font="Sans Regular 10" foreground="#AAAAAA">`
+	year += fmt.Sprintf("%v", movie.Year)
+	year += `</span> - `
+
+	s = `<span font="Sans Regular 10" foreground="#AAAAAA">` + s + `</span>`
+	label.SetMarkup(year + s)
+
+	return label
+}
+
 // createToWatchOverlay creates a gtk.Image containing the to watch image
 func createToWatchOverlay() *gtk.Image {
 	pixBuf, err := gdk.PixbufNewFromBytesOnly(toWatchIcon)
@@ -158,33 +189,60 @@ func createToWatchOverlay() *gtk.Image {
 	return image
 }
 
-// getMarkup returns the markup for the title, subtitle, year & ratings for the movie
-func getMarkup(movie *data.Movie) string {
-	s := ""
-
-	// Title
-	s += `<span font="Sans Regular 14" foreground="#111111"><b>`
-	s += cleanString(movie.Title)
-	s += `</b></span>`
-	s += "\n"
-
-	// Subtitle
-	s += `<span font="Sans Regular 10" foreground="#111111"><b>`
-	s += cleanString(movie.SubTitle)
-	s += `</b></span>`
-	s += "\n"
-
-	// Year & ratings
-	s += `<span font="Sans Regular 10" foreground="#DDDDDD">`
-	s += fmt.Sprintf("%v", movie.Year)
-	s += `</span> - <span font="Sans Regular 10" foreground="#AAAA00">`
-	s += fmt.Sprintf("Imdb rating : %v", movie.ImdbRating)
-	s += `</span>`
-	if movie.MyRating > 0 {
-		s += ` - <span font="Sans Regular 10" foreground="#DDDDDD">`
-		s += fmt.Sprintf("My rating: %v/5", movie.MyRating)
-		s += `</span>`
+// createIMDBRatingOverlay creates a gtk.Label containing IMDB rating
+func createIMDBRatingOverlay(movie *data.Movie) *gtk.Label {
+	label, err := gtk.LabelNew("")
+	if err != nil {
+		reportError(err)
+		log.Fatal(err)
 	}
+	label.SetJustify(gtk.JUSTIFY_CENTER)
+	label.SetMarkup(getIMDBRatingMarkup(movie))
+
+	label.SetHAlign(gtk.ALIGN_START)
+	label.SetVAlign(gtk.ALIGN_END)
+	label.SetMarginStart(10)
+	label.SetMarginBottom(10)
+
+	return label
+}
+
+// getIMDBRatingMarkup returns the markup for the IMDB rating
+func getIMDBRatingMarkup(movie *data.Movie) string {
+	s := `<span font="Sans Regular 12" foreground="#AAAA00">`
+	s += fmt.Sprintf("Imdb rating : %v", movie.ImdbRating)
+	s += `</span>   `
+
+	return s
+}
+
+// createMyRatingOverlay creates a gtk.Label containing my rating
+func createMyRatingOverlay(movie *data.Movie) *gtk.Label {
+	label, err := gtk.LabelNew("")
+	if err != nil {
+		reportError(err)
+		log.Fatal(err)
+	}
+	if movie.MyRating == 0 {
+		return label
+	}
+
+	label.SetJustify(gtk.JUSTIFY_CENTER)
+	label.SetMarkup(getMyRatingMarkup(movie))
+
+	label.SetHAlign(gtk.ALIGN_END)
+	label.SetVAlign(gtk.ALIGN_END)
+	label.SetMarginEnd(10)
+	label.SetMarginBottom(10)
+
+	return label
+}
+
+// getMyRatingMarkup returns the markup for my rating
+func getMyRatingMarkup(movie *data.Movie) string {
+	s := `<span font="Sans Regular 12" foreground="#AAAA00">`
+	s += fmt.Sprintf("My rating: %v/5", movie.MyRating)
+	s += `</span>`
 
 	return s
 }
