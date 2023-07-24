@@ -403,6 +403,14 @@
                   <object class="GtkEntry" id="searchEntry">
                     <property name="visible">True</property>
                     <property name="can-focus">True</property>
+                    <property name="tooltip-text" translatable="yes">Search for a string in the title, subtitle, year or story line.
+
+If you prefix the search string with:
+title:	// Searches title and subtitle
+year:
+pack:
+imdb:
+only that field will be searched.</property>
                   </object>
                 </child>
               </object>

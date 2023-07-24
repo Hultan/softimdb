@@ -1,9 +1,8 @@
 package data
 
 import (
-	"strings"
-
 	"gorm.io/gorm"
+	"strings"
 )
 
 // Movie represents a movie in the database.
@@ -63,69 +62,35 @@ func (d *Database) GetMovie(id int) (*Movie, error) {
 	return &movie, nil
 }
 
-// GetAllMovies returns all movies in the database.
+// GetAllMovies returns all movies in the database that matches the search criteria.
 func (d *Database) GetAllMovies(searchFor string, categoryId int, orderBy string) ([]*Movie, error) {
 	db, err := d.getDatabase()
 	if err != nil {
 		return nil, err
 	}
-	if orderBy == "" {
-		orderBy = "title asc"
+
+	var (
+		movies                        []*Movie
+		sqlJoin, sqlWhere, sqlOrderBy string
+		sqlArgs                       map[string]interface{}
+	)
+	sqlOrderBy = orderBy
+
+	if categoryId == -1 {
+		sqlWhere, sqlArgs = getStandardSearch(searchFor)
+	} else {
+		sqlJoin, sqlWhere, sqlArgs = getCategorySearch(searchFor, categoryId)
 	}
 
-	var movies []*Movie
-
-	var result *gorm.DB
-
-	if searchFor == "" && categoryId == -1 {
-		if result = db.Order(orderBy).Find(&movies); result.Error != nil {
-			return nil, result.Error
-		}
-	} else if strings.HasPrefix(searchFor, "pack") {
-		where := "pack is not null && pack!=''"
-		searchFor = ""
-		if result = db.Where(where).
-			Order(orderBy).
-			Find(&movies); result.Error != nil {
-			return nil, result.Error
-		}
-	} else if searchFor != "" && categoryId == -1 {
-		var where string
-		if strings.HasPrefix(searchFor, "title:") {
-			where = "title like ? OR sub_title like ?"
-			searchFor = searchFor[6:]
-		} else if strings.HasPrefix(searchFor, "year:") {
-			where = "year like ?"
-			searchFor = searchFor[5:]
-		} else {
-			where = "title like ? OR sub_title like ? OR year like ? OR story_line like ?"
-		}
-
-		s := "%" + searchFor + "%"
-		if result = db.Where(where, s, s, s, s).
-			Order(orderBy).
-			Find(&movies); result.Error != nil {
-			return nil, result.Error
-		}
-	} else if searchFor == "" && categoryId >= 0 {
-		if result = db.Joins("JOIN movie_tag on movies.id = movie_tag.movie_id").
-			Where("movie_tag.tag_id = ?", categoryId).
-			Order(orderBy).
-			Find(&movies); result.Error != nil {
-			return nil, result.Error
-		}
-	} else {
-		s := "%" + searchFor + "%"
-		if result = db.Joins("JOIN movie_tag on movies.id = movie_tag.movie_id").
-			Where(
-				"(title like ? OR sub_title like ? OR year like ? OR story_line like ?) AND movie_tag.tag_id = ?", s, s,
-				s,
-				s, categoryId,
-			).
-			Order(orderBy).
-			Find(&movies); result.Error != nil {
-			return nil, result.Error
-		}
+	query := db
+	if sqlJoin != "" {
+		query = query.Joins(sqlJoin)
+	}
+	if sqlWhere != "" {
+		query = query.Where(sqlWhere, sqlArgs)
+	}
+	if result := query.Order(sqlOrderBy).Find(&movies); result.Error != nil {
+		return nil, result.Error
 	}
 
 	movies, err = d.getImagesForMovies(movies)
@@ -134,6 +99,61 @@ func (d *Database) GetAllMovies(searchFor string, categoryId int, orderBy string
 	}
 
 	return movies, nil
+}
+
+func getCategorySearch(searchFor string, categoryId int) (string, string, map[string]interface{}) {
+	var sqlWhere, sqlJoin string
+	var sqlArgs map[string]interface{}
+	sqlArgs = make(map[string]interface{}, 0)
+
+	if searchFor == "" {
+		sqlJoin = "JOIN movie_tag on movies.id = movie_tag.movie_id"
+		sqlWhere = "movie_tag.tag_id = @category"
+		sqlArgs["category"] = categoryId
+	} else {
+		sqlJoin = "JOIN movie_tag on movies.id = movie_tag.movie_id"
+		sqlWhere = "(title like @search OR sub_title like @search OR year like @search OR story_line like @search) AND movie_tag.tag_id = @category"
+		sqlArgs["search"] = "%" + searchFor + "%"
+		sqlArgs["category"] = categoryId
+	}
+	return sqlJoin, sqlWhere, sqlArgs
+}
+
+func getStandardSearch(searchFor string) (string, map[string]interface{}) {
+	var sqlWhere string
+	var sqlArgs map[string]interface{}
+	sqlArgs = make(map[string]interface{}, 0)
+	if searchFor != "" {
+		prefix, search := getSearchPrefix(searchFor)
+		switch prefix {
+		case "title":
+			sqlWhere = "title like @search OR sub_title like @search"
+		case "year":
+			sqlWhere = "year like @search"
+		case "pack":
+			sqlWhere = "pack like @search"
+		case "imdb":
+			sqlWhere = "imdb_rating > @search"
+		default:
+			sqlWhere = "title like @search OR sub_title like @search OR year like @search OR story_line like @search"
+		}
+		sqlArgs["search"] = search
+	}
+	return sqlWhere, sqlArgs
+}
+
+func getSearchPrefix(searchFor string) (string, string) {
+	if strings.HasPrefix(searchFor, "title:") {
+		return "title", "%" + searchFor[6:] + "%"
+	} else if strings.HasPrefix(searchFor, "year:") {
+		return "year", "%" + searchFor[5:] + "%"
+	} else if strings.HasPrefix(searchFor, "pack:") {
+		return "pack", "%" + searchFor[5:] + "%"
+	} else if strings.HasPrefix(searchFor, "imdb:") {
+		return "imdb", searchFor[5:]
+	} else {
+		return "", "%" + searchFor + "%"
+	}
 }
 
 func (d *Database) getImagesForMovies(movies []*Movie) ([]*Movie, error) {
