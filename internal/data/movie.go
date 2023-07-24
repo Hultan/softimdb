@@ -76,15 +76,8 @@ func (d *Database) GetAllMovies(searchFor string, categoryId int, orderBy string
 	var movies []*Movie
 
 	var result *gorm.DB
-	if strings.HasPrefix(orderBy, "pack") {
-		where := "pack is not null && pack!=''"
-		searchFor = ""
-		if result = db.Where(where).
-			Order(orderBy).
-			Find(&movies); result.Error != nil {
-			return nil, result.Error
-		}
-	} else if searchFor == "" && categoryId == -1 {
+
+	if searchFor == "" && categoryId == -1 {
 		if result = db.Order(orderBy).Find(&movies); result.Error != nil {
 			return nil, result.Error
 		}

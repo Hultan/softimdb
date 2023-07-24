@@ -46,7 +46,6 @@ type mainWindow struct {
 	menuNoTagItem                         *gtk.RadioMenuItem
 	menuSortByName, menuSortByRating      *gtk.RadioMenuItem
 	menuSortByYear, menuSortById          *gtk.RadioMenuItem
-	menuSortByPacksOnly                   *gtk.RadioMenuItem
 	menuSortAscending, menuSortDescending *gtk.RadioMenuItem
 
 	movieWin    *movieWindow
@@ -162,15 +161,6 @@ func (m *mainWindow) setupMenu(window *gtk.ApplicationWindow) {
 		"activate", func() {
 			if m.menuSortById.GetActive() {
 				sortBy = sortById
-				m.refresh(searchFor, searchGenreId, getSortBy())
-			}
-		},
-	)
-	m.menuSortByPacksOnly = m.builder.GetObject("menuSortByPacksOnly").(*gtk.RadioMenuItem)
-	m.menuSortByPacksOnly.Connect(
-		"activate", func() {
-			if m.menuSortById.GetActive() {
-				sortBy = sortByPacksOnly
 				m.refresh(searchFor, searchGenreId, getSortBy())
 			}
 		},
@@ -300,15 +290,6 @@ func (m *mainWindow) setupToolBar() {
 	_ = sortByIdButton.Connect(
 		"clicked", func() {
 			sortBy = sortById
-			sortOrder = sortDescending
-			m.refresh("", -1, getSortBy())
-		},
-	)
-
-	sortByPacksOnlyButton := m.builder.GetObject("sortByPacksOnly").(*gtk.ToolButton)
-	_ = sortByPacksOnlyButton.Connect(
-		"clicked", func() {
-			sortBy = sortByPacksOnly
 			sortOrder = sortDescending
 			m.refresh("", -1, getSortBy())
 		},
