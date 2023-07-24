@@ -135,6 +135,15 @@ func (d *Database) GetAllMovies(searchFor string, categoryId int, orderBy string
 		}
 	}
 
+	movies, err = d.getImagesForMovies(movies)
+	if err != nil {
+		return nil, err
+	}
+
+	return movies, nil
+}
+
+func (d *Database) getImagesForMovies(movies []*Movie) ([]*Movie, error) {
 	// Get images for movies
 	for i := range movies {
 		movie := movies[i]
@@ -158,7 +167,6 @@ func (d *Database) GetAllMovies(searchFor string, categoryId int, orderBy string
 		d.getMovieImage(movie)
 		d.cache.Save(movie.Id, movie.Image)
 	}
-
 	return movies, nil
 }
 
