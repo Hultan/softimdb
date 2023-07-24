@@ -54,9 +54,18 @@ type mainWindow struct {
 	movies map[int]*data.Movie
 }
 
+type View string
+
+const (
+	viewAll     View = "all"
+	viewPacks        = "packs"
+	viewToWatch      = "toWatch"
+)
+
 var sortBy, sortOrder string
 var searchGenreId int
 var searchFor string
+var currentView View
 
 // NewMainWindow : Creates a new mainWindow object
 func NewMainWindow() *mainWindow {
@@ -193,8 +202,78 @@ func (m *mainWindow) setupMenu(window *gtk.ApplicationWindow) {
 	m.fillTagsMenu(menuTags)
 }
 
+func (m *mainWindow) setupToolBar() {
+	// Quit button
+	button := m.builder.GetObject("quitButton").(*gtk.ToolButton)
+	_ = button.Connect("clicked", m.window.Close)
+
+	// Refresh button
+	button = m.builder.GetObject("refreshButton").(*gtk.ToolButton)
+	_ = button.Connect("clicked", m.onRefreshButtonClicked)
+
+	// Add button
+	button = m.builder.GetObject("addButton").(*gtk.ToolButton)
+	_ = button.Connect("clicked", m.onOpenAddWindowClicked)
+
+	// Search button
+	m.searchButton = m.builder.GetObject("searchButton").(*gtk.ToolButton)
+	_ = m.searchButton.Connect("clicked", m.onSearchButtonClicked)
+
+	// Search entry
+	m.searchEntry = m.builder.GetObject("searchEntry").(*gtk.Entry)
+	_ = m.searchEntry.Connect("activate", m.onSearchButtonClicked)
+
+	// Sort by buttons
+	sortByNameButton := m.builder.GetObject("sortByName").(*gtk.ToolButton)
+	_ = sortByNameButton.Connect(
+		"clicked", func() {
+			sortBy = sortByName
+			sortOrder = sortAscending
+			m.refresh("", -1, getSortBy())
+		},
+	)
+
+	sortByIdButton := m.builder.GetObject("sortById").(*gtk.ToolButton)
+	_ = sortByIdButton.Connect(
+		"clicked", func() {
+			sortBy = sortById
+			sortOrder = sortDescending
+			m.refresh("", -1, getSortBy())
+		},
+	)
+
+	viewAllButton := m.builder.GetObject("viewAll").(*gtk.ToggleToolButton)
+	viewPacksButton := m.builder.GetObject("viewPacks").(*gtk.ToggleToolButton)
+	viewToWatchButton := m.builder.GetObject("viewToWatch").(*gtk.ToggleToolButton)
+
+	_ = viewAllButton.Connect("toggled", func() {
+		if viewAllButton.GetActive() {
+			currentView = viewAll
+			viewPacksButton.SetActive(false)
+			viewToWatchButton.SetActive(false)
+			m.refresh(searchFor, searchGenreId, getSortBy())
+		}
+	})
+	_ = viewPacksButton.Connect("toggled", func() {
+		if viewPacksButton.GetActive() {
+			currentView = viewPacks
+			viewAllButton.SetActive(false)
+			viewToWatchButton.SetActive(false)
+			m.refresh(searchFor, searchGenreId, getSortBy())
+		}
+	})
+	_ = viewToWatchButton.Connect("toggled", func() {
+		if viewToWatchButton.GetActive() {
+			currentView = viewToWatch
+			viewAllButton.SetActive(false)
+			viewPacksButton.SetActive(false)
+			m.refresh(searchFor, searchGenreId, getSortBy())
+		}
+	})
+}
+
 func (m *mainWindow) fillMovieList(searchFor string, categoryId int, sortBy string) {
-	movies, err := m.database.GetAllMovies(searchFor, categoryId, sortBy)
+	movies, err := m.database.GetAllMovies(string(currentView), searchFor, categoryId, sortBy)
 	if err != nil {
 		reportError(err)
 		log.Fatal(err)
@@ -253,47 +332,6 @@ func (m *mainWindow) getSelectedMovie() *data.Movie {
 		return nil
 	}
 	return m.movies[id]
-}
-
-func (m *mainWindow) setupToolBar() {
-	// Quit button
-	button := m.builder.GetObject("quitButton").(*gtk.ToolButton)
-	_ = button.Connect("clicked", m.window.Close)
-
-	// Refresh button
-	button = m.builder.GetObject("refreshButton").(*gtk.ToolButton)
-	_ = button.Connect("clicked", m.onRefreshButtonClicked)
-
-	// Add button
-	button = m.builder.GetObject("addButton").(*gtk.ToolButton)
-	_ = button.Connect("clicked", m.onOpenAddWindowClicked)
-
-	// Search button
-	m.searchButton = m.builder.GetObject("searchButton").(*gtk.ToolButton)
-	_ = m.searchButton.Connect("clicked", m.onSearchButtonClicked)
-
-	// Search entry
-	m.searchEntry = m.builder.GetObject("searchEntry").(*gtk.Entry)
-	_ = m.searchEntry.Connect("activate", m.onSearchButtonClicked)
-
-	// Sort by buttons
-	sortByNameButton := m.builder.GetObject("sortByName").(*gtk.ToolButton)
-	_ = sortByNameButton.Connect(
-		"clicked", func() {
-			sortBy = sortByName
-			sortOrder = sortAscending
-			m.refresh("", -1, getSortBy())
-		},
-	)
-
-	sortByIdButton := m.builder.GetObject("sortById").(*gtk.ToolButton)
-	_ = sortByIdButton.Connect(
-		"clicked", func() {
-			sortBy = sortById
-			sortOrder = sortDescending
-			m.refresh("", -1, getSortBy())
-		},
-	)
 }
 
 func (m *mainWindow) refresh(search string, categoryId int, sortBy string) {

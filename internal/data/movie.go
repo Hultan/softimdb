@@ -63,7 +63,7 @@ func (d *Database) GetMovie(id int) (*Movie, error) {
 }
 
 // GetAllMovies returns all movies in the database that matches the search criteria.
-func (d *Database) GetAllMovies(searchFor string, categoryId int, orderBy string) ([]*Movie, error) {
+func (d *Database) GetAllMovies(currentView string, searchFor string, categoryId int, orderBy string) ([]*Movie, error) {
 	db, err := d.getDatabase()
 	if err != nil {
 		return nil, err
@@ -82,12 +82,18 @@ func (d *Database) GetAllMovies(searchFor string, categoryId int, orderBy string
 		sqlJoin, sqlWhere, sqlArgs = getCategorySearch(searchFor, categoryId)
 	}
 
+	sqlWhere = addViewSQL(currentView, sqlWhere)
+
 	query := db
 	if sqlJoin != "" {
 		query = query.Joins(sqlJoin)
 	}
 	if sqlWhere != "" {
-		query = query.Where(sqlWhere, sqlArgs)
+		if len(sqlArgs) == 0 {
+			query = query.Where(sqlWhere)
+		} else {
+			query = query.Where(sqlWhere, sqlArgs)
+		}
 	}
 	if result := query.Order(sqlOrderBy).Find(&movies); result.Error != nil {
 		return nil, result.Error
@@ -99,6 +105,20 @@ func (d *Database) GetAllMovies(searchFor string, categoryId int, orderBy string
 	}
 
 	return movies, nil
+}
+
+func addViewSQL(view string, where string) string {
+	var sql string
+	switch view {
+	case "packs":
+		sql = "pack != '' AND pack is not null"
+	case "toWatch":
+		sql = "to_watch = true"
+	}
+	if where != "" && sql != "" {
+		sql = " AND " + sql
+	}
+	return where + sql
 }
 
 func getCategorySearch(searchFor string, categoryId int) (string, string, map[string]interface{}) {
