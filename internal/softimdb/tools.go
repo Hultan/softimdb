@@ -100,6 +100,9 @@ func findMovieFile(path string) (string, error) {
 		if strings.HasSuffix(file, "mkv") {
 			return file, nil
 		}
+		if strings.HasSuffix(file, "mp4") {
+			return file, nil
+		}
 	}
 	return "", nil
 }
