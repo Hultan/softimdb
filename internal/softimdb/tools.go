@@ -88,6 +88,9 @@ func openBrowser(url string) {
 }
 
 func findMovieFile(path string) (string, error) {
+	// Movie file extensions to look for
+	var ext = []string{"mp4", "mkv", "avi", "webm"}
+
 	f, err := os.Open(path)
 	if err != nil {
 		return "", err
@@ -97,11 +100,11 @@ func findMovieFile(path string) (string, error) {
 		return "", err
 	}
 	for _, file := range files {
-		if strings.HasSuffix(file, "mkv") {
-			return file, nil
-		}
-		if strings.HasSuffix(file, "mp4") {
-			return file, nil
+		lower := strings.ToLower(file)
+		for _, extension := range ext {
+			if strings.HasSuffix(lower, extension) {
+				return file, nil
+			}
 		}
 	}
 	return "", nil
