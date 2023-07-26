@@ -6,21 +6,21 @@ border {
 #titleBox {
     margin: 10px 15px 10px 15px;
     padding: 5px;
-    background: #faf6e6;
+    background: #141103;
     border-radius: 5px;
 }
 
 #imdbRatingBox {
     margin: 10px 15px 10px 15px;
     padding: 5px;
-    background: #f1e3ae;
+    background: #141103;
     border-radius: 5px;
 }
 
 #myRatingBox {
     margin: 10px 15px 10px 15px;
     padding: 5px;
-    background: #f1e3ae;
+    background: #141103;
     border-radius: 5px;
 }
 

@@ -119,13 +119,13 @@ func getMovieInfoMarkup(movie *data.Movie) string {
 	s := ""
 
 	// Title & Year
-	s += fmt.Sprintf(`<span font="Sans Regular 13" foreground="#141103"><b>%s</b></span>`, cleanString(movie.Title))
-	s += fmt.Sprintf(`<span font="Sans Regular 13" foreground="#141103"> (%d)</span>`, movie.Year)
+	s += fmt.Sprintf(`<span font="Sans Regular 13" foreground="#f1e3ae"><b>%s</b></span>`, cleanString(movie.Title))
+	s += fmt.Sprintf(`<span font="Sans Regular 13" foreground="#f1e3ae"> (%d)</span>`, movie.Year)
 
 	// Subtitle
 	if movie.SubTitle != "" {
 		s += "\n"
-		s += fmt.Sprintf(`<span font="Sans Regular 12" foreground="#292207"><b>%s</b></span>`, cleanString(movie.SubTitle))
+		s += fmt.Sprintf(`<span font="Sans Regular 12" foreground="#908868"><b>%s</b></span>`, cleanString(movie.SubTitle))
 	}
 
 	return s
@@ -219,7 +219,7 @@ func createIMDBRatingOverlay(movie *data.Movie) *gtk.Label {
 
 // getIMDBRatingMarkup returns the markup for the IMDB rating
 func getIMDBRatingMarkup(movie *data.Movie) string {
-	s := `<span font="Sans Regular 12" foreground="#141103">IMDB : `
+	s := `<span font="Sans Regular 12" foreground="#f1e3ae">IMDB : `
 	s += fmt.Sprintf("%v", movie.ImdbRating)
 	s += `</span>   `
 
@@ -254,7 +254,7 @@ func getMyRatingMarkup(movie *data.Movie) string {
 		s += fmt.Sprintf("My rating:    ")
 		s += `</span>`
 	} else {
-		s = `<span font="Sans Regular 12" foreground="#141103">`
+		s = `<span font="Sans Regular 12" foreground="#f1e3ae">`
 		s += fmt.Sprintf("My rating: %v/5", movie.MyRating)
 		s += `</span>`
 	}
