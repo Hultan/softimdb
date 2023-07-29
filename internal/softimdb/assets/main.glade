@@ -525,6 +525,20 @@ only that field will be searched.</property>
               </packing>
             </child>
             <child>
+              <object class="GtkToggleToolButton" id="viewNoRating">
+                <property name="visible">True</property>
+                <property name="can-focus">False</property>
+                <property name="tooltip-text" translatable="yes">No rating view:
+  Shows all movies without a My Raintg.</property>
+                <property name="label" translatable="yes">No rating</property>
+                <property name="use-underline">True</property>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="homogeneous">True</property>
+              </packing>
+            </child>
+            <child>
               <object class="GtkSeparatorToolItem">
                 <property name="visible">True</property>
                 <property name="can-focus">False</property>

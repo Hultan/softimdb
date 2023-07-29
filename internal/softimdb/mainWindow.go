@@ -3,13 +3,14 @@ package softimdb
 import (
 	_ "embed"
 	"fmt"
-	"github.com/gotk3/gotk3/gdk"
-	"github.com/gotk3/gotk3/gtk"
-	"github.com/hultan/dialog"
 	"log"
 	"path"
 	"strconv"
 	"strings"
+
+	"github.com/gotk3/gotk3/gdk"
+	"github.com/gotk3/gotk3/gtk"
+	"github.com/hultan/dialog"
 
 	"github.com/hultan/softimdb/internal/builder"
 	"github.com/hultan/softimdb/internal/config"
@@ -57,9 +58,10 @@ type mainWindow struct {
 type View string
 
 const (
-	viewAll     View = "all"
-	viewPacks        = "packs"
-	viewToWatch      = "toWatch"
+	viewAll      View = "all"
+	viewPacks         = "packs"
+	viewToWatch       = "toWatch"
+	viewNoRating      = "noRating"
 )
 
 var sortBy, sortOrder string
@@ -245,12 +247,14 @@ func (m *mainWindow) setupToolBar() {
 	viewAllButton := m.builder.GetObject("viewAll").(*gtk.ToggleToolButton)
 	viewPacksButton := m.builder.GetObject("viewPacks").(*gtk.ToggleToolButton)
 	viewToWatchButton := m.builder.GetObject("viewToWatch").(*gtk.ToggleToolButton)
+	viewNoRatingButton := m.builder.GetObject("viewNoRating").(*gtk.ToggleToolButton)
 
 	_ = viewAllButton.Connect("toggled", func() {
 		if viewAllButton.GetActive() {
 			currentView = viewAll
 			viewPacksButton.SetActive(false)
 			viewToWatchButton.SetActive(false)
+			viewNoRatingButton.SetActive(false)
 			m.refresh(searchFor, searchGenreId, getSortBy())
 		}
 	})
@@ -259,6 +263,7 @@ func (m *mainWindow) setupToolBar() {
 			currentView = viewPacks
 			viewAllButton.SetActive(false)
 			viewToWatchButton.SetActive(false)
+			viewNoRatingButton.SetActive(false)
 			m.refresh(searchFor, searchGenreId, getSortBy())
 		}
 	})
@@ -267,6 +272,16 @@ func (m *mainWindow) setupToolBar() {
 			currentView = viewToWatch
 			viewAllButton.SetActive(false)
 			viewPacksButton.SetActive(false)
+			viewNoRatingButton.SetActive(false)
+			m.refresh(searchFor, searchGenreId, getSortBy())
+		}
+	})
+	_ = viewNoRatingButton.Connect("toggled", func() {
+		if viewNoRatingButton.GetActive() {
+			currentView = viewNoRating
+			viewAllButton.SetActive(false)
+			viewPacksButton.SetActive(false)
+			viewToWatchButton.SetActive(false)
 			m.refresh(searchFor, searchGenreId, getSortBy())
 		}
 	})
