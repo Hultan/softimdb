@@ -1,8 +1,9 @@
 package data
 
 import (
-	"gorm.io/gorm"
 	"strings"
+
+	"gorm.io/gorm"
 )
 
 // Movie represents a movie in the database.

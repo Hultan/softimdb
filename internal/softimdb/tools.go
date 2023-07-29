@@ -4,9 +4,6 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"github.com/gotk3/gotk3/gdk"
-	"github.com/gotk3/gotk3/gtk"
-	"github.com/nfnt/resize"
 	"html"
 	"image"
 	"image/png"
@@ -17,6 +14,10 @@ import (
 	"runtime"
 	"strings"
 	"syscall"
+
+	"github.com/gotk3/gotk3/gdk"
+	"github.com/gotk3/gotk3/gtk"
+	"github.com/nfnt/resize"
 
 	"github.com/hultan/dialog"
 )
@@ -93,6 +94,7 @@ func findMovieFile(path string) (string, error) {
 
 	f, err := os.Open(path)
 	if err != nil {
+		_, _ = dialog.Title("Failed to open file!").Text("Is the NAS unlocked?").WarningIcon().OkButton().Show()
 		return "", err
 	}
 	files, err := f.Readdirnames(0)
