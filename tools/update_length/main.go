@@ -78,7 +78,7 @@ func main() {
 
 func getMovieInfo(movieId string) (string, error) {
 	// Define the OMDB API URL with your API key
-	apiKey := "329d749e"
+	apiKey := "xxxx"
 	apiUrl := fmt.Sprintf("http://www.omdbapi.com/?apikey=%s&i=%s", apiKey, movieId)
 
 	// Make an HTTP GET request to the API
