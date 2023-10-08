@@ -72,12 +72,16 @@ func createMovieBox(movie *data.Movie) *gtk.Box {
 	info := createMovieInfoBox(movie)
 	box.PackStart(info, false, false, 5)
 
+	// Runtime
+	label := createRuntimeLabel(movie)
+	box.Add(label)
+
 	// Image
 	image := createMovieImage(movie)
 	box.Add(image)
 
 	// Genres
-	label := createMovieGenresLabel(movie)
+	label = createMovieGenresLabel(movie)
 	box.Add(label)
 
 	if movie.Pack != "" {
@@ -153,6 +157,29 @@ func createMovieImage(movie *data.Movie) *gtk.Image {
 		log.Fatal(err)
 	}
 	return image
+}
+
+// createRuntimeLabel creates a gtk.Label containing the runtime in hours and minutes
+func createRuntimeLabel(movie *data.Movie) *gtk.Label {
+	var s string
+
+	if movie.Runtime == -1 {
+		s = "Runtime : unknown"
+	} else {
+		t := movie.Runtime
+		h, m := t/60, t%60
+		s = fmt.Sprintf("Runtime : %dh %dm", h, m)
+	}
+	label, err := gtk.LabelNew("")
+	if err != nil {
+		reportError(err)
+		log.Fatal(err)
+	}
+
+	s = `<span font="Sans Regular 10" foreground="#AAAAAA">` + s + `</span>`
+	label.SetMarkup(s)
+
+	return label
 }
 
 // createMovieGenresLabel creates a gtk.Label containing the movie release year and all genres comma separated
