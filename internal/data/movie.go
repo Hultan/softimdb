@@ -18,6 +18,7 @@ type Movie struct {
 	ImdbID     string  `gorm:"column:imdb_id;size:9"`
 	StoryLine  string  `gorm:"column:story_line;size:65535"`
 	MoviePath  string  `gorm:"column:path;size:1024"`
+	Runtime    int     `gorm:"column:length"`
 	Tags       []Tag   `gorm:"-"`
 
 	HasImage  bool   `gorm:"-"`

@@ -2,9 +2,10 @@ package data
 
 import (
 	"fmt"
+	"log"
+
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
-	"log"
 
 	"github.com/hultan/crypto"
 	"github.com/hultan/softimdb/internal/config"
