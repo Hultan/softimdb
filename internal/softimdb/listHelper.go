@@ -53,10 +53,10 @@ func (l *ListHelper) CreateMovieCard(movie *data.Movie) *gtk.Frame {
 	pack := createPackOverlay(movie)
 	overlay.AddOverlay(pack)
 
-	// This is to make sure that all cards have an equal height of 430 (even if they have a small image)
+	// This is to make sure that all cards have an equal height of 480 (even if they have a small image)
 	// and also to make sure that they have a minimal width, which makes the gtk.FlowBox to display four movies
 	// per row.
-	overlay.SetSizeRequest(385, 470)
+	overlay.SetSizeRequest(385, 480)
 
 	return frame
 }
