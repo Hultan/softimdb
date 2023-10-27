@@ -464,7 +464,7 @@ func (m *mainWindow) onPlayMovieClicked() {
 			return
 		}
 
-		moviePath := fmt.Sprintf("%s/%s", m.config.RootDir, movie.MoviePath)
+		moviePath := path.Join(m.config.RootDir, movie.MoviePath)
 		movieName, err := findMovieFile(moviePath)
 		if err != nil {
 			reportError(err)
