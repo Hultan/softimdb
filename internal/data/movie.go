@@ -126,13 +126,16 @@ func addViewSQL(view string, where string) string {
 	if where != "" && sql != "" {
 		sql = " AND " + sql
 	}
+	if where != "" {
+		where = "(" + where + ")"
+	}
 	return where + sql
 }
 
 func getCategorySearch(searchFor string, categoryId int) (string, string, map[string]interface{}) {
 	var sqlWhere, sqlJoin string
 	var sqlArgs map[string]interface{}
-	sqlArgs = make(map[string]interface{}, 0)
+	sqlArgs = make(map[string]interface{})
 
 	if searchFor == "" {
 		sqlJoin = "JOIN movie_tag on movies.id = movie_tag.movie_id"
@@ -150,7 +153,7 @@ func getCategorySearch(searchFor string, categoryId int) (string, string, map[st
 func getStandardSearch(searchFor string) (string, map[string]interface{}) {
 	var sqlWhere string
 	var sqlArgs map[string]interface{}
-	sqlArgs = make(map[string]interface{}, 0)
+	sqlArgs = make(map[string]interface{})
 	if searchFor != "" {
 		prefix, search := getSearchPrefix(searchFor)
 		switch prefix {
