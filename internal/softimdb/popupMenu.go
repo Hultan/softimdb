@@ -1,10 +1,11 @@
 package softimdb
 
 import (
-	"github.com/gotk3/gotk3/gdk"
-	"github.com/gotk3/gotk3/gtk"
 	"log"
 	"path"
+
+	"github.com/gotk3/gotk3/gdk"
+	"github.com/gotk3/gotk3/gtk"
 
 	"github.com/hultan/softimdb/internal/data"
 )
@@ -17,6 +18,7 @@ type popupMenu struct {
 	popupOpenFolder    *gtk.MenuItem
 	popupOpenIMDB      *gtk.MenuItem
 	popupOpenMovieInfo *gtk.MenuItem
+	popupOpenPack      *gtk.MenuItem
 	popupPlayMovie     *gtk.MenuItem
 }
 
@@ -33,6 +35,7 @@ func (p *popupMenu) setup() {
 	p.popupOpenFolder = p.mainWindow.builder.GetObject("popupOpenFolder").(*gtk.MenuItem)
 	p.popupOpenIMDB = p.mainWindow.builder.GetObject("popupOpenIMDBPage").(*gtk.MenuItem)
 	p.popupOpenMovieInfo = p.mainWindow.builder.GetObject("popupOpenMovieInfo").(*gtk.MenuItem)
+	p.popupOpenPack = p.mainWindow.builder.GetObject("popupOpenPack").(*gtk.MenuItem)
 	p.popupPlayMovie = p.mainWindow.builder.GetObject("popupPlayMovie").(*gtk.MenuItem)
 
 	p.setupEvents()
@@ -46,6 +49,11 @@ func (p *popupMenu) setupEvents() {
 				movie := p.mainWindow.getSelectedMovie()
 				if movie == nil {
 					return
+				}
+
+				p.popupOpenPack.SetSensitive(false)
+				if movie.Pack != "" {
+					p.popupOpenPack.SetSensitive(true)
 				}
 
 				menu, err := gtk.MenuNew()
@@ -111,6 +119,12 @@ func (p *popupMenu) setupEvents() {
 	p.popupOpenMovieInfo.Connect(
 		"activate", func() {
 			p.mainWindow.onEditMovieInfoClicked()
+		},
+	)
+
+	p.popupOpenPack.Connect(
+		"activate", func() {
+			p.mainWindow.onOpenPackClicked()
 		},
 	)
 

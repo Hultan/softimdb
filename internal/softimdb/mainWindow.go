@@ -587,3 +587,20 @@ func (m *mainWindow) onMovieListDoubleClicked(_ *gtk.FlowBox) {
 	}
 	m.onEditMovieInfoClicked()
 }
+
+func (m *mainWindow) onOpenPackClicked() {
+	movie := m.getSelectedMovie()
+	if movie == nil {
+		return
+	}
+
+	searchFor = "pack:" + movie.Pack
+	searchGenreId = -1
+	sortBy = sortByName
+	sortOrder = sortAscending
+	m.searchEntry.SetText(searchFor)
+	m.menuNoTagItem.SetActive(true)
+	m.menuSortByName.SetActive(true)
+	m.menuSortAscending.SetActive(true)
+	m.refresh(searchFor, searchGenreId, getSortBy())
+}
