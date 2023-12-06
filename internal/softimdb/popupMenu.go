@@ -71,38 +71,7 @@ func (p *popupMenu) setupEvents() {
 				return
 			}
 
-			for i := 0; i < len(tags); i++ {
-				tag := tags[i]
-				item, err := gtk.CheckMenuItemNew()
-				if err != nil {
-					reportError(err)
-					log.Fatal(err)
-				}
-				item.SetLabel(tag.Name)
-
-				for i := 0; i < len(movie.Tags); i++ {
-					if movie.Tags[i].Id == tag.Id {
-						item.SetActive(true)
-					}
-				}
-
-				menu.Add(item)
-				item.Connect(
-					"activate", func() {
-						if item.GetActive() {
-							err = p.mainWindow.database.InsertMovieTag(movie, &tag)
-							if err == nil {
-								p.addTag(movie, &tag)
-							}
-						} else {
-							err = p.mainWindow.database.RemoveMovieTag(movie, &tag)
-							if err == nil {
-								p.removeTag(movie, &tag)
-							}
-						}
-					},
-				)
-			}
+			p.createTagMenu(tags, movie, menu)
 			p.popupTags.SetSubmenu(menu)
 			p.popupTags.ShowAll()
 			p.popupMenu.PopupAtPointer(event)
@@ -144,6 +113,28 @@ func (p *popupMenu) setupEvents() {
 	)
 }
 
+func (p *popupMenu) createTagMenu(tags []data.Tag, movie *data.Movie, menu *gtk.Menu) {
+	for i := 0; i < len(tags); i++ {
+		tag := tags[i]
+		item, err := gtk.CheckMenuItemNew()
+		if err != nil {
+			reportError(err)
+			log.Fatal(err)
+		}
+		item.SetLabel(tag.Name)
+
+		for i := 0; i < len(movie.Tags); i++ {
+			if movie.Tags[i].Id == tag.Id {
+				item.SetActive(true)
+			}
+		}
+
+		menu.Add(item)
+
+		p.addTagActivateEvent(item, movie, &tag)
+	}
+}
+
 func (p *popupMenu) addTag(movie *data.Movie, tag *data.Tag) {
 	movie.Tags = append(movie.Tags, *tag)
 }
@@ -154,4 +145,22 @@ func (p *popupMenu) removeTag(movie *data.Movie, tag *data.Tag) {
 			movie.Tags = append(movie.Tags[:i], movie.Tags[i+1:]...)
 		}
 	}
+}
+
+func (p *popupMenu) addTagActivateEvent(item *gtk.CheckMenuItem, movie *data.Movie, tag *data.Tag) {
+	item.Connect(
+		"activate", func() {
+			if item.GetActive() {
+				err := p.mainWindow.database.InsertMovieTag(movie, tag)
+				if err == nil {
+					p.addTag(movie, tag)
+				}
+			} else {
+				err := p.mainWindow.database.RemoveMovieTag(movie, tag)
+				if err == nil {
+					p.removeTag(movie, tag)
+				}
+			}
+		},
+	)
 }
