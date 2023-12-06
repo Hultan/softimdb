@@ -45,64 +45,67 @@ func (p *popupMenu) setupEvents() {
 	_ = p.mainWindow.window.Connect(
 		"button-release-event", func(window *gtk.ApplicationWindow, event *gdk.Event) {
 			buttonEvent := gdk.EventButtonNewFromEvent(event)
-			if buttonEvent.Button() == gdk.BUTTON_SECONDARY {
-				movie := p.mainWindow.getSelectedMovie()
-				if movie == nil {
-					return
-				}
+			if buttonEvent.Button() != gdk.BUTTON_SECONDARY {
+				return
+			}
 
-				p.popupOpenPack.SetSensitive(false)
-				if movie.Pack != "" {
-					p.popupOpenPack.SetSensitive(true)
-				}
+			movie := p.mainWindow.getSelectedMovie()
+			if movie == nil {
+				return
+			}
 
-				menu, err := gtk.MenuNew()
+			p.popupOpenPack.SetSensitive(false)
+			if movie.Pack != "" {
+				p.popupOpenPack.SetSensitive(true)
+			}
+
+			menu, err := gtk.MenuNew()
+			if err != nil {
+				reportError(err)
+				log.Fatal(err)
+			}
+
+			tags, err := p.mainWindow.database.GetTags()
+			if err != nil {
+				reportError(err)
+				return
+			}
+
+			for i := 0; i < len(tags); i++ {
+				tag := tags[i]
+				item, err := gtk.CheckMenuItemNew()
 				if err != nil {
 					reportError(err)
 					log.Fatal(err)
-				} else {
-					tags, err := p.mainWindow.database.GetTags()
-					if err != nil {
-						reportError(err)
-						return
-					}
-					for i := 0; i < len(tags); i++ {
-						tag := tags[i]
-						item, err := gtk.CheckMenuItemNew()
-						if err != nil {
-							reportError(err)
-							log.Fatal(err)
-						}
-						item.SetLabel(tag.Name)
+				}
+				item.SetLabel(tag.Name)
 
-						for i := 0; i < len(movie.Tags); i++ {
-							if movie.Tags[i].Id == tag.Id {
-								item.SetActive(true)
+				for i := 0; i < len(movie.Tags); i++ {
+					if movie.Tags[i].Id == tag.Id {
+						item.SetActive(true)
+					}
+				}
+
+				menu.Add(item)
+				item.Connect(
+					"activate", func() {
+						if item.GetActive() {
+							err = p.mainWindow.database.InsertMovieTag(movie, &tag)
+							if err == nil {
+								p.addTag(movie, &tag)
+							}
+						} else {
+							err = p.mainWindow.database.RemoveMovieTag(movie, &tag)
+							if err == nil {
+								p.removeTag(movie, &tag)
 							}
 						}
-
-						menu.Add(item)
-						item.Connect(
-							"activate", func() {
-								if item.GetActive() {
-									err = p.mainWindow.database.InsertMovieTag(movie, &tag)
-									if err == nil {
-										p.addTag(movie, &tag)
-									}
-								} else {
-									err = p.mainWindow.database.RemoveMovieTag(movie, &tag)
-									if err == nil {
-										p.removeTag(movie, &tag)
-									}
-								}
-							},
-						)
-					}
-					p.popupTags.SetSubmenu(menu)
-					p.popupTags.ShowAll()
-				}
-				p.popupMenu.PopupAtPointer(event)
+					},
+				)
 			}
+			p.popupTags.SetSubmenu(menu)
+			p.popupTags.ShowAll()
+			p.popupMenu.PopupAtPointer(event)
 		},
 	)
 
