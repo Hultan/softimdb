@@ -40,6 +40,7 @@ type mainWindow struct {
 	storyLineLabel                        *gtk.Label
 	searchEntry                           *gtk.Entry
 	searchButton                          *gtk.ToolButton
+	clearSearchButton                     *gtk.ToolButton
 	popupMenu                             *popupMenu
 	countLabel                            *gtk.Label
 	database                              *data.Database
@@ -220,6 +221,10 @@ func (m *mainWindow) setupToolBar() {
 	// Search button
 	m.searchButton = m.builder.GetObject("searchButton").(*gtk.ToolButton)
 	_ = m.searchButton.Connect("clicked", m.onSearchButtonClicked)
+
+	// Clear search button
+	m.clearSearchButton = m.builder.GetObject("clearSearchButton").(*gtk.ToolButton)
+	_ = m.clearSearchButton.Connect("clicked", m.onClearSearchButtonClicked)
 
 	// Search entry
 	m.searchEntry = m.builder.GetObject("searchEntry").(*gtk.Entry)
@@ -526,6 +531,11 @@ func (m *mainWindow) onSearchButtonClicked() {
 	search = strings.Trim(search, " ")
 	searchFor = search
 	m.refresh(searchFor, searchGenreId, getSortBy())
+}
+
+func (m *mainWindow) onClearSearchButtonClicked() {
+	m.searchEntry.SetText("")
+	m.refresh("", searchGenreId, getSortBy())
 }
 
 func (m *mainWindow) onKeyPressEvent(_ *gtk.ApplicationWindow, event *gdk.Event) {

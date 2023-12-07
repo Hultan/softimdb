@@ -435,6 +435,20 @@ only that field will be searched.</property>
               </packing>
             </child>
             <child>
+              <object class="GtkToolButton" id="clearSearchButton">
+                <property name="visible">True</property>
+                <property name="can-focus">False</property>
+                <property name="tooltip-text" translatable="yes">Clears the search field and refreshes the list.</property>
+                <property name="label" translatable="yes">Clear</property>
+                <property name="use-underline">True</property>
+                <property name="stock-id">gtk-delete</property>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="homogeneous">True</property>
+              </packing>
+            </child>
+            <child>
               <object class="GtkSeparatorToolItem">
                 <property name="visible">True</property>
                 <property name="can-focus">False</property>
