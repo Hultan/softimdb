@@ -62,8 +62,7 @@ func (d *Database) getDatabase() (*gorm.DB, error) {
 }
 
 func (d *Database) openDatabase() (*gorm.DB, error) {
-	c := &crypto.Crypto{}
-	passwordDecrypted, err := c.Decrypt(d.config.Database.Password)
+	passwordDecrypted, err := crypto.Decrypt(d.config.Database.Password)
 	if err != nil {
 		return nil, err
 	}
