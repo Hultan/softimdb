@@ -146,6 +146,8 @@ func (m *mainWindow) setupMenu(window *gtk.ApplicationWindow) {
 		"activate", func() {
 			if m.menuSortByName.GetActive() {
 				sortBy = sortByName
+				sortOrder = sortAscending
+				m.menuSortAscending.SetActive(true)
 				m.refresh(searchFor, searchGenreId, getSortBy())
 			}
 		},
@@ -155,6 +157,8 @@ func (m *mainWindow) setupMenu(window *gtk.ApplicationWindow) {
 		"activate", func() {
 			if m.menuSortByRating.GetActive() {
 				sortBy = sortByRating
+				sortOrder = sortDescending
+				m.menuSortDescending.SetActive(true)
 				m.refresh(searchFor, searchGenreId, getSortBy())
 			}
 		},
@@ -164,6 +168,8 @@ func (m *mainWindow) setupMenu(window *gtk.ApplicationWindow) {
 		"activate", func() {
 			if m.menuSortByYear.GetActive() {
 				sortBy = sortByYear
+				sortOrder = sortDescending
+				m.menuSortDescending.SetActive(true)
 				m.refresh(searchFor, searchGenreId, getSortBy())
 			}
 		},
@@ -173,6 +179,8 @@ func (m *mainWindow) setupMenu(window *gtk.ApplicationWindow) {
 		"activate", func() {
 			if m.menuSortById.GetActive() {
 				sortBy = sortById
+				sortOrder = sortAscending
+				m.menuSortAscending.SetActive(true)
 				m.refresh(searchFor, searchGenreId, getSortBy())
 			}
 		},
