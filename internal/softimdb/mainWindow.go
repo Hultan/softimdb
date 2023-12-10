@@ -50,6 +50,9 @@ type mainWindow struct {
 	menuSortByYear, menuSortById          *gtk.RadioMenuItem
 	menuSortAscending, menuSortDescending *gtk.RadioMenuItem
 
+	viewAllButton, viewPacksButton        *gtk.ToggleToolButton
+	viewToWatchButton, viewNoRatingButton *gtk.ToggleToolButton
+
 	movieWin    *movieWindow
 	addMovieWin *addMovieWindow
 
@@ -257,44 +260,44 @@ func (m *mainWindow) setupToolBar() {
 		},
 	)
 
-	viewAllButton := m.builder.GetObject("viewAll").(*gtk.ToggleToolButton)
-	viewPacksButton := m.builder.GetObject("viewPacks").(*gtk.ToggleToolButton)
-	viewToWatchButton := m.builder.GetObject("viewToWatch").(*gtk.ToggleToolButton)
-	viewNoRatingButton := m.builder.GetObject("viewNoRating").(*gtk.ToggleToolButton)
+	m.viewAllButton = m.builder.GetObject("viewAll").(*gtk.ToggleToolButton)
+	m.viewPacksButton = m.builder.GetObject("viewPacks").(*gtk.ToggleToolButton)
+	m.viewToWatchButton = m.builder.GetObject("viewToWatch").(*gtk.ToggleToolButton)
+	m.viewNoRatingButton = m.builder.GetObject("viewNoRating").(*gtk.ToggleToolButton)
 
-	_ = viewAllButton.Connect("toggled", func() {
-		if viewAllButton.GetActive() {
+	_ = m.viewAllButton.Connect("toggled", func() {
+		if m.viewAllButton.GetActive() {
 			currentView = viewAll
-			viewPacksButton.SetActive(false)
-			viewToWatchButton.SetActive(false)
-			viewNoRatingButton.SetActive(false)
+			m.viewPacksButton.SetActive(false)
+			m.viewToWatchButton.SetActive(false)
+			m.viewNoRatingButton.SetActive(false)
 			m.refresh(searchFor, searchGenreId, getSortBy())
 		}
 	})
-	_ = viewPacksButton.Connect("toggled", func() {
-		if viewPacksButton.GetActive() {
+	_ = m.viewPacksButton.Connect("toggled", func() {
+		if m.viewPacksButton.GetActive() {
 			currentView = viewPacks
-			viewAllButton.SetActive(false)
-			viewToWatchButton.SetActive(false)
-			viewNoRatingButton.SetActive(false)
+			m.viewAllButton.SetActive(false)
+			m.viewToWatchButton.SetActive(false)
+			m.viewNoRatingButton.SetActive(false)
 			m.refresh(searchFor, searchGenreId, getSortBy())
 		}
 	})
-	_ = viewToWatchButton.Connect("toggled", func() {
-		if viewToWatchButton.GetActive() {
+	_ = m.viewToWatchButton.Connect("toggled", func() {
+		if m.viewToWatchButton.GetActive() {
 			currentView = viewToWatch
-			viewAllButton.SetActive(false)
-			viewPacksButton.SetActive(false)
-			viewNoRatingButton.SetActive(false)
+			m.viewAllButton.SetActive(false)
+			m.viewPacksButton.SetActive(false)
+			m.viewNoRatingButton.SetActive(false)
 			m.refresh(searchFor, searchGenreId, getSortBy())
 		}
 	})
-	_ = viewNoRatingButton.Connect("toggled", func() {
-		if viewNoRatingButton.GetActive() {
+	_ = m.viewNoRatingButton.Connect("toggled", func() {
+		if m.viewNoRatingButton.GetActive() {
 			currentView = viewNoRating
-			viewAllButton.SetActive(false)
-			viewPacksButton.SetActive(false)
-			viewToWatchButton.SetActive(false)
+			m.viewAllButton.SetActive(false)
+			m.viewPacksButton.SetActive(false)
+			m.viewToWatchButton.SetActive(false)
 			m.refresh(searchFor, searchGenreId, getSortBy())
 		}
 	})
@@ -542,6 +545,7 @@ func (m *mainWindow) onSearchButtonClicked() {
 }
 
 func (m *mainWindow) onClearSearchButtonClicked() {
+	searchFor = ""
 	m.searchEntry.SetText("")
 	m.refresh("", searchGenreId, getSortBy())
 }
@@ -616,9 +620,28 @@ func (m *mainWindow) onOpenPackClicked() {
 	searchGenreId = -1
 	sortBy = sortByName
 	sortOrder = sortAscending
+	m.changeView(viewPacks)
 	m.searchEntry.SetText(searchFor)
 	m.menuNoTagItem.SetActive(true)
 	m.menuSortByName.SetActive(true)
 	m.menuSortAscending.SetActive(true)
 	m.refresh(searchFor, searchGenreId, getSortBy())
+}
+
+func (m *mainWindow) changeView(view View) {
+	m.viewAllButton.SetActive(false)
+	m.viewToWatchButton.SetActive(false)
+	m.viewPacksButton.SetActive(false)
+	m.viewToWatchButton.SetActive(false)
+
+	switch view {
+	case viewAll:
+		m.viewAllButton.SetActive(true)
+	case viewToWatch:
+		m.viewToWatchButton.SetActive(true)
+	case viewPacks:
+		m.viewPacksButton.SetActive(true)
+	case viewNoRating:
+		m.viewNoRatingButton.SetActive(true)
+	}
 }
