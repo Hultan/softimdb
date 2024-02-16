@@ -76,6 +76,7 @@ func (d *Database) GetAllMovies(currentView string, searchFor string, categoryId
 		sqlJoin, sqlWhere, sqlOrderBy string
 		sqlArgs                       map[string]interface{}
 	)
+
 	if currentView == "packs" && orderBy == "title asc" {
 		sqlOrderBy = "pack asc, " + orderBy
 	} else {

@@ -47,6 +47,7 @@ type mainWindow struct {
 	config                                *config.Config
 	menuNoTagItem                         *gtk.RadioMenuItem
 	menuSortByName, menuSortByRating      *gtk.RadioMenuItem
+	menuSortByMyRating                    *gtk.RadioMenuItem
 	menuSortByYear, menuSortById          *gtk.RadioMenuItem
 	menuSortAscending, menuSortDescending *gtk.RadioMenuItem
 
@@ -160,6 +161,17 @@ func (m *mainWindow) setupMenu(window *gtk.ApplicationWindow) {
 		"activate", func() {
 			if m.menuSortByRating.GetActive() {
 				sortBy = sortByRating
+				sortOrder = sortDescending
+				m.menuSortDescending.SetActive(true)
+				m.refresh(searchFor, searchGenreId, getSortBy())
+			}
+		},
+	)
+	m.menuSortByMyRating = m.builder.GetObject("menuSortByMyRating").(*gtk.RadioMenuItem)
+	m.menuSortByMyRating.Connect(
+		"activate", func() {
+			if m.menuSortByMyRating.GetActive() {
+				sortBy = sortByMyRating
 				sortOrder = sortDescending
 				m.menuSortDescending.SetActive(true)
 				m.refresh(searchFor, searchGenreId, getSortBy())
