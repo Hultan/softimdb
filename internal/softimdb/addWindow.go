@@ -2,12 +2,13 @@ package softimdb
 
 import (
 	"fmt"
+	"log"
+
 	"github.com/gotk3/gotk3/gtk"
 	"github.com/hultan/dialog"
 	"github.com/hultan/softimdb/internal/config"
 	"github.com/hultan/softimdb/internal/data"
 	"github.com/hultan/softimdb/internal/nas"
-	"log"
 )
 
 type addMovieWindow struct {

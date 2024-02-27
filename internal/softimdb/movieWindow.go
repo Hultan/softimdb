@@ -2,10 +2,11 @@ package softimdb
 
 import (
 	"fmt"
-	"github.com/hultan/dialog"
 	_ "image/jpeg"
 	"log"
 	"strconv"
+
+	"github.com/hultan/dialog"
 
 	"github.com/gotk3/gotk3/gdk"
 	"github.com/gotk3/gotk3/gtk"
