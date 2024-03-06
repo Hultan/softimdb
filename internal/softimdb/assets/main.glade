@@ -249,6 +249,16 @@
                       </object>
                     </child>
                     <child>
+                      <object class="GtkRadioMenuItem" id="menuSortByLength">
+                        <property name="visible">True</property>
+                        <property name="can-focus">False</property>
+                        <property name="label" translatable="yes">Runtime</property>
+                        <property name="use-underline">True</property>
+                        <property name="draw-as-radio">True</property>
+                        <property name="group">menuSortByRating</property>
+                      </object>
+                    </child>
+                    <child>
                       <object class="GtkRadioMenuItem" id="menuSortByYear">
                         <property name="visible">True</property>
                         <property name="can-focus">False</property>

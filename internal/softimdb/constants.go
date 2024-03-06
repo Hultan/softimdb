@@ -2,7 +2,7 @@ package softimdb
 
 const (
 	applicationTitle     = "SoftImdb"
-	applicationVersion   = "v 2.3.7"
+	applicationVersion   = "v 2.3.8"
 	applicationCopyRight = "©SoftTeam AB, 2020"
 	listMargin           = 3
 	listSpacing          = 0
@@ -16,6 +16,7 @@ const (
 	sortByMyRating = "my_rating"
 	sortByYear     = "year"
 	sortById       = "id"
+	sortByLength   = "length"
 )
 
 const (
