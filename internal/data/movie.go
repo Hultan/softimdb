@@ -165,7 +165,9 @@ func getStandardSearch(searchFor string) (string, map[string]interface{}) {
 		case "pack":
 			sqlWhere = "pack like @search"
 		case "imdb":
-			sqlWhere = "imdb_rating > @search"
+			sqlWhere = "imdb_rating >= @search"
+		case "myrating":
+			sqlWhere = "my_rating >= @search"
 		default:
 			sqlWhere = "title like @search OR sub_title like @search OR year like @search OR story_line like @search"
 		}
@@ -183,6 +185,8 @@ func getSearchPrefix(searchFor string) (string, string) {
 		return "pack", "%" + searchFor[5:] + "%"
 	} else if strings.HasPrefix(searchFor, "imdb:") {
 		return "imdb", searchFor[5:]
+	} else if strings.HasPrefix(searchFor, "myrating:") {
+		return "myrating", searchFor[9:]
 	} else {
 		return "", "%" + searchFor + "%"
 	}

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"path"
+	"runtime"
 	"strconv"
 	"strings"
 
@@ -335,6 +336,7 @@ func (m *mainWindow) fillMovieList(searchFor string, categoryId int, sortBy stri
 
 	listHelper := ListHelperNew()
 	clearFlowBox(m.movieList)
+	runtime.GC()
 
 	cssProvider, _ := gtk.CssProviderNew()
 	if err = cssProvider.LoadFromData(mainCss); err != nil {
