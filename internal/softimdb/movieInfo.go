@@ -15,6 +15,7 @@ type movieInfo struct {
 	year      string
 	path      string
 	pack      string
+	runtime   int
 
 	imdbRating string
 	imdbUrl    string
@@ -35,6 +36,7 @@ func newMovieInfoFromDatabase(movie *data.Movie) (*movieInfo, error) {
 		storyLine:       movie.StoryLine,
 		year:            fmt.Sprintf("%d", movie.Year),
 		myRating:        movie.MyRating,
+		runtime:         movie.Runtime,
 		toWatch:         movie.ToWatch,
 		path:            movie.MoviePath,
 		pack:            movie.Pack,
@@ -55,6 +57,7 @@ func (m *movieInfo) toDatabase(movie *data.Movie) {
 	movie.Pack = m.pack
 	movie.Year = m.getYear()
 	movie.MyRating = m.myRating
+	movie.Runtime = m.runtime
 	movie.ToWatch = m.toWatch
 	movie.ImdbID = m.imdbId
 	movie.ImdbUrl = m.imdbUrl

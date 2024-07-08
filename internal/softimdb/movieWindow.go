@@ -29,6 +29,7 @@ type movieWindow struct {
 	genresEntry        *gtk.Entry
 	packEntry          *gtk.Entry
 	posterImage        *gtk.Image
+	runtimeEntry       *gtk.Entry
 
 	movieInfo *movieInfo
 	movie     *data.Movie
@@ -69,6 +70,7 @@ func newMovieWindow(builder *builder.Builder, parent gtk.IWindow) *movieWindow {
 	m.genresEntry = builder.GetObject("genresEntry").(*gtk.Entry)
 	m.packEntry = builder.GetObject("packEntry").(*gtk.Entry)
 	m.posterImage = builder.GetObject("posterImage").(*gtk.Image)
+	m.runtimeEntry = builder.GetObject("runtimeEntry").(*gtk.Entry)
 	eventBox := builder.GetObject("imageEventBox").(*gtk.EventBox)
 	eventBox.Connect("button-press-event", m.onImageClick)
 
@@ -101,6 +103,8 @@ func (m *movieWindow) open(info *movieInfo, movie *data.Movie, saveCallback func
 	m.ratingEntry.SetText(m.movieInfo.imdbRating)
 	m.genresEntry.SetText(m.movieInfo.tags)
 	m.packEntry.SetText(m.movieInfo.pack)
+	m.runtimeEntry.SetText(strconv.Itoa(m.movieInfo.runtime))
+
 	if m.movieInfo.image == nil {
 		m.posterImage.Clear()
 	} else {
@@ -131,6 +135,7 @@ func (m *movieWindow) saveMovie() {
 	m.movieInfo.subTitle = getEntryText(m.subTitleEntry)
 	m.movieInfo.pack = getEntryText(m.packEntry)
 	m.movieInfo.year = getEntryText(m.yearEntry)
+
 	ratingText := getEntryText(m.myRatingEntry)
 	rating, err := strconv.Atoi(ratingText)
 	if err != nil || rating < 0 || rating > 5 {
@@ -144,6 +149,21 @@ func (m *movieWindow) saveMovie() {
 		return
 	}
 	m.movieInfo.myRating = rating
+
+	runtimeText := getEntryText(m.runtimeEntry)
+	runtime, err := strconv.Atoi(runtimeText)
+	if err != nil || runtime < 0 {
+		msg := fmt.Sprintf("Invalid runtime : %s (error : %s)", runtimeText, err)
+		_, err = dialog.Title("Invalid runtime...").Text(msg).ErrorIcon().OkButton().Show()
+
+		if err != nil {
+			fmt.Printf("Error : %s", err)
+		}
+
+		return
+	}
+	m.movieInfo.runtime = runtime
+
 	m.movieInfo.toWatch = m.toWatchCheckButton.GetActive()
 	m.movieInfo.imdbRating = getEntryText(m.ratingEntry)
 	buffer, err := m.storyLineEntry.GetBuffer()

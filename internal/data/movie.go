@@ -177,17 +177,13 @@ func getStandardSearch(searchFor string) (string, map[string]interface{}) {
 }
 
 func getSearchPrefix(searchFor string) (string, string) {
-	if strings.HasPrefix(searchFor, "title:") {
-		return "title", "%" + searchFor[6:] + "%"
-	} else if strings.HasPrefix(searchFor, "year:") {
-		return "year", "%" + searchFor[5:] + "%"
-	} else if strings.HasPrefix(searchFor, "pack:") {
-		return "pack", "%" + searchFor[5:] + "%"
-	} else if strings.HasPrefix(searchFor, "imdb:") {
-		return "imdb", searchFor[5:]
-	} else if strings.HasPrefix(searchFor, "myrating:") {
-		return "myrating", searchFor[9:]
-	} else {
+	before, after, _ := strings.Cut(searchFor, ":")
+	switch before {
+	case "title", "pack":
+		return before, "%" + after + "%"
+	case "year", "imdb", "myrating":
+		return before, after
+	default:
 		return "", "%" + searchFor + "%"
 	}
 }
