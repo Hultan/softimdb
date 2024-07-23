@@ -686,6 +686,9 @@ only that field will be searched.</property>
                 <property name="visible">True</property>
                 <property name="can-focus">False</property>
                 <property name="wrap">True</property>
+                <attributes>
+                  <attribute name="font-desc" value="Sans 15"/>
+                </attributes>
               </object>
               <packing>
                 <property name="expand">False</property>

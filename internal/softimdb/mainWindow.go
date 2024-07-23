@@ -581,6 +581,8 @@ func (m *mainWindow) onKeyPressEvent(_ *gtk.ApplicationWindow, event *gdk.Event)
 	ctrl := (keyEvent.State() & gdk.CONTROL_MASK) > 0
 
 	switch {
+	case keyEvent.KeyVal() == gdk.KEY_F5:
+		m.onPlayMovieClicked()
 	case keyEvent.KeyVal() == gdk.KEY_f && ctrl:
 		m.searchEntry.GrabFocus()
 	case keyEvent.KeyVal() == gdk.KEY_a && ctrl:
