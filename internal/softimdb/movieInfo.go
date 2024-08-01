@@ -21,8 +21,9 @@ type movieInfo struct {
 	imdbUrl    string
 	imdbId     string
 
-	myRating int
-	toWatch  bool
+	myRating      int
+	toWatch       bool
+	needsSubtitle bool
 
 	tags            string // Info field only
 	image           []byte
@@ -38,6 +39,7 @@ func newMovieInfoFromDatabase(movie *data.Movie) (*movieInfo, error) {
 		myRating:        movie.MyRating,
 		runtime:         movie.Runtime,
 		toWatch:         movie.ToWatch,
+		needsSubtitle:   movie.NeedsSubtitle,
 		path:            movie.MoviePath,
 		pack:            movie.Pack,
 		imdbRating:      fmt.Sprintf("%.1f", movie.ImdbRating),
@@ -59,6 +61,7 @@ func (m *movieInfo) toDatabase(movie *data.Movie) {
 	movie.MyRating = m.myRating
 	movie.Runtime = m.runtime
 	movie.ToWatch = m.toWatch
+	movie.NeedsSubtitle = m.needsSubtitle
 	movie.ImdbID = m.imdbId
 	movie.ImdbUrl = m.imdbUrl
 	movie.ImdbRating = m.getImdbRating()

@@ -27,6 +27,9 @@ var mainGlade string
 //go:embed assets/toWatch.png
 var toWatchIcon []byte
 
+//go:embed assets/needsSubtitle.png
+var needsSubtitleIcon []byte
+
 //go:embed assets/softimdb.css
 var mainCss string
 

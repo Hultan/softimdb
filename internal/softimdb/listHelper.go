@@ -44,6 +44,12 @@ func (l *ListHelper) CreateMovieCard(movie *data.Movie) *gtk.Frame {
 		overlay.AddOverlay(toWatchImage)
 	}
 
+	// Add to needsSubtitle flag (if needed)
+	if movie.NeedsSubtitle {
+		needsSubtitleImage := createNeedsSubtitleOverlay()
+		overlay.AddOverlay(needsSubtitleImage)
+	}
+
 	imdbRating := createIMDBRatingOverlay(movie)
 	overlay.AddOverlay(imdbRating)
 
@@ -221,6 +227,26 @@ func createToWatchOverlay() *gtk.Image {
 	image.SetHAlign(gtk.ALIGN_START)
 	image.SetMarginStart(23)
 	image.SetMarginTop(100)
+
+	return image
+}
+
+// createToWatchOverlay creates a gtk.Image containing the to watch image
+func createNeedsSubtitleOverlay() *gtk.Image {
+	pixBuf, err := gdk.PixbufNewFromBytesOnly(needsSubtitleIcon)
+	if err != nil {
+		reportError(err)
+		log.Fatal(err)
+	}
+	image, err := gtk.ImageNewFromPixbuf(pixBuf)
+	if err != nil {
+		reportError(err)
+		log.Fatal(err)
+	}
+	image.SetVAlign(gtk.ALIGN_START)
+	image.SetHAlign(gtk.ALIGN_START)
+	image.SetMarginStart(23)
+	image.SetMarginTop(160)
 
 	return image
 }

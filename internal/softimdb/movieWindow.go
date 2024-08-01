@@ -16,20 +16,21 @@ import (
 )
 
 type movieWindow struct {
-	window             *gtk.Window
-	pathEntry          *gtk.Entry
-	imdbUrlEntry       *gtk.Entry
-	titleEntry         *gtk.Entry
-	subTitleEntry      *gtk.Entry
-	yearEntry          *gtk.Entry
-	myRatingEntry      *gtk.Entry
-	toWatchCheckButton *gtk.CheckButton
-	storyLineEntry     *gtk.TextView
-	ratingEntry        *gtk.Entry
-	genresEntry        *gtk.Entry
-	packEntry          *gtk.Entry
-	posterImage        *gtk.Image
-	runtimeEntry       *gtk.Entry
+	window                   *gtk.Window
+	pathEntry                *gtk.Entry
+	imdbUrlEntry             *gtk.Entry
+	titleEntry               *gtk.Entry
+	subTitleEntry            *gtk.Entry
+	yearEntry                *gtk.Entry
+	myRatingEntry            *gtk.Entry
+	toWatchCheckButton       *gtk.CheckButton
+	needsSubtitleCheckButton *gtk.CheckButton
+	storyLineEntry           *gtk.TextView
+	ratingEntry              *gtk.Entry
+	genresEntry              *gtk.Entry
+	packEntry                *gtk.Entry
+	posterImage              *gtk.Image
+	runtimeEntry             *gtk.Entry
 
 	movieInfo *movieInfo
 	movie     *data.Movie
@@ -65,6 +66,7 @@ func newMovieWindow(builder *builder.Builder, parent gtk.IWindow) *movieWindow {
 	m.yearEntry = builder.GetObject("yearEntry").(*gtk.Entry)
 	m.myRatingEntry = builder.GetObject("myRatingEntry").(*gtk.Entry)
 	m.toWatchCheckButton = builder.GetObject("toWatchCheckButton").(*gtk.CheckButton)
+	m.needsSubtitleCheckButton = builder.GetObject("needsSubtitleCheckButton").(*gtk.CheckButton)
 	m.storyLineEntry = builder.GetObject("storyLineTextView").(*gtk.TextView)
 	m.ratingEntry = builder.GetObject("ratingEntry").(*gtk.Entry)
 	m.genresEntry = builder.GetObject("genresEntry").(*gtk.Entry)
@@ -93,6 +95,7 @@ func (m *movieWindow) open(info *movieInfo, movie *data.Movie, saveCallback func
 	m.yearEntry.SetText(fmt.Sprintf("%d", m.movieInfo.getYear()))
 	m.myRatingEntry.SetText(fmt.Sprintf("%d", m.movieInfo.myRating))
 	m.toWatchCheckButton.SetActive(m.movieInfo.toWatch)
+	m.needsSubtitleCheckButton.SetActive(m.movieInfo.needsSubtitle)
 	buffer, err := gtk.TextBufferNew(nil)
 	if err != nil {
 		reportError(err)
@@ -165,6 +168,7 @@ func (m *movieWindow) saveMovie() {
 	m.movieInfo.runtime = runtime
 
 	m.movieInfo.toWatch = m.toWatchCheckButton.GetActive()
+	m.movieInfo.needsSubtitle = m.needsSubtitleCheckButton.GetActive()
 	m.movieInfo.imdbRating = getEntryText(m.ratingEntry)
 	buffer, err := m.storyLineEntry.GetBuffer()
 	if err != nil {

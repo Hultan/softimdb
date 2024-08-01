@@ -21,12 +21,13 @@ type Movie struct {
 	Runtime    int     `gorm:"column:length"`
 	Tags       []Tag   `gorm:"-"`
 
-	HasImage  bool   `gorm:"-"`
-	Image     []byte `gorm:"-"`
-	ImageId   int    `gorm:"column:image_id;"`
-	ImagePath string `gorm:"column:image_path;size:1024"` // Not used yet
-	ToWatch   bool   `gorm:"column:to_watch"`
-	Pack      string `gorm:"column:pack"`
+	HasImage      bool   `gorm:"-"`
+	Image         []byte `gorm:"-"`
+	ImageId       int    `gorm:"column:image_id;"`
+	ImagePath     string `gorm:"column:image_path;size:1024"` // Not used yet
+	ToWatch       bool   `gorm:"column:to_watch"`
+	Pack          string `gorm:"column:pack"`
+	NeedsSubtitle bool   `gorm:"column:needsSubtitle"`
 }
 
 // TableName returns the name of the table.
@@ -328,6 +329,10 @@ func (d *Database) UpdateMovie(movie *Movie, updateTags bool) error {
 			}
 
 			if result := db.Model(&movie).Update("pack", movie.Pack); result.Error != nil {
+				return result.Error
+			}
+
+			if result := db.Model(&movie).Update("needsSubtitle", movie.NeedsSubtitle); result.Error != nil {
 				return result.Error
 			}
 

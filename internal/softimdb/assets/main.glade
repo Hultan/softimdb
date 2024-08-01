@@ -1050,30 +1050,6 @@ only that field will be searched.</property>
           </packing>
         </child>
         <child>
-          <object class="GtkLabel">
-            <property name="visible">True</property>
-            <property name="can-focus">False</property>
-            <property name="halign">start</property>
-            <property name="label" translatable="yes">To watch</property>
-          </object>
-          <packing>
-            <property name="left-attach">2</property>
-            <property name="top-attach">4</property>
-          </packing>
-        </child>
-        <child>
-          <object class="GtkCheckButton" id="toWatchCheckButton">
-            <property name="visible">True</property>
-            <property name="can-focus">True</property>
-            <property name="receives-default">False</property>
-            <property name="draw-indicator">True</property>
-          </object>
-          <packing>
-            <property name="left-attach">3</property>
-            <property name="top-attach">4</property>
-          </packing>
-        </child>
-        <child>
           <object class="GtkEntry" id="myRatingEntry">
             <property name="visible">True</property>
             <property name="can-focus">True</property>
@@ -1111,10 +1087,22 @@ only that field will be searched.</property>
             <property name="visible">True</property>
             <property name="can-focus">False</property>
             <property name="halign">start</property>
-            <property name="label" translatable="yes">Runtime</property>
+            <property name="label" translatable="yes">Needs subtitle</property>
           </object>
           <packing>
-            <property name="left-attach">0</property>
+            <property name="left-attach">2</property>
+            <property name="top-attach">5</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkCheckButton" id="needsSubtitleCheckButton">
+            <property name="visible">True</property>
+            <property name="can-focus">True</property>
+            <property name="receives-default">False</property>
+            <property name="draw-indicator">True</property>
+          </object>
+          <packing>
+            <property name="left-attach">3</property>
             <property name="top-attach">5</property>
           </packing>
         </child>
@@ -1124,8 +1112,8 @@ only that field will be searched.</property>
             <property name="can-focus">True</property>
           </object>
           <packing>
-            <property name="left-attach">1</property>
-            <property name="top-attach">5</property>
+            <property name="left-attach">3</property>
+            <property name="top-attach">4</property>
           </packing>
         </child>
         <child>
@@ -1133,15 +1121,36 @@ only that field will be searched.</property>
             <property name="visible">True</property>
             <property name="can-focus">False</property>
             <property name="halign">start</property>
-            <property name="label" translatable="yes">minutes</property>
+            <property name="label" translatable="yes">Runtime (min)</property>
           </object>
           <packing>
             <property name="left-attach">2</property>
+            <property name="top-attach">4</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkLabel">
+            <property name="visible">True</property>
+            <property name="can-focus">False</property>
+            <property name="halign">start</property>
+            <property name="label" translatable="yes">To watch</property>
+          </object>
+          <packing>
+            <property name="left-attach">0</property>
             <property name="top-attach">5</property>
           </packing>
         </child>
         <child>
-          <placeholder/>
+          <object class="GtkCheckButton" id="toWatchCheckButton">
+            <property name="visible">True</property>
+            <property name="can-focus">True</property>
+            <property name="receives-default">False</property>
+            <property name="draw-indicator">True</property>
+          </object>
+          <packing>
+            <property name="left-attach">1</property>
+            <property name="top-attach">5</property>
+          </packing>
         </child>
         <child>
           <placeholder/>
