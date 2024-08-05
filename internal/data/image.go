@@ -2,11 +2,12 @@ package data
 
 import (
 	"fmt"
-	"gorm.io/gorm"
 	"io"
 	"log"
 	"os"
 	"path"
+
+	"gorm.io/gorm"
 )
 
 // Image represents a movie image.
@@ -103,6 +104,20 @@ func (d *Database) getCachedImage(image *Image, cachePath string) error {
 		return err
 	}
 	image.Data = data
+	return nil
+}
+
+// DeleteImage inserts an image into the database.
+func (d *Database) DeleteImage(movie *Movie) error {
+	db, err := d.getDatabase()
+	if err != nil {
+		return err
+	}
+
+	if result := db.Delete(&Image{}, movie.ImageId); result.Error != nil {
+		return result.Error
+	}
+
 	return nil
 }
 

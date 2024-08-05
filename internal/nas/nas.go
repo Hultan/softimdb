@@ -1,12 +1,13 @@
 package nas
 
 import (
-	"github.com/hultan/softimdb/internal/config"
-	"github.com/hultan/softimdb/internal/data"
 	"io/fs"
 	"log"
 	"path/filepath"
 	"strings"
+
+	"github.com/hultan/softimdb/internal/config"
+	"github.com/hultan/softimdb/internal/data"
 )
 
 // Manager represents a NAS manager.

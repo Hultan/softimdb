@@ -1,6 +1,8 @@
 package data
 
 import (
+	"os"
+	"path"
 	"strings"
 
 	"gorm.io/gorm"
@@ -371,13 +373,38 @@ func (d *Database) UpdateMovie(movie *Movie, updateTags bool) error {
 }
 
 // DeleteMovie removes a movie from the database.
-func (d *Database) DeleteMovie(movie *Movie) error {
+func (d *Database) DeleteMovie(rootDir string, movie *Movie) error {
 	db, err := d.getDatabase()
 	if err != nil {
 		return err
 	}
-	if result := db.Delete(movie, movie.Id); result.Error != nil {
-		return result.Error
+
+	err = db.Transaction(
+		func(tx *gorm.DB) error {
+			if err = d.DeleteImage(movie); err != nil {
+				return err
+			}
+
+			if err = d.DeleteTagsForMovie(movie); err != nil {
+				return err
+			}
+
+			if result := db.Delete(movie, movie.Id); result.Error != nil {
+				return result.Error
+			}
+
+			return nil
+		},
+	)
+
+	if err != nil {
+		return err
+	}
+
+	moviePath := path.Join(rootDir, movie.MoviePath)
+	err = os.RemoveAll(moviePath)
+	if err != nil {
+		return err
 	}
 
 	return nil

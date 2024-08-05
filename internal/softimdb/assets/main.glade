@@ -844,6 +844,10 @@ only that field will be searched.</property>
                 <property name="visible">True</property>
                 <property name="can-focus">True</property>
                 <property name="receives-default">True</property>
+                <property name="margin-end">5</property>
+                <style>
+                  <class name="suggested-action"/>
+                </style>
               </object>
               <packing>
                 <property name="expand">False</property>
@@ -857,6 +861,7 @@ only that field will be searched.</property>
                 <property name="visible">True</property>
                 <property name="can-focus">True</property>
                 <property name="receives-default">True</property>
+                <property name="margin-start">5</property>
               </object>
               <packing>
                 <property name="expand">False</property>
@@ -1153,7 +1158,19 @@ only that field will be searched.</property>
           </packing>
         </child>
         <child>
-          <placeholder/>
+          <object class="GtkButton" id="deleteButton">
+            <property name="label" translatable="yes">Delete</property>
+            <property name="visible">True</property>
+            <property name="can-focus">True</property>
+            <property name="receives-default">True</property>
+            <style>
+              <class name="destructive-action"/>
+            </style>
+          </object>
+          <packing>
+            <property name="left-attach">0</property>
+            <property name="top-attach">11</property>
+          </packing>
         </child>
         <child>
           <placeholder/>

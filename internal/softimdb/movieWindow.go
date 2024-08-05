@@ -31,11 +31,12 @@ type movieWindow struct {
 	packEntry                *gtk.Entry
 	posterImage              *gtk.Image
 	runtimeEntry             *gtk.Entry
+	deleteButton             *gtk.Button
 
 	movieInfo *movieInfo
 	movie     *data.Movie
 
-	saveCallback func(*movieInfo, *data.Movie)
+	closeCallback func(gtk.ResponseType, *movieInfo, *data.Movie)
 }
 
 func newMovieWindow(builder *builder.Builder, parent gtk.IWindow) *movieWindow {
@@ -51,13 +52,27 @@ func newMovieWindow(builder *builder.Builder, parent gtk.IWindow) *movieWindow {
 
 	button := builder.GetObject("okButton").(*gtk.Button)
 	_ = button.Connect("clicked", func() {
-		m.saveMovie()
+		if !m.saveMovie() {
+			return
+		}
 		m.window.Hide()
+		m.closeCallback(gtk.RESPONSE_ACCEPT, m.movieInfo, m.movie)
 	})
+
 	button = builder.GetObject("cancelButton").(*gtk.Button)
 	_ = button.Connect("clicked", func() {
 		m.window.Hide()
+		m.closeCallback(gtk.RESPONSE_CANCEL, nil, nil)
 	})
+
+	button = builder.GetObject("deleteButton").(*gtk.Button)
+	_ = button.Connect("clicked", func() {
+		if m.deleteMovie() {
+			m.window.Hide()
+			m.closeCallback(gtk.RESPONSE_REJECT, nil, m.movie)
+		}
+	})
+	m.deleteButton = button
 
 	m.imdbUrlEntry = builder.GetObject("imdbUrlEntry").(*gtk.Entry)
 	m.pathEntry = builder.GetObject("pathEntry").(*gtk.Entry)
@@ -79,13 +94,15 @@ func newMovieWindow(builder *builder.Builder, parent gtk.IWindow) *movieWindow {
 	return m
 }
 
-func (m *movieWindow) open(info *movieInfo, movie *data.Movie, saveCallback func(*movieInfo, *data.Movie)) {
+func (m *movieWindow) open(info *movieInfo, movie *data.Movie, closeCallback func(gtk.ResponseType, *movieInfo,
+	*data.Movie)) {
 	if info == nil {
 		info = &movieInfo{}
 	}
 	m.movie = movie
 	m.movieInfo = info
-	m.saveCallback = saveCallback
+	m.closeCallback = closeCallback
+	m.deleteButton.SetSensitive(movie != nil)
 
 	// Fill form with data
 	m.imdbUrlEntry.SetText(m.movieInfo.imdbUrl)
@@ -118,7 +135,7 @@ func (m *movieWindow) open(info *movieInfo, movie *data.Movie, saveCallback func
 	m.imdbUrlEntry.GrabFocus()
 }
 
-func (m *movieWindow) saveMovie() {
+func (m *movieWindow) saveMovie() bool {
 	// Fill fields
 	m.movieInfo.path = getEntryText(m.pathEntry)
 	m.movieInfo.imdbUrl = getEntryText(m.imdbUrlEntry)
@@ -131,7 +148,7 @@ func (m *movieWindow) saveMovie() {
 			fmt.Printf("Error : %s", err)
 		}
 
-		return
+		return false
 	}
 	m.movieInfo.imdbId = id
 	m.movieInfo.title = getEntryText(m.titleEntry)
@@ -149,7 +166,7 @@ func (m *movieWindow) saveMovie() {
 			fmt.Printf("Error : %s", err)
 		}
 
-		return
+		return false
 	}
 	m.movieInfo.myRating = rating
 
@@ -163,7 +180,7 @@ func (m *movieWindow) saveMovie() {
 			fmt.Printf("Error : %s", err)
 		}
 
-		return
+		return false
 	}
 	m.movieInfo.runtime = runtime
 
@@ -173,18 +190,33 @@ func (m *movieWindow) saveMovie() {
 	buffer, err := m.storyLineEntry.GetBuffer()
 	if err != nil {
 		reportError(err)
-		log.Fatal(err)
+		return false
 	}
 	storyLine, err := buffer.GetText(buffer.GetStartIter(), buffer.GetEndIter(), false)
 	if err != nil {
 		reportError(err)
-		log.Fatal(err)
+		return false
 	}
 	m.movieInfo.storyLine = storyLine
 	m.movieInfo.tags = getEntryText(m.genresEntry)
 	// Poster is set when clicking on the image
 
-	m.saveCallback(m.movieInfo, m.movie)
+	return true
+}
+
+func (m *movieWindow) deleteMovie() bool {
+	response, err := dialog.Title("Delete movie...").Text("Do you want to delete this movie?").YesNoButtons().
+		WarningIcon().Show()
+
+	if err != nil {
+		return false
+	}
+
+	if response == gtk.RESPONSE_YES {
+		return true
+	}
+
+	return false
 }
 
 func (m *movieWindow) onImageClick() {

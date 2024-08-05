@@ -2,7 +2,9 @@ package softimdb
 
 import (
 	_ "embed"
+	"errors"
 	"fmt"
+	"io/fs"
 	"log"
 	"path"
 	"runtime"
@@ -448,6 +450,22 @@ func (m *mainWindow) searchTag(item *gtk.RadioMenuItem) {
 	m.refresh(searchFor, searchGenreId, getSortBy())
 }
 
+func (m *mainWindow) windowClosed(r gtk.ResponseType, info *movieInfo, movie *data.Movie) {
+	switch r {
+	case gtk.RESPONSE_ACCEPT:
+		// Save movie
+		m.saveMovieInfo(info, movie)
+	case gtk.RESPONSE_CANCEL:
+		// Cancel dialog
+	case gtk.RESPONSE_REJECT:
+		// Delete movie
+		m.deleteMovie(movie)
+	default:
+		// Unknown response
+		// Handle as cancel
+	}
+}
+
 func (m *mainWindow) saveMovieInfo(movieInfo *movieInfo, movie *data.Movie) {
 	movieInfo.toDatabase(movie)
 
@@ -470,6 +488,26 @@ func (m *mainWindow) saveMovieInfo(movieInfo *movieInfo, movie *data.Movie) {
 			OkButton().
 			Show()
 	}
+}
+
+func (m *mainWindow) deleteMovie(movie *data.Movie) {
+	err := m.database.DeleteMovie(m.config.RootDir, movie)
+	var pathError *fs.PathError
+	if errors.Is(err, pathError) {
+		moviePath := path.Join(m.config.RootDir, movie.MoviePath)
+		msg := fmt.Sprintf("Failed to delete movie from NAS. "+
+			"Some directories or files might need to be removed manually from path='%s'.", moviePath)
+
+		_, _ = dialog.Title("Failed to delete movie").Text(msg).Extra(err.Error()).
+			ErrorIcon().OkButton().Show()
+		return
+	} else if err != nil {
+		//reportError(err)
+		return
+	}
+
+	_, _ = dialog.Title("Movie deleted...").Text("The movie has been deleted!").
+		InfoIcon().OkButton().Show()
 }
 
 func (m *mainWindow) updateCountLabel(i int) {
@@ -540,7 +578,7 @@ func (m *mainWindow) onEditMovieInfoClicked() {
 		m.movieWin = newMovieWindow(m.builder, m.window)
 	}
 
-	m.movieWin.open(info, selectedMovie, m.saveMovieInfo)
+	m.movieWin.open(info, selectedMovie, m.windowClosed)
 }
 
 func (m *mainWindow) onOpenAddWindowClicked() {

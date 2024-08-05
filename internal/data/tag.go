@@ -1,6 +1,7 @@
 package data
 
 import (
+	"errors"
 	"strings"
 
 	"gorm.io/gorm"
@@ -37,7 +38,7 @@ func (d *Database) GetTagByName(name string) (*Tag, error) {
 	}
 	tag := Tag{}
 	if result := db.Where("name=?", name).First(&tag); result.Error != nil {
-		if result.Error != gorm.ErrRecordNotFound {
+		if !errors.Is(result.Error, gorm.ErrRecordNotFound) {
 			return nil, result.Error
 		}
 		return nil, nil
@@ -130,4 +131,22 @@ func (d *Database) GetTags() ([]Tag, error) {
 	}
 
 	return tags, nil
+}
+
+// DeleteTagsForMovie deletes all tags for the given movie.
+func (d *Database) DeleteTagsForMovie(movie *Movie) error {
+	db, err := d.getDatabase()
+	if err != nil {
+		return err
+	}
+
+	// Get tag id:s for movie
+	var movieTags []MovieTag
+	if result := db.Where("movie_id=?", movie.Id).Find(&movieTags); result.Error != nil {
+		return result.Error
+	}
+
+	db.Delete(&movieTags)
+
+	return nil
 }
