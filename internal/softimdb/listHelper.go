@@ -90,15 +90,17 @@ func createMovieBox(movie *data.Movie) *gtk.Box {
 	label = createMovieGenresLabel(movie)
 	box.Add(label)
 
-	if movie.Pack != "" {
-		boxContext, err := box.GetStyleContext()
-		if err != nil {
-			reportError(err)
-			log.Fatal(err)
-		}
-
-		boxContext.AddClass("packBackground")
-	}
+	// This does not work well when the movie is selected.
+	//
+	//if movie.Pack != "" {
+	//	boxContext, err := box.GetStyleContext()
+	//	if err != nil {
+	//		reportError(err)
+	//		log.Fatal(err)
+	//	}
+	//
+	//	boxContext.AddClass("packBackground")
+	//}
 
 	return box
 }
