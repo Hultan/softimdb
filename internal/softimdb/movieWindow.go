@@ -158,7 +158,8 @@ func (m *movieWindow) saveMovie() bool {
 
 	ratingText := getEntryText(m.myRatingEntry)
 	rating, err := strconv.Atoi(ratingText)
-	if err != nil || rating < 0 || rating > 5 {
+	legalRating := rating >= 0 && rating <= 5
+	if err != nil || !legalRating {
 		msg := fmt.Sprintf("Invalid my rating : %s (error : %s)", ratingText, err)
 		_, err = dialog.Title("Invalid my rating...").Text(msg).ErrorIcon().OkButton().Show()
 
@@ -172,7 +173,8 @@ func (m *movieWindow) saveMovie() bool {
 
 	runtimeText := getEntryText(m.runtimeEntry)
 	runtime, err := strconv.Atoi(runtimeText)
-	if err != nil || runtime < 0 {
+	legalRuntime := runtime == -1 || runtime > 0
+	if err != nil || !legalRuntime {
 		msg := fmt.Sprintf("Invalid runtime : %s (error : %s)", runtimeText, err)
 		_, err = dialog.Title("Invalid runtime...").Text(msg).ErrorIcon().OkButton().Show()
 
