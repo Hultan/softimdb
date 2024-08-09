@@ -11,7 +11,7 @@ import (
 )
 
 type popupMenu struct {
-	mainWindow *mainWindow
+	mainWindow *MainWindow
 	popupMenu  *gtk.Menu
 
 	popupTags          *gtk.MenuItem
@@ -22,7 +22,7 @@ type popupMenu struct {
 	popupPlayMovie     *gtk.MenuItem
 }
 
-func newPopupMenu(window *mainWindow) *popupMenu {
+func newPopupMenu(window *MainWindow) *popupMenu {
 	menu := new(popupMenu)
 	menu.mainWindow = window
 	return menu

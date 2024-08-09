@@ -37,7 +37,7 @@ var mainCss string
 
 const configFile = "/home/per/.config/softteam/softimdb/config.json"
 
-type mainWindow struct {
+type MainWindow struct {
 	builder *builder.Builder
 
 	application                           *gtk.Application
@@ -82,9 +82,9 @@ var searchGenreId int
 var searchFor string
 var currentView View
 
-// NewMainWindow : Creates a new mainWindow object
-func NewMainWindow() *mainWindow {
-	m := &mainWindow{}
+// NewMainWindow : Creates a new MainWindow object
+func NewMainWindow() *MainWindow {
+	m := &MainWindow{}
 	m.movies = make(map[int]*data.Movie, 500)
 
 	b, err := builder.NewBuilder(mainGlade)
@@ -135,15 +135,15 @@ func NewMainWindow() *mainWindow {
 	return m
 }
 
-// Open : Opens the mainWindow window
-func (m *mainWindow) Open(app *gtk.Application) {
+// Open : Opens the MainWindow window
+func (m *MainWindow) Open(app *gtk.Application) {
 	m.application = app
 	m.window.SetApplication(app)
 	m.window.ShowAll()
 	m.onRefreshButtonClicked()
 }
 
-func (m *mainWindow) setupMenu(window *gtk.ApplicationWindow) {
+func (m *MainWindow) setupMenu(window *gtk.ApplicationWindow) {
 	// File menu
 	menuQuit := m.builder.GetObject("menuFileQuit").(*gtk.MenuItem)
 	_ = menuQuit.Connect("activate", window.Close)
@@ -247,7 +247,7 @@ func (m *mainWindow) setupMenu(window *gtk.ApplicationWindow) {
 	m.fillTagsMenu(menuTags)
 }
 
-func (m *mainWindow) setupToolBar() {
+func (m *MainWindow) setupToolBar() {
 	// Quit button
 	button := m.builder.GetObject("quitButton").(*gtk.ToolButton)
 	_ = button.Connect("clicked", m.window.Close)
@@ -353,7 +353,7 @@ func (m *mainWindow) setupToolBar() {
 	})
 }
 
-func (m *mainWindow) fillMovieList(searchFor string, categoryId int, sortBy string) {
+func (m *MainWindow) fillMovieList(searchFor string, categoryId int, sortBy string) {
 	movies, err := m.database.GetAllMovies(string(currentView), searchFor, categoryId, sortBy)
 	if err != nil {
 		reportError(err)
@@ -388,7 +388,7 @@ func (m *mainWindow) fillMovieList(searchFor string, categoryId int, sortBy stri
 	m.updateCountLabel(len(movies))
 }
 
-func (m *mainWindow) getSelectedMovie() *data.Movie {
+func (m *MainWindow) getSelectedMovie() *data.Movie {
 	children := m.movieList.GetSelectedChildren()
 	if children == nil {
 		return nil
@@ -416,7 +416,7 @@ func (m *mainWindow) getSelectedMovie() *data.Movie {
 	return m.movies[id]
 }
 
-func (m *mainWindow) refresh(search string, categoryId int, sortBy string) {
+func (m *MainWindow) refresh(search string, categoryId int, sortBy string) {
 	m.fillMovieList(search, categoryId, sortBy)
 	m.movieList.ShowAll()
 	if search == "" {
@@ -424,7 +424,7 @@ func (m *mainWindow) refresh(search string, categoryId int, sortBy string) {
 	}
 }
 
-func (m *mainWindow) fillTagsMenu(menu *gtk.MenuItem) {
+func (m *MainWindow) fillTagsMenu(menu *gtk.MenuItem) {
 	tags, _ := m.database.GetTags()
 
 	// Create and add tags menu
@@ -464,14 +464,14 @@ func (m *mainWindow) fillTagsMenu(menu *gtk.MenuItem) {
 	}
 }
 
-func (m *mainWindow) searchTag(item *gtk.RadioMenuItem) {
+func (m *MainWindow) searchTag(item *gtk.RadioMenuItem) {
 	name, _ := item.GetName()
 	i, _ := strconv.Atoi(name)
 	searchGenreId = i
 	m.refresh(searchFor, searchGenreId, getSortBy())
 }
 
-func (m *mainWindow) windowClosed(r gtk.ResponseType, info *movieInfo, movie *data.Movie) {
+func (m *MainWindow) windowClosed(r gtk.ResponseType, info *movieInfo, movie *data.Movie) {
 	switch r {
 	case gtk.RESPONSE_ACCEPT:
 		// Save movie
@@ -487,7 +487,7 @@ func (m *mainWindow) windowClosed(r gtk.ResponseType, info *movieInfo, movie *da
 	}
 }
 
-func (m *mainWindow) saveMovieInfo(movieInfo *movieInfo, movie *data.Movie) {
+func (m *MainWindow) saveMovieInfo(movieInfo *movieInfo, movie *data.Movie) {
 	movieInfo.toDatabase(movie)
 
 	err := m.database.UpdateMovie(movie, true)
@@ -511,7 +511,7 @@ func (m *mainWindow) saveMovieInfo(movieInfo *movieInfo, movie *data.Movie) {
 	}
 }
 
-func (m *mainWindow) deleteMovie(movie *data.Movie) {
+func (m *MainWindow) deleteMovie(movie *data.Movie) {
 	err := m.database.DeleteMovie(m.config.RootDir, movie)
 	var pathError *fs.PathError
 	if errors.Is(err, pathError) {
@@ -531,7 +531,7 @@ func (m *mainWindow) deleteMovie(movie *data.Movie) {
 		InfoIcon().OkButton().Show()
 }
 
-func (m *mainWindow) updateCountLabel(i int) {
+func (m *MainWindow) updateCountLabel(i int) {
 	m.countLabel.SetText(fmt.Sprintf("Number of videos : %d", i))
 }
 
@@ -539,7 +539,7 @@ func (m *mainWindow) updateCountLabel(i int) {
 // Signal handlers
 //
 
-func (m *mainWindow) onClose() {
+func (m *MainWindow) onClose() {
 	m.database.CloseDatabase()
 	m.window.Close()
 	m.movieList = nil
@@ -551,7 +551,7 @@ func (m *mainWindow) onClose() {
 	m.application.Quit()
 }
 
-func (m *mainWindow) onOpenIMDBClicked() {
+func (m *MainWindow) onOpenIMDBClicked() {
 	v := m.getSelectedMovie()
 	if v == nil {
 		return
@@ -560,7 +560,7 @@ func (m *mainWindow) onOpenIMDBClicked() {
 	openBrowser(v.ImdbUrl)
 }
 
-func (m *mainWindow) onPlayMovieClicked() {
+func (m *MainWindow) onPlayMovieClicked() {
 	go func() {
 		movie := m.getSelectedMovie()
 		if movie == nil {
@@ -582,7 +582,7 @@ func (m *mainWindow) onPlayMovieClicked() {
 	}()
 }
 
-func (m *mainWindow) onEditMovieInfoClicked() {
+func (m *MainWindow) onEditMovieInfoClicked() {
 	selectedMovie := m.getSelectedMovie()
 	if selectedMovie == nil {
 		return
@@ -602,14 +602,14 @@ func (m *mainWindow) onEditMovieInfoClicked() {
 	m.movieWin.open(info, selectedMovie, m.windowClosed)
 }
 
-func (m *mainWindow) onOpenAddWindowClicked() {
+func (m *MainWindow) onOpenAddWindowClicked() {
 	if m.addMovieWin == nil {
 		m.addMovieWin = newAddMovieWindow(m, m.database, m.config)
 	}
 	m.addMovieWin.open()
 }
 
-func (m *mainWindow) onRefreshButtonClicked() {
+func (m *MainWindow) onRefreshButtonClicked() {
 	searchFor = ""
 	searchGenreId = -1
 	sortBy = sortByName
@@ -620,7 +620,7 @@ func (m *mainWindow) onRefreshButtonClicked() {
 	m.refresh(searchFor, searchGenreId, getSortBy())
 }
 
-func (m *mainWindow) onSearchButtonClicked() {
+func (m *MainWindow) onSearchButtonClicked() {
 	search, err := m.searchEntry.GetText()
 	if err != nil {
 		reportError(err)
@@ -631,13 +631,13 @@ func (m *mainWindow) onSearchButtonClicked() {
 	m.refresh(searchFor, searchGenreId, getSortBy())
 }
 
-func (m *mainWindow) onClearSearchButtonClicked() {
+func (m *MainWindow) onClearSearchButtonClicked() {
 	searchFor = ""
 	m.searchEntry.SetText("")
 	m.refresh("", searchGenreId, getSortBy())
 }
 
-func (m *mainWindow) onKeyPressEvent(_ *gtk.ApplicationWindow, event *gdk.Event) {
+func (m *MainWindow) onKeyPressEvent(_ *gtk.ApplicationWindow, event *gdk.Event) {
 	keyEvent := gdk.EventKeyNewFromEvent(event)
 
 	ctrl := (keyEvent.State() & gdk.CONTROL_MASK) > 0
@@ -654,7 +654,7 @@ func (m *mainWindow) onKeyPressEvent(_ *gtk.ApplicationWindow, event *gdk.Event)
 	}
 }
 
-func (m *mainWindow) onOpenAboutDialogClicked() {
+func (m *MainWindow) onOpenAboutDialogClicked() {
 	about := m.builder.GetObject("aboutDialog").(*gtk.AboutDialog)
 
 	about.SetDestroyWithParent(true)
@@ -682,7 +682,7 @@ func (m *mainWindow) onOpenAboutDialogClicked() {
 	about.ShowAll()
 }
 
-func (m *mainWindow) onMovieListSelectionChanged(_ *gtk.FlowBox) {
+func (m *MainWindow) onMovieListSelectionChanged(_ *gtk.FlowBox) {
 	movie := m.getSelectedMovie()
 	if movie == nil {
 		return
@@ -691,7 +691,7 @@ func (m *mainWindow) onMovieListSelectionChanged(_ *gtk.FlowBox) {
 	m.storyLineLabel.SetMarkup(story)
 }
 
-func (m *mainWindow) onMovieListDoubleClicked(_ *gtk.FlowBox) {
+func (m *MainWindow) onMovieListDoubleClicked(_ *gtk.FlowBox) {
 	movie := m.getSelectedMovie()
 	if movie == nil {
 		return
@@ -699,7 +699,7 @@ func (m *mainWindow) onMovieListDoubleClicked(_ *gtk.FlowBox) {
 	m.onEditMovieInfoClicked()
 }
 
-func (m *mainWindow) onOpenPackClicked() {
+func (m *MainWindow) onOpenPackClicked() {
 	movie := m.getSelectedMovie()
 	if movie == nil {
 		return
@@ -717,7 +717,7 @@ func (m *mainWindow) onOpenPackClicked() {
 	m.refresh(searchFor, searchGenreId, getSortBy())
 }
 
-func (m *mainWindow) changeView(view View) {
+func (m *MainWindow) changeView(view View) {
 	m.viewAllButton.SetActive(false)
 	m.viewToWatchButton.SetActive(false)
 	m.viewPacksButton.SetActive(false)

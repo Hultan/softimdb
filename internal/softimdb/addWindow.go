@@ -12,7 +12,7 @@ import (
 )
 
 type addMovieWindow struct {
-	mainWindow     *mainWindow
+	mainWindow     *MainWindow
 	window         *gtk.Window
 	list           *gtk.ListBox
 	moviePathEntry *gtk.Entry
@@ -20,7 +20,7 @@ type addMovieWindow struct {
 	config         *config.Config
 }
 
-func newAddMovieWindow(m *mainWindow, db *data.Database, cfg *config.Config) *addMovieWindow {
+func newAddMovieWindow(m *MainWindow, db *data.Database, cfg *config.Config) *addMovieWindow {
 	a := &addMovieWindow{
 		mainWindow: m,
 		database:   db,
