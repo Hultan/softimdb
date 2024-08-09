@@ -338,6 +338,10 @@ func (d *Database) UpdateMovie(movie *Movie, updateTags bool) error {
 				return result.Error
 			}
 
+			if result := db.Model(&movie).Update("length", movie.Runtime); result.Error != nil {
+				return result.Error
+			}
+
 			if !updateTags {
 				return nil
 			}
