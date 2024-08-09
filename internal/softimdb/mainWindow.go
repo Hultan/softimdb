@@ -59,6 +59,7 @@ type mainWindow struct {
 
 	viewAllButton, viewPacksButton        *gtk.ToggleToolButton
 	viewToWatchButton, viewNoRatingButton *gtk.ToggleToolButton
+	viewNeedsSubtitlesButton              *gtk.ToggleToolButton
 
 	movieWin    *movieWindow
 	addMovieWin *addMovieWindow
@@ -69,10 +70,11 @@ type mainWindow struct {
 type View string
 
 const (
-	viewAll      View = "all"
-	viewPacks         = "packs"
-	viewToWatch       = "toWatch"
-	viewNoRating      = "noRating"
+	viewAll            View = "all"
+	viewPacks               = "packs"
+	viewToWatch             = "toWatch"
+	viewNoRating            = "noRating"
+	viewNeedsSubtitles      = "needsSubtitles"
 )
 
 var sortBy, sortOrder string
@@ -269,30 +271,31 @@ func (m *mainWindow) setupToolBar() {
 	// Search entry
 	m.searchEntry = m.builder.GetObject("searchEntry").(*gtk.Entry)
 	_ = m.searchEntry.Connect("activate", m.onSearchButtonClicked)
-
-	// Sort by buttons
-	sortByNameButton := m.builder.GetObject("sortByName").(*gtk.ToolButton)
-	_ = sortByNameButton.Connect(
-		"clicked", func() {
-			sortBy = sortByName
-			sortOrder = sortAscending
-			m.refresh("", -1, getSortBy())
-		},
-	)
-
-	sortByIdButton := m.builder.GetObject("sortById").(*gtk.ToolButton)
-	_ = sortByIdButton.Connect(
-		"clicked", func() {
-			sortBy = sortById
-			sortOrder = sortDescending
-			m.refresh("", -1, getSortBy())
-		},
-	)
+	//
+	//// Sort by buttons
+	//sortByNameButton := m.builder.GetObject("sortByName").(*gtk.ToolButton)
+	//_ = sortByNameButton.Connect(
+	//	"clicked", func() {
+	//		sortBy = sortByName
+	//		sortOrder = sortAscending
+	//		m.refresh("", -1, getSortBy())
+	//	},
+	//)
+	//
+	//sortByIdButton := m.builder.GetObject("sortById").(*gtk.ToolButton)
+	//_ = sortByIdButton.Connect(
+	//	"clicked", func() {
+	//		sortBy = sortById
+	//		sortOrder = sortDescending
+	//		m.refresh("", -1, getSortBy())
+	//	},
+	//)
 
 	m.viewAllButton = m.builder.GetObject("viewAll").(*gtk.ToggleToolButton)
 	m.viewPacksButton = m.builder.GetObject("viewPacks").(*gtk.ToggleToolButton)
 	m.viewToWatchButton = m.builder.GetObject("viewToWatch").(*gtk.ToggleToolButton)
 	m.viewNoRatingButton = m.builder.GetObject("viewNoRating").(*gtk.ToggleToolButton)
+	m.viewNeedsSubtitlesButton = m.builder.GetObject("viewNeedsSubtitles").(*gtk.ToggleToolButton)
 
 	_ = m.viewAllButton.Connect("toggled", func() {
 		if m.viewAllButton.GetActive() {
@@ -300,6 +303,7 @@ func (m *mainWindow) setupToolBar() {
 			m.viewPacksButton.SetActive(false)
 			m.viewToWatchButton.SetActive(false)
 			m.viewNoRatingButton.SetActive(false)
+			m.viewNeedsSubtitlesButton.SetActive(false)
 			m.refresh(searchFor, searchGenreId, getSortBy())
 		}
 	})
@@ -309,6 +313,7 @@ func (m *mainWindow) setupToolBar() {
 			m.viewAllButton.SetActive(false)
 			m.viewToWatchButton.SetActive(false)
 			m.viewNoRatingButton.SetActive(false)
+			m.viewNeedsSubtitlesButton.SetActive(false)
 			m.refresh(searchFor, searchGenreId, getSortBy())
 		}
 	})
@@ -318,6 +323,7 @@ func (m *mainWindow) setupToolBar() {
 			m.viewAllButton.SetActive(false)
 			m.viewPacksButton.SetActive(false)
 			m.viewNoRatingButton.SetActive(false)
+			m.viewNeedsSubtitlesButton.SetActive(false)
 			m.refresh(searchFor, searchGenreId, getSortBy())
 		}
 	})
@@ -327,6 +333,17 @@ func (m *mainWindow) setupToolBar() {
 			m.viewAllButton.SetActive(false)
 			m.viewPacksButton.SetActive(false)
 			m.viewToWatchButton.SetActive(false)
+			m.viewNeedsSubtitlesButton.SetActive(false)
+			m.refresh(searchFor, searchGenreId, getSortBy())
+		}
+	})
+	_ = m.viewNeedsSubtitlesButton.Connect("toggled", func() {
+		if m.viewNeedsSubtitlesButton.GetActive() {
+			currentView = viewNeedsSubtitles
+			m.viewAllButton.SetActive(false)
+			m.viewPacksButton.SetActive(false)
+			m.viewToWatchButton.SetActive(false)
+			m.viewNoRatingButton.SetActive(false)
 			m.refresh(searchFor, searchGenreId, getSortBy())
 		}
 	})
@@ -700,7 +717,8 @@ func (m *mainWindow) changeView(view View) {
 	m.viewAllButton.SetActive(false)
 	m.viewToWatchButton.SetActive(false)
 	m.viewPacksButton.SetActive(false)
-	m.viewToWatchButton.SetActive(false)
+	m.viewNoRatingButton.SetActive(false)
+	m.viewNeedsSubtitlesButton.SetActive(false)
 
 	switch view {
 	case viewAll:
@@ -711,5 +729,7 @@ func (m *mainWindow) changeView(view View) {
 		m.viewPacksButton.SetActive(true)
 	case viewNoRating:
 		m.viewNoRatingButton.SetActive(true)
+	case viewNeedsSubtitles:
+		m.viewNeedsSubtitlesButton.SetActive(true)
 	}
 }

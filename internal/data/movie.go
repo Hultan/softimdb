@@ -126,6 +126,8 @@ func addViewSQL(view string, where string) string {
 		sql = "to_watch = true"
 	case "noRating":
 		sql = "my_rating = 0"
+	case "needsSubtitles":
+		sql = "needsSubtitle = true"
 	}
 	if where != "" && sql != "" {
 		sql = " AND " + sql
