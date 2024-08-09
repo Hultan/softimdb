@@ -256,6 +256,10 @@ func (m *mainWindow) setupToolBar() {
 	button = m.builder.GetObject("refreshButton").(*gtk.ToolButton)
 	_ = button.Connect("clicked", m.onRefreshButtonClicked)
 
+	// Play button
+	button = m.builder.GetObject("playMovieButton").(*gtk.ToolButton)
+	_ = button.Connect("clicked", m.onPlayMovieClicked)
+
 	// Add button
 	button = m.builder.GetObject("addButton").(*gtk.ToolButton)
 	_ = button.Connect("clicked", m.onOpenAddWindowClicked)
