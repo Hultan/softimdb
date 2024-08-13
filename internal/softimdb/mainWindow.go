@@ -57,10 +57,6 @@ type MainWindow struct {
 	menuSortByYear, menuSortById          *gtk.RadioMenuItem
 	menuSortAscending, menuSortDescending *gtk.RadioMenuItem
 
-	viewAllButton, viewPacksButton        *gtk.ToggleToolButton
-	viewToWatchButton, viewNoRatingButton *gtk.ToggleToolButton
-	viewNeedsSubtitlesButton              *gtk.ToggleToolButton
-
 	movieWin    *movieWindow
 	addMovieWin *addMovieWindow
 
@@ -77,10 +73,11 @@ const (
 	viewNeedsSubtitles      = "needsSubtitles"
 )
 
-var sortBy, sortOrder string
-var searchGenreId int
-var searchFor string
+var sortBy, sortOrder string = sortByName, sortAscending
+var searchGenreId int = -1
+var searchFor string = ""
 var currentView View
+var view viewManager
 
 // NewMainWindow : Creates a new MainWindow object
 func NewMainWindow() *MainWindow {
@@ -132,6 +129,8 @@ func NewMainWindow() *MainWindow {
 	_ = m.movieList.Connect("selected-children-changed", m.onMovieListSelectionChanged)
 	_ = m.movieList.Connect("child-activated", m.onMovieListDoubleClicked)
 
+	view = newViewManager(m)
+
 	return m
 }
 
@@ -140,7 +139,7 @@ func (m *MainWindow) Open(app *gtk.Application) {
 	m.application = app
 	m.window.SetApplication(app)
 	m.window.ShowAll()
-	m.onRefreshButtonClicked()
+	//m.onRefreshButtonClicked()
 }
 
 func (m *MainWindow) setupMenu(window *gtk.ApplicationWindow) {
@@ -294,63 +293,6 @@ func (m *MainWindow) setupToolBar() {
 	//		m.refresh("", -1, getSortBy())
 	//	},
 	//)
-
-	m.viewAllButton = m.builder.GetObject("viewAll").(*gtk.ToggleToolButton)
-	m.viewPacksButton = m.builder.GetObject("viewPacks").(*gtk.ToggleToolButton)
-	m.viewToWatchButton = m.builder.GetObject("viewToWatch").(*gtk.ToggleToolButton)
-	m.viewNoRatingButton = m.builder.GetObject("viewNoRating").(*gtk.ToggleToolButton)
-	m.viewNeedsSubtitlesButton = m.builder.GetObject("viewNeedsSubtitles").(*gtk.ToggleToolButton)
-
-	_ = m.viewAllButton.Connect("toggled", func() {
-		if m.viewAllButton.GetActive() {
-			currentView = viewAll
-			m.viewPacksButton.SetActive(false)
-			m.viewToWatchButton.SetActive(false)
-			m.viewNoRatingButton.SetActive(false)
-			m.viewNeedsSubtitlesButton.SetActive(false)
-			m.refresh(searchFor, searchGenreId, getSortBy())
-		}
-	})
-	_ = m.viewPacksButton.Connect("toggled", func() {
-		if m.viewPacksButton.GetActive() {
-			currentView = viewPacks
-			m.viewAllButton.SetActive(false)
-			m.viewToWatchButton.SetActive(false)
-			m.viewNoRatingButton.SetActive(false)
-			m.viewNeedsSubtitlesButton.SetActive(false)
-			m.refresh(searchFor, searchGenreId, getSortBy())
-		}
-	})
-	_ = m.viewToWatchButton.Connect("toggled", func() {
-		if m.viewToWatchButton.GetActive() {
-			currentView = viewToWatch
-			m.viewAllButton.SetActive(false)
-			m.viewPacksButton.SetActive(false)
-			m.viewNoRatingButton.SetActive(false)
-			m.viewNeedsSubtitlesButton.SetActive(false)
-			m.refresh(searchFor, searchGenreId, getSortBy())
-		}
-	})
-	_ = m.viewNoRatingButton.Connect("toggled", func() {
-		if m.viewNoRatingButton.GetActive() {
-			currentView = viewNoRating
-			m.viewAllButton.SetActive(false)
-			m.viewPacksButton.SetActive(false)
-			m.viewToWatchButton.SetActive(false)
-			m.viewNeedsSubtitlesButton.SetActive(false)
-			m.refresh(searchFor, searchGenreId, getSortBy())
-		}
-	})
-	_ = m.viewNeedsSubtitlesButton.Connect("toggled", func() {
-		if m.viewNeedsSubtitlesButton.GetActive() {
-			currentView = viewNeedsSubtitles
-			m.viewAllButton.SetActive(false)
-			m.viewPacksButton.SetActive(false)
-			m.viewToWatchButton.SetActive(false)
-			m.viewNoRatingButton.SetActive(false)
-			m.refresh(searchFor, searchGenreId, getSortBy())
-		}
-	})
 }
 
 func (m *MainWindow) fillMovieList(searchFor string, categoryId int, sortBy string) {
@@ -709,31 +651,10 @@ func (m *MainWindow) onOpenPackClicked() {
 	searchGenreId = -1
 	sortBy = sortByName
 	sortOrder = sortAscending
-	m.changeView(viewPacks)
+	view.changeView(viewPacks)
 	m.searchEntry.SetText(searchFor)
 	m.menuNoTagItem.SetActive(true)
 	m.menuSortByName.SetActive(true)
 	m.menuSortAscending.SetActive(true)
 	m.refresh(searchFor, searchGenreId, getSortBy())
-}
-
-func (m *MainWindow) changeView(view View) {
-	m.viewAllButton.SetActive(false)
-	m.viewToWatchButton.SetActive(false)
-	m.viewPacksButton.SetActive(false)
-	m.viewNoRatingButton.SetActive(false)
-	m.viewNeedsSubtitlesButton.SetActive(false)
-
-	switch view {
-	case viewAll:
-		m.viewAllButton.SetActive(true)
-	case viewToWatch:
-		m.viewToWatchButton.SetActive(true)
-	case viewPacks:
-		m.viewPacksButton.SetActive(true)
-	case viewNoRating:
-		m.viewNoRatingButton.SetActive(true)
-	case viewNeedsSubtitles:
-		m.viewNeedsSubtitlesButton.SetActive(true)
-	}
 }
