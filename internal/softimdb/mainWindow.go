@@ -586,6 +586,8 @@ func (m *MainWindow) onKeyPressEvent(_ *gtk.ApplicationWindow, event *gdk.Event)
 
 	switch {
 	case keyEvent.KeyVal() == gdk.KEY_F5:
+		m.onRefreshButtonClicked()
+	case keyEvent.KeyVal() == gdk.KEY_F6:
 		m.onPlayMovieClicked()
 	case keyEvent.KeyVal() == gdk.KEY_f && ctrl:
 		m.searchEntry.GrabFocus()

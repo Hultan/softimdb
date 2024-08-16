@@ -355,7 +355,7 @@
               <object class="GtkToolButton" id="refreshButton">
                 <property name="visible">True</property>
                 <property name="can-focus">False</property>
-                <property name="tooltip-text" translatable="yes">Ctrl + F5</property>
+                <property name="tooltip-text" translatable="yes">F5</property>
                 <property name="is-important">True</property>
                 <property name="label" translatable="yes">Refresh</property>
                 <property name="use-underline">True</property>
@@ -370,7 +370,7 @@
               <object class="GtkToolButton" id="playMovieButton">
                 <property name="visible">True</property>
                 <property name="can-focus">False</property>
-                <property name="tooltip-text" translatable="yes">F5</property>
+                <property name="tooltip-text" translatable="yes">F6</property>
                 <property name="is-important">True</property>
                 <property name="label" translatable="yes">Play</property>
                 <property name="use-underline">True</property>
@@ -1188,6 +1188,7 @@ Show all movies that needs subtitles.</property>
       <object class="GtkMenuItem" id="popupPlayMovie">
         <property name="visible">True</property>
         <property name="can-focus">False</property>
+        <property name="tooltip-text" translatable="yes">F6</property>
         <property name="label" translatable="yes">Play movie...</property>
         <property name="use-underline">True</property>
       </object>
