@@ -23,7 +23,7 @@ type Database struct {
 func DatabaseNew(useTestDB bool, config *config.Config) *Database {
 	database := &Database{}
 	database.UseTestDatabase = useTestDB
-	database.cache = ImageCacheNew()
+	database.cache = imageCacheNew()
 	database.config = config
 
 	tagCache = NewTagCache()

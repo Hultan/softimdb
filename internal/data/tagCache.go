@@ -8,10 +8,6 @@ func NewTagCache() *TagCache {
 	return &TagCache{}
 }
 
-func (t *TagCache) Add(tag *Tag) {
-	t.tags = append(t.tags, tag)
-}
-
 func (t *TagCache) GetByName(name string) *Tag {
 	for _, tag := range t.tags {
 		if tag.Name == name {
@@ -21,7 +17,11 @@ func (t *TagCache) GetByName(name string) *Tag {
 	return nil
 }
 
-func (t *TagCache) GetById(id int) *Tag {
+func (t *TagCache) add(tag *Tag) {
+	t.tags = append(t.tags, tag)
+}
+
+func (t *TagCache) getById(id int) *Tag {
 	for _, tag := range t.tags {
 		if tag.Id == id {
 			return tag

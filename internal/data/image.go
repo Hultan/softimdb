@@ -10,8 +10,8 @@ import (
 	"gorm.io/gorm"
 )
 
-// Image represents a movie image.
-type Image struct {
+// image represents a movie image.
+type image struct {
 	Id   int    `gorm:"column:id;primary_key"`
 	Data []byte `gorm:"column:image;"`
 }
@@ -19,13 +19,46 @@ type Image struct {
 const imageCache = "/home/per/.cache/"
 
 // TableName returns the name of the table.
-func (i *Image) TableName() string {
+func (i *image) TableName() string {
 	return "image"
 }
 
-// GetImage returns an image from the database.
-func (d *Database) GetImage(id int) (*Image, error) {
-	image := Image{}
+// UpdateImage replaces an image in the database.
+func (d *Database) UpdateImage(movie *Movie, imageData []byte) error {
+	db, err := d.getDatabase()
+	if err != nil {
+		return err
+	}
+
+	err = db.Transaction(
+		func(tx *gorm.DB) error {
+			if result := db.Delete(&image{}, movie.ImageId); result.Error != nil {
+				return result.Error
+			}
+			image := &image{Data: imageData}
+			if result := db.Create(image); result.Error != nil {
+				return result.Error
+			}
+			if result := db.Model(&movie).Update("image_id", image.Id); result.Error != nil {
+				return result.Error
+			}
+			// TODO : Update cache
+
+			return nil
+		},
+	)
+
+	// Check transaction error
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// getImage returns an image from the database.
+func (d *Database) getImage(id int) (*image, error) {
+	image := image{}
 
 	// Load from cache
 	cachePath := path.Join(imageCache, "softimdb", fmt.Sprintf("%d.png", id))
@@ -53,7 +86,38 @@ func (d *Database) GetImage(id int) (*Image, error) {
 	return &image, nil
 }
 
-func (d *Database) storeCachedImage(image *Image, cachePath string) {
+// deleteImage inserts an image into the database.
+func (d *Database) deleteImage(movie *Movie) error {
+	db, err := d.getDatabase()
+	if err != nil {
+		return err
+	}
+
+	if result := db.Delete(&image{}, movie.ImageId); result.Error != nil {
+		return result.Error
+	}
+
+	return nil
+}
+
+// insertImage inserts an image into the database.
+func (d *Database) insertImage(image *image) error {
+	db, err := d.getDatabase()
+	if err != nil {
+		return err
+	}
+	if result := db.Create(image); result.Error != nil {
+		return result.Error
+	}
+
+	return nil
+}
+
+//
+// Cached images
+//
+
+func (d *Database) storeCachedImage(image *image, cachePath string) {
 	if !d.existCachedImage(path.Join(imageCache, "softimdb")) {
 		err := os.Mkdir(path.Join(imageCache, "softimdb"), os.ModePerm)
 		if err != nil {
@@ -87,7 +151,7 @@ func (d *Database) existCachedImage(cachePath string) bool {
 }
 
 // getCachedImage returns an image from the cache.
-func (d *Database) getCachedImage(image *Image, cachePath string) error {
+func (d *Database) getCachedImage(image *image, cachePath string) error {
 	file, err := os.Open(cachePath)
 	if err != nil {
 		return err
@@ -104,65 +168,5 @@ func (d *Database) getCachedImage(image *Image, cachePath string) error {
 		return err
 	}
 	image.Data = data
-	return nil
-}
-
-// DeleteImage inserts an image into the database.
-func (d *Database) DeleteImage(movie *Movie) error {
-	db, err := d.getDatabase()
-	if err != nil {
-		return err
-	}
-
-	if result := db.Delete(&Image{}, movie.ImageId); result.Error != nil {
-		return result.Error
-	}
-
-	return nil
-}
-
-// InsertImage inserts an image into the database.
-func (d *Database) InsertImage(image *Image) error {
-	db, err := d.getDatabase()
-	if err != nil {
-		return err
-	}
-	if result := db.Create(image); result.Error != nil {
-		return result.Error
-	}
-
-	return nil
-}
-
-// UpdateImage removes an image from the database.
-func (d *Database) UpdateImage(movie *Movie, imageData []byte) error {
-	db, err := d.getDatabase()
-	if err != nil {
-		return err
-	}
-
-	err = db.Transaction(
-		func(tx *gorm.DB) error {
-			if result := db.Delete(&Image{}, movie.ImageId); result.Error != nil {
-				return result.Error
-			}
-			image := &Image{Data: imageData}
-			if result := db.Create(image); result.Error != nil {
-				return result.Error
-			}
-			if result := db.Model(&movie).Update("image_id", image.Id); result.Error != nil {
-				return result.Error
-			}
-			// TODO : Update cache
-
-			return nil
-		},
-	)
-
-	// Check transaction error
-	if err != nil {
-		return err
-	}
-
 	return nil
 }

@@ -37,35 +37,36 @@ func (m *Movie) TableName() string {
 	return "movies"
 }
 
-// GetMovie returns a movie from the database.
-func (d *Database) GetMovie(id int) (*Movie, error) {
-	db, err := d.getDatabase()
-	if err != nil {
-		return nil, err
-	}
-	movie := Movie{}
-	if result := db.Where("Id=?", id).First(&movie); result.Error != nil {
-		return nil, result.Error
-	}
-
-	// Check cache
-	image := d.cache.Load(movie.Id)
-	if image != nil {
-		movie.Image = image
-	} else {
-		// Get movie image
-		d.getMovieImage(&movie)
-	}
-
-	// Get tags for movie
-	tags, err := d.GetTagsForMovie(&movie)
-	if err != nil {
-		return nil, err
-	}
-	movie.Tags = tags
-
-	return &movie, nil
-}
+//
+//// GetMovie returns a movie from the database.
+//func (d *Database) GetMovie(id int) (*Movie, error) {
+//	db, err := d.getDatabase()
+//	if err != nil {
+//		return nil, err
+//	}
+//	movie := Movie{}
+//	if result := db.Where("Id=?", id).First(&movie); result.Error != nil {
+//		return nil, result.Error
+//	}
+//
+//	// Check cache
+//	image := d.cache.load(movie.Id)
+//	if image != nil {
+//		movie.Image = image
+//	} else {
+//		// Get movie image
+//		d.getMovieImage(&movie)
+//	}
+//
+//	// Get tags for movie
+//	tags, err := d.getTagsForMovie(&movie)
+//	if err != nil {
+//		return nil, err
+//	}
+//	movie.Tags = tags
+//
+//	return &movie, nil
+//}
 
 // GetAllMovies returns all movies in the database that matches the search criteria.
 func (d *Database) GetAllMovies(currentView string, searchFor string, categoryId int, orderBy string) ([]*Movie, error) {
@@ -109,114 +110,16 @@ func (d *Database) GetAllMovies(currentView string, searchFor string, categoryId
 		return nil, result.Error
 	}
 
+	movies, err = d.getTagsForMovies(movies)
+	if err != nil {
+		return nil, err
+	}
+
 	movies, err = d.getImagesForMovies(movies)
 	if err != nil {
 		return nil, err
 	}
 
-	return movies, nil
-}
-
-func addViewSQL(view string, where string) string {
-	var sql string
-	switch view {
-	case "packs":
-		sql = "pack != '' AND pack is not null"
-	case "toWatch":
-		sql = "to_watch = true"
-	case "noRating":
-		sql = "my_rating = 0"
-	case "needsSubtitles":
-		sql = "needsSubtitle = true"
-	}
-	if where != "" && sql != "" {
-		sql = " AND " + sql
-	}
-	if where != "" {
-		where = "(" + where + ")"
-	}
-	return where + sql
-}
-
-func getCategorySearch(searchFor string, categoryId int) (string, string, map[string]interface{}) {
-	var sqlWhere, sqlJoin string
-	var sqlArgs map[string]interface{}
-	sqlArgs = make(map[string]interface{})
-
-	if searchFor == "" {
-		sqlJoin = "JOIN movie_tag on movies.id = movie_tag.movie_id"
-		sqlWhere = "movie_tag.tag_id = @category"
-		sqlArgs["category"] = categoryId
-	} else {
-		sqlJoin = "JOIN movie_tag on movies.id = movie_tag.movie_id"
-		sqlWhere = "(title like @search OR sub_title like @search OR year like @search OR story_line like @search) AND movie_tag.tag_id = @category"
-		sqlArgs["search"] = "%" + searchFor + "%"
-		sqlArgs["category"] = categoryId
-	}
-	return sqlJoin, sqlWhere, sqlArgs
-}
-
-func getStandardSearch(searchFor string) (string, map[string]interface{}) {
-	var sqlWhere string
-	var sqlArgs map[string]interface{}
-	sqlArgs = make(map[string]interface{})
-	if searchFor != "" {
-		prefix, search := getSearchPrefix(searchFor)
-		switch prefix {
-		case "title":
-			sqlWhere = "title like @search OR sub_title like @search"
-		case "year":
-			sqlWhere = "year like @search"
-		case "pack":
-			sqlWhere = "pack like @search"
-		case "imdb":
-			sqlWhere = "imdb_rating >= @search"
-		case "myrating":
-			sqlWhere = "my_rating >= @search"
-		default:
-			sqlWhere = "title like @search OR sub_title like @search OR year like @search OR story_line like @search"
-		}
-		sqlArgs["search"] = search
-	}
-	return sqlWhere, sqlArgs
-}
-
-func getSearchPrefix(searchFor string) (string, string) {
-	before, after, _ := strings.Cut(searchFor, ":")
-	switch before {
-	case "title", "pack":
-		return before, "%" + after + "%"
-	case "year", "imdb", "myrating":
-		return before, after
-	default:
-		return "", "%" + searchFor + "%"
-	}
-}
-
-func (d *Database) getImagesForMovies(movies []*Movie) ([]*Movie, error) {
-	// Get images for movies
-	for i := range movies {
-		movie := movies[i]
-
-		// Load genres (tags)
-		tags, err := d.GetTagsForMovie(movie)
-		if err != nil {
-			return nil, err
-		}
-		movie.Tags = tags
-
-		// Check cache for image
-		image := d.cache.Load(movie.Id)
-		if image != nil {
-			movie.Image = image
-			continue
-		}
-
-		// Image is not in cache, so load it from database
-		// and store it in cache
-		d.getMovieImage(movie)
-		d.cache.Save(movie.Id, movie.Image)
-	}
 	return movies, nil
 }
 
@@ -250,8 +153,8 @@ func (d *Database) InsertMovie(movie *Movie) error {
 		func(tx *gorm.DB) error {
 			// Insert image
 			if movie.HasImage && len(movie.Image) > 0 {
-				image := Image{Data: movie.Image}
-				err = d.InsertImage(&image)
+				image := image{Data: movie.Image}
+				err = d.insertImage(&image)
 				if err != nil {
 					return err
 				}
@@ -264,7 +167,7 @@ func (d *Database) InsertMovie(movie *Movie) error {
 
 			// Handle tags
 			for i := range movie.Tags {
-				tag, err := d.GetOrInsertTag(&movie.Tags[i])
+				tag, err := d.getOrInsertTag(&movie.Tags[i])
 				if err != nil {
 					return err
 				}
@@ -350,7 +253,7 @@ func (d *Database) UpdateMovie(movie *Movie, updateTags bool) error {
 
 			// Handle tags
 			for i := range movie.Tags {
-				tag, err := d.GetOrInsertTag(&movie.Tags[i])
+				tag, err := d.getOrInsertTag(&movie.Tags[i])
 				if err != nil {
 					return err
 				}
@@ -387,11 +290,11 @@ func (d *Database) DeleteMovie(rootDir string, movie *Movie) error {
 
 	err = db.Transaction(
 		func(tx *gorm.DB) error {
-			if err = d.DeleteImage(movie); err != nil {
+			if err = d.deleteImage(movie); err != nil {
 				return err
 			}
 
-			if err = d.DeleteTagsForMovie(movie); err != nil {
+			if err = d.deleteTagsForMovie(movie); err != nil {
 				return err
 			}
 
@@ -416,11 +319,122 @@ func (d *Database) DeleteMovie(rootDir string, movie *Movie) error {
 	return nil
 }
 
+func addViewSQL(view string, where string) string {
+	var sql string
+	switch view {
+	case "packs":
+		sql = "pack != '' AND pack is not null"
+	case "toWatch":
+		sql = "to_watch = true"
+	case "noRating":
+		sql = "my_rating = 0"
+	case "needsSubtitles":
+		sql = "needsSubtitle = true"
+	}
+	if where != "" && sql != "" {
+		sql = " AND " + sql
+	}
+	if where != "" {
+		where = "(" + where + ")"
+	}
+	return where + sql
+}
+
+func getCategorySearch(searchFor string, categoryId int) (string, string, map[string]interface{}) {
+	var sqlWhere, sqlJoin string
+	var sqlArgs map[string]interface{}
+	sqlArgs = make(map[string]interface{})
+
+	if searchFor == "" {
+		sqlJoin = "JOIN movie_tag on movies.id = movie_tag.movie_id"
+		sqlWhere = "movie_tag.tag_id = @category"
+		sqlArgs["category"] = categoryId
+	} else {
+		sqlJoin = "JOIN movie_tag on movies.id = movie_tag.movie_id"
+		sqlWhere = "(title like @search OR sub_title like @search OR year like @search OR story_line like @search) AND movie_tag.tag_id = @category"
+		sqlArgs["search"] = "%" + searchFor + "%"
+		sqlArgs["category"] = categoryId
+	}
+	return sqlJoin, sqlWhere, sqlArgs
+}
+
+func getStandardSearch(searchFor string) (string, map[string]interface{}) {
+	var sqlWhere string
+	var sqlArgs map[string]interface{}
+	sqlArgs = make(map[string]interface{})
+	if searchFor != "" {
+		prefix, search := getSearchPrefix(searchFor)
+		switch prefix {
+		case "title":
+			sqlWhere = "title like @search OR sub_title like @search"
+		case "year":
+			sqlWhere = "year like @search"
+		case "pack":
+			sqlWhere = "pack like @search"
+		case "imdb":
+			sqlWhere = "imdb_rating >= @search"
+		case "myrating":
+			sqlWhere = "my_rating >= @search"
+		default:
+			sqlWhere = "title like @search OR sub_title like @search OR year like @search OR story_line like @search"
+		}
+		sqlArgs["search"] = search
+	}
+	return sqlWhere, sqlArgs
+}
+
+func getSearchPrefix(searchFor string) (string, string) {
+	before, after, _ := strings.Cut(searchFor, ":")
+	switch before {
+	case "title", "pack":
+		return before, "%" + after + "%"
+	case "year", "imdb", "myrating":
+		return before, after
+	default:
+		return "", "%" + searchFor + "%"
+	}
+}
+
+func (d *Database) getImagesForMovies(movies []*Movie) ([]*Movie, error) {
+	// Get images for movies
+	for i := range movies {
+		movie := movies[i]
+
+		// Check cache for image
+		image := d.cache.load(movie.Id)
+		if image != nil {
+			movie.Image = image
+			continue
+		}
+
+		// Image is not in cache, so load it from database
+		// and store it in cache
+		d.getMovieImage(movie)
+		d.cache.save(movie.Id, movie.Image)
+	}
+	return movies, nil
+}
+
+func (d *Database) getTagsForMovies(movies []*Movie) ([]*Movie, error) {
+	// Get images for movies
+	for i := range movies {
+		movie := movies[i]
+
+		// Load genres (tags)
+		tags, err := d.getTagsForMovie(movie)
+		if err != nil {
+			return nil, err
+		}
+		movie.Tags = tags
+	}
+	return movies, nil
+}
+
 func (d *Database) getMovieImage(movie *Movie) {
 
 	// Get image (if it exists)
 	if movie.ImageId > 0 {
-		image, err := d.GetImage(movie.ImageId)
+		image, err := d.getImage(movie.ImageId)
 		if err != nil {
 			return
 		}

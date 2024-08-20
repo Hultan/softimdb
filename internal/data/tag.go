@@ -22,8 +22,29 @@ func (t *Tag) TableName() string {
 	return "tag"
 }
 
-// GetTagByName returns a tag by name.
-func (d *Database) GetTagByName(name string) (*Tag, error) {
+// GetTags returns all tags
+func (d *Database) GetTags() ([]Tag, error) {
+	db, err := d.getDatabase()
+	if err != nil {
+		return nil, err
+	}
+
+	// Get tag id:s for movie
+	var tags []Tag
+	if result := db.Find(&tags); result.Error != nil {
+		return nil, result.Error
+	}
+
+	// Fill tag cache
+	for i := range tags {
+		tagCache.add(&tags[i])
+	}
+
+	return tags, nil
+}
+
+// getTagByName returns a tag by name.
+func (d *Database) getTagByName(name string) (*Tag, error) {
 	name = strings.Trim(name, " \t\n")
 
 	// Check tag cache
@@ -47,15 +68,15 @@ func (d *Database) GetTagByName(name string) (*Tag, error) {
 	return &tag, nil
 }
 
-// GetOrInsertTag either returns an existing tag or inserts a new tag and returns it.
-func (d *Database) GetOrInsertTag(tag *Tag) (*Tag, error) {
+// getOrInsertTag either returns an existing tag or inserts a new tag and returns it.
+func (d *Database) getOrInsertTag(tag *Tag) (*Tag, error) {
 	db, err := d.getDatabase()
 	if err != nil {
 		return nil, err
 	}
 
 	// Check if tag exists
-	existingTag, err := d.GetTagByName(tag.Name)
+	existingTag, err := d.getTagByName(tag.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -74,8 +95,8 @@ func (d *Database) GetOrInsertTag(tag *Tag) (*Tag, error) {
 	return tag, nil
 }
 
-// GetTagsForMovie returns a list of tags connected to the given movie.
-func (d *Database) GetTagsForMovie(movie *Movie) ([]Tag, error) {
+// getTagsForMovie returns a list of tags connected to the given movie.
+func (d *Database) getTagsForMovie(movie *Movie) ([]Tag, error) {
 	db, err := d.getDatabase()
 	if err != nil {
 		return nil, err
@@ -93,7 +114,7 @@ func (d *Database) GetTagsForMovie(movie *Movie) ([]Tag, error) {
 outerLoop:
 	for i := range movieTags {
 		// Check tag cache first
-		t := tagCache.GetById(movieTags[i].TagId)
+		t := tagCache.getById(movieTags[i].TagId)
 		if t != nil {
 			tags = append(tags, *t)
 			continue outerLoop
@@ -105,36 +126,15 @@ outerLoop:
 		if result := db.Where("id=?", movieTags[i].TagId).Find(&tag); result.Error != nil {
 			return nil, result.Error
 		}
-		tagCache.Add(&tag)
+		tagCache.add(&tag)
 		tags = append(tags, tag)
 	}
 
 	return tags, nil
 }
 
-// GetTags returns all tags
-func (d *Database) GetTags() ([]Tag, error) {
-	db, err := d.getDatabase()
-	if err != nil {
-		return nil, err
-	}
-
-	// Get tag id:s for movie
-	var tags []Tag
-	if result := db.Find(&tags); result.Error != nil {
-		return nil, result.Error
-	}
-
-	// Fill tag cache
-	for i := range tags {
-		tagCache.Add(&tags[i])
-	}
-
-	return tags, nil
-}
-
-// DeleteTagsForMovie deletes all tags for the given movie.
-func (d *Database) DeleteTagsForMovie(movie *Movie) error {
+// deleteTagsForMovie deletes all tags for the given movie.
+func (d *Database) deleteTagsForMovie(movie *Movie) error {
 	db, err := d.getDatabase()
 	if err != nil {
 		return err
