@@ -296,7 +296,7 @@ func (m *MainWindow) setupToolBar() {
 }
 
 func (m *MainWindow) fillMovieList(searchFor string, categoryId int, sortBy string) {
-	movies, err := m.database.GetAllMovies(string(currentView), searchFor, categoryId, sortBy)
+	movies, err := m.database.SearchMovies(string(currentView), searchFor, categoryId, sortBy)
 	if err != nil {
 		reportError(err)
 		log.Fatal(err)

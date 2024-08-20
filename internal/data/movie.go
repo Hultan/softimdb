@@ -37,39 +37,8 @@ func (m *Movie) TableName() string {
 	return "movies"
 }
 
-//
-//// GetMovie returns a movie from the database.
-//func (d *Database) GetMovie(id int) (*Movie, error) {
-//	db, err := d.getDatabase()
-//	if err != nil {
-//		return nil, err
-//	}
-//	movie := Movie{}
-//	if result := db.Where("Id=?", id).First(&movie); result.Error != nil {
-//		return nil, result.Error
-//	}
-//
-//	// Check cache
-//	image := d.cache.load(movie.Id)
-//	if image != nil {
-//		movie.Image = image
-//	} else {
-//		// Get movie image
-//		d.getMovieImage(&movie)
-//	}
-//
-//	// Get tags for movie
-//	tags, err := d.getTagsForMovie(&movie)
-//	if err != nil {
-//		return nil, err
-//	}
-//	movie.Tags = tags
-//
-//	return &movie, nil
-//}
-
-// GetAllMovies returns all movies in the database that matches the search criteria.
-func (d *Database) GetAllMovies(currentView string, searchFor string, categoryId int, orderBy string) ([]*Movie, error) {
+// SearchMovies returns all movies in the database that matches the search criteria.
+func (d *Database) SearchMovies(currentView string, searchFor string, categoryId int, orderBy string) ([]*Movie, error) {
 	db, err := d.getDatabase()
 	if err != nil {
 		return nil, err

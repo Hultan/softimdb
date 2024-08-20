@@ -20,7 +20,7 @@ func main() {
 	// Open database
 	database := data.DatabaseNew(false, cnf)
 
-	movies, err := database.GetAllMovies("", -1, "id asc")
+	movies, err := database.SearchMovies("", -1, "id asc")
 	if err != nil {
 		log.Fatal(err)
 	}
