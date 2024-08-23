@@ -156,8 +156,7 @@ func getMoviesWithoutLength(db *sql.DB) ([]string, error) {
 }
 
 func openDatabase(config *config.Config) (*gorm.DB, error) {
-	c := &crypto.Crypto{}
-	passwordDecrypted, err := c.Decrypt(config.Database.Password)
+	passwordDecrypted, err := crypto.Decrypt(config.Database.Password)
 	if err != nil {
 		return nil, err
 	}
