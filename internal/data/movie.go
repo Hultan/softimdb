@@ -294,9 +294,9 @@ func addViewSQL(view string, where string) string {
 	case "packs":
 		sql = "pack != '' AND pack is not null"
 	case "toWatch":
-		sql = "to_watch = true"
+		sql = "to_watch = true AND needsSubtitle = false"
 	case "noRating":
-		sql = "my_rating = 0"
+		sql = "my_rating = 0 AND needsSubtitle = false"
 	case "needsSubtitles":
 		sql = "needsSubtitle = true"
 	}
