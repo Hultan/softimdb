@@ -139,6 +139,7 @@ func (m *MainWindow) Open(app *gtk.Application) {
 	m.application = app
 	m.window.SetApplication(app)
 	m.window.ShowAll()
+	view.changeView(viewToWatch)
 	//m.onRefreshButtonClicked()
 }
 
