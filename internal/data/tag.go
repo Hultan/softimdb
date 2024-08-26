@@ -12,7 +12,7 @@ type Tag struct {
 	Id        int     `gorm:"column:id;primary_key"`
 	Name      string  `gorm:"column:name;size:255"`
 	IsPrivate bool    `gorm:"column:is_private;"`
-	Movies    []Movie `gorm:"-"`
+	Movies    []Movie `gorm:"many2many:movie_tag;"`
 }
 
 var tagCache *TagCache

@@ -21,7 +21,7 @@ type Movie struct {
 	StoryLine  string  `gorm:"column:story_line;size:65535"`
 	MoviePath  string  `gorm:"column:path;size:1024"`
 	Runtime    int     `gorm:"column:length"`
-	Tags       []Tag   `gorm:"-"`
+	Tags       []Tag   `gorm:"many2many:movie_tag;"`
 
 	HasImage      bool   `gorm:"-"`
 	Image         []byte `gorm:"-"`
@@ -38,7 +38,7 @@ func (m *Movie) TableName() string {
 }
 
 // SearchMovies returns all movies in the database that matches the search criteria.
-func (d *Database) SearchMovies(currentView string, searchFor string, categoryId int, orderBy string) ([]*Movie, error) {
+func (d *Database) SearchMovies(currentView string, searchFor string, tagId int, orderBy string) ([]*Movie, error) {
 	db, err := d.getDatabase()
 	if err != nil {
 		return nil, err
@@ -56,10 +56,10 @@ func (d *Database) SearchMovies(currentView string, searchFor string, categoryId
 		sqlOrderBy = orderBy
 	}
 
-	if categoryId == -1 {
+	if tagId == -1 {
 		sqlWhere, sqlArgs = getStandardSearch(searchFor)
 	} else {
-		sqlJoin, sqlWhere, sqlArgs = getCategorySearch(searchFor, categoryId)
+		sqlJoin, sqlWhere, sqlArgs = getTagSearch(searchFor, tagId)
 	}
 
 	sqlWhere = addViewSQL(currentView, sqlWhere)
@@ -75,13 +75,9 @@ func (d *Database) SearchMovies(currentView string, searchFor string, categoryId
 			query = query.Where(sqlWhere, sqlArgs)
 		}
 	}
+	query = query.Preload("Tags")
 	if result := query.Order(sqlOrderBy).Find(&movies); result.Error != nil {
 		return nil, result.Error
-	}
-
-	movies, err = d.getTagsForMovies(movies)
-	if err != nil {
-		return nil, err
 	}
 
 	movies, err = d.getImagesForMovies(movies)
@@ -309,20 +305,21 @@ func addViewSQL(view string, where string) string {
 	return where + sql
 }
 
-func getCategorySearch(searchFor string, categoryId int) (string, string, map[string]interface{}) {
+func getTagSearch(searchFor string, tagId int) (string, string, map[string]interface{}) {
 	var sqlWhere, sqlJoin string
 	var sqlArgs map[string]interface{}
 	sqlArgs = make(map[string]interface{})
 
 	if searchFor == "" {
 		sqlJoin = "JOIN movie_tag on movies.id = movie_tag.movie_id"
-		sqlWhere = "movie_tag.tag_id = @category"
-		sqlArgs["category"] = categoryId
+		sqlWhere = "movie_tag.tag_id = @tag"
+		sqlArgs["tag"] = tagId
 	} else {
 		sqlJoin = "JOIN movie_tag on movies.id = movie_tag.movie_id"
-		sqlWhere = "(title like @search OR sub_title like @search OR year like @search OR story_line like @search) AND movie_tag.tag_id = @category"
+		sqlWhere = "(title like @search OR sub_title like @search OR year like @search OR story_line like @search" +
+			") AND movie_tag.tag_id = @tag"
 		sqlArgs["search"] = "%" + searchFor + "%"
-		sqlArgs["category"] = categoryId
+		sqlArgs["tag"] = tagId
 	}
 	return sqlJoin, sqlWhere, sqlArgs
 }
@@ -370,9 +367,9 @@ func (d *Database) getImagesForMovies(movies []*Movie) ([]*Movie, error) {
 		movie := movies[i]
 
 		// Check cache for image
-		image := d.cache.load(movie.Id)
-		if image != nil {
-			movie.Image = image
+		img := d.cache.load(movie.Id)
+		if img != nil {
+			movie.Image = img
 			continue
 		}
 
@@ -384,30 +381,15 @@ func (d *Database) getImagesForMovies(movies []*Movie) ([]*Movie, error) {
 	return movies, nil
 }
 
-func (d *Database) getTagsForMovies(movies []*Movie) ([]*Movie, error) {
-	// Get images for movies
-	for i := range movies {
-		movie := movies[i]
-
-		// Load genres (tags)
-		tags, err := d.getTagsForMovie(movie)
-		if err != nil {
-			return nil, err
-		}
-		movie.Tags = tags
-	}
-	return movies, nil
-}
-
 func (d *Database) getMovieImage(movie *Movie) {
 
 	// Get image (if it exists)
 	if movie.ImageId > 0 {
-		image, err := d.getImage(movie.ImageId)
+		img, err := d.getImage(movie.ImageId)
 		if err != nil {
 			return
 		}
-		movie.Image = image.Data
+		movie.Image = img.Data
 		movie.HasImage = true
 	}
 }
