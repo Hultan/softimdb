@@ -21,7 +21,7 @@ type Movie struct {
 	StoryLine  string  `gorm:"column:story_line;size:65535"`
 	MoviePath  string  `gorm:"column:path;size:1024"`
 	Runtime    int     `gorm:"column:length"`
-	Tags       []Tag   `gorm:"many2many:movie_tag;"`
+	Tags       []Tag   `gorm:"-"`
 
 	HasImage      bool   `gorm:"-"`
 	Image         []byte `gorm:"-"`
@@ -75,9 +75,13 @@ func (d *Database) SearchMovies(currentView string, searchFor string, tagId int,
 			query = query.Where(sqlWhere, sqlArgs)
 		}
 	}
-	query = query.Preload("Tags")
 	if result := query.Order(sqlOrderBy).Find(&movies); result.Error != nil {
 		return nil, result.Error
+	}
+
+	movies, err = d.getTagsForMovies(movies)
+	if err != nil {
+		return nil, err
 	}
 
 	movies, err = d.getImagesForMovies(movies)
@@ -377,6 +381,21 @@ func (d *Database) getImagesForMovies(movies []*Movie) ([]*Movie, error) {
 		// and store it in cache
 		d.getMovieImage(movie)
 		d.cache.save(movie.Id, movie.Image)
+	}
+	return movies, nil
+}
+
+func (d *Database) getTagsForMovies(movies []*Movie) ([]*Movie, error) {
+	// Get images for movies
+	for i := range movies {
+		movie := movies[i]
+
+		// Load genres (tags)
+		tags, err := d.getTagsForMovie(movie)
+		if err != nil {
+			return nil, err
+		}
+		movie.Tags = tags
 	}
 	return movies, nil
 }
