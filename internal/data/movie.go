@@ -168,51 +168,22 @@ func (d *Database) UpdateMovie(movie *Movie, updateTags bool) error {
 
 	err = db.Transaction(
 		func(tx *gorm.DB) error {
-			if result := db.Model(&movie).Update("title", movie.Title); result.Error != nil {
-				return result.Error
-			}
+			updates := make(map[string]interface{}, 12)
 
-			if result := db.Model(&movie).Update("sub_title", movie.SubTitle); result.Error != nil {
-				return result.Error
-			}
+			updates["title"] = movie.Title
+			updates["sub_title"] = movie.SubTitle
+			updates["story_line"] = movie.StoryLine
+			updates["imdb_rating"] = movie.ImdbRating
+			updates["imdb_url"] = movie.ImdbUrl
+			updates["year"] = movie.Year
+			updates["my_rating"] = movie.MyRating
+			updates["to_watch"] = movie.ToWatch
+			updates["image_id"] = movie.ImageId
+			updates["pack"] = movie.Pack
+			updates["needsSubtitle"] = movie.NeedsSubtitle
+			updates["length"] = movie.Runtime
 
-			if result := db.Model(&movie).Update("story_line", movie.StoryLine); result.Error != nil {
-				return result.Error
-			}
-
-			if result := db.Model(&movie).Update("imdb_rating", movie.ImdbRating); result.Error != nil {
-				return result.Error
-			}
-
-			if result := db.Model(&movie).Update("imdb_url", movie.ImdbUrl); result.Error != nil {
-				return result.Error
-			}
-
-			if result := db.Model(&movie).Update("year", movie.Year); result.Error != nil {
-				return result.Error
-			}
-
-			if result := db.Model(&movie).Update("my_rating", movie.MyRating); result.Error != nil {
-				return result.Error
-			}
-
-			if result := db.Model(&movie).Update("to_watch", movie.ToWatch); result.Error != nil {
-				return result.Error
-			}
-
-			if result := db.Model(&movie).Update("image_id", movie.ImageId); result.Error != nil {
-				return result.Error
-			}
-
-			if result := db.Model(&movie).Update("pack", movie.Pack); result.Error != nil {
-				return result.Error
-			}
-
-			if result := db.Model(&movie).Update("needsSubtitle", movie.NeedsSubtitle); result.Error != nil {
-				return result.Error
-			}
-
-			if result := db.Model(&movie).Update("length", movie.Runtime); result.Error != nil {
+			if result := db.Model(&movie).Updates(updates); result.Error != nil {
 				return result.Error
 			}
 
