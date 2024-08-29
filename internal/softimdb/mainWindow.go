@@ -275,25 +275,6 @@ func (m *MainWindow) setupToolBar() {
 	// Search entry
 	m.searchEntry = m.builder.GetObject("searchEntry").(*gtk.Entry)
 	_ = m.searchEntry.Connect("activate", m.onSearchButtonClicked)
-	//
-	//// Sort by buttons
-	//sortByNameButton := m.builder.GetObject("sortByName").(*gtk.ToolButton)
-	//_ = sortByNameButton.Connect(
-	//	"clicked", func() {
-	//		sortBy = sortByName
-	//		sortOrder = sortAscending
-	//		m.refresh("", -1, getSortBy())
-	//	},
-	//)
-	//
-	//sortByIdButton := m.builder.GetObject("sortById").(*gtk.ToolButton)
-	//_ = sortByIdButton.Connect(
-	//	"clicked", func() {
-	//		sortBy = sortById
-	//		sortOrder = sortDescending
-	//		m.refresh("", -1, getSortBy())
-	//	},
-	//)
 }
 
 func (m *MainWindow) fillMovieList(searchFor string, categoryId int, sortBy string) {
@@ -414,22 +395,6 @@ func (m *MainWindow) searchTag(item *gtk.RadioMenuItem) {
 	m.refresh(searchFor, searchGenreId, getSortBy())
 }
 
-func (m *MainWindow) windowClosed(r gtk.ResponseType, info *movieInfo, movie *data.Movie) {
-	switch r {
-	case gtk.RESPONSE_ACCEPT:
-		// Save movie
-		m.saveMovieInfo(info, movie)
-	case gtk.RESPONSE_CANCEL:
-		// Cancel dialog
-	case gtk.RESPONSE_REJECT:
-		// Delete movie
-		m.deleteMovie(movie)
-	default:
-		// Unknown response
-		// Handle as cancel
-	}
-}
-
 func (m *MainWindow) saveMovieInfo(movieInfo *movieInfo, movie *data.Movie) {
 	movieInfo.toDatabase(movie)
 
@@ -542,7 +507,7 @@ func (m *MainWindow) onEditMovieInfoClicked() {
 		m.movieWin = newMovieWindow(m.builder, m.window)
 	}
 
-	m.movieWin.open(info, selectedMovie, m.windowClosed)
+	m.movieWin.open(info, selectedMovie, m.onWindowClosed)
 }
 
 func (m *MainWindow) onOpenAddWindowClicked() {
@@ -660,4 +625,20 @@ func (m *MainWindow) onOpenPackClicked() {
 	m.menuSortByName.SetActive(true)
 	m.menuSortAscending.SetActive(true)
 	m.refresh(searchFor, searchGenreId, getSortBy())
+}
+
+func (m *MainWindow) onWindowClosed(r gtk.ResponseType, info *movieInfo, movie *data.Movie) {
+	switch r {
+	case gtk.RESPONSE_ACCEPT:
+		// Save movie
+		m.saveMovieInfo(info, movie)
+	case gtk.RESPONSE_CANCEL:
+		// Cancel dialog
+	case gtk.RESPONSE_REJECT:
+		// Delete movie
+		m.deleteMovie(movie)
+	default:
+		// Unknown response
+		// Handle as cancel
+	}
 }
