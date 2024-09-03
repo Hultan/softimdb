@@ -4,6 +4,8 @@ import (
 	"fmt"
 	_ "image/jpeg"
 	"log"
+	"os"
+	"path"
 	"strconv"
 
 	"github.com/hultan/dialog"
@@ -231,6 +233,12 @@ func (m *movieWindow) onImageClick() {
 		return
 	}
 	defer dlg.Destroy()
+
+	home, err := os.UserHomeDir()
+	if err == nil {
+		dir := path.Join(home, "Downloads")
+		_ = dlg.SetCurrentFolder(dir)
+	}
 
 	response := dlg.Run()
 	if response == gtk.RESPONSE_CANCEL {
