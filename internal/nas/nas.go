@@ -1,9 +1,10 @@
 package nas
 
 import (
-	"io/fs"
 	"log"
-	"path/filepath"
+	"os"
+	"path"
+	"slices"
 	"strings"
 
 	"github.com/hultan/softimdb/internal/config"
@@ -15,7 +16,7 @@ type Manager struct {
 	database *data.Database
 }
 
-var dirs = &[]string{}
+var dirs []string
 var ignoredPaths []*data.IgnoredPath
 
 // ManagerNew creates a new Manager.
@@ -26,8 +27,9 @@ func ManagerNew(database *data.Database) *Manager {
 }
 
 // GetMovies returns a list of movie paths on the NAS.
-func (m Manager) GetMovies(config *config.Config) *[]string {
+func (m Manager) GetMovies(config *config.Config) []string {
 	var err error
+	dirs = make([]string, 3000)
 
 	// Get ignored paths
 	db := data.DatabaseNew(false, config)
@@ -36,11 +38,12 @@ func (m Manager) GetMovies(config *config.Config) *[]string {
 		log.Fatal(err)
 	}
 
-	dirs = &[]string{}
+	scanDir(config.RootDir, "", "")
 
-	err = filepath.WalkDir(config.RootDir, walk)
-	if err != nil {
-		log.Fatal(err)
+	for i, dir := range dirs {
+		if getIgnorePath(ignoredPaths, dir) {
+			dirs[i] = ""
+		}
 	}
 
 	// Get movie paths
@@ -56,61 +59,54 @@ func (m Manager) GetMovies(config *config.Config) *[]string {
 	return result
 }
 
-func walk(_ string, d fs.DirEntry, err error) error {
-	if d.Name() == "videos" { // Skip main directory
-		return nil
-	}
-	//if d.Name() == "SEARCH FOR ME!" { // Skip main directory
-	//	fmt.Println("SEARCH")
-	//}
-	if err != nil { // Skip on errors
-		return err
-	}
-	if !d.IsDir() { // Skip files
-		return nil
+func scanDir(root, base, dir string) {
+	file, err := os.Open(path.Join(root, base, dir))
+	if err != nil {
+		log.Fatal(err)
 	}
 
-	// Skip ignored paths
-	ignore := getIgnorePath(ignoredPaths, d.Name())
-	if ignore != nil {
-		return filepath.SkipDir
+	if dir != "" && getIgnorePath(ignoredPaths, dir) {
+		return
 	}
-	*dirs = append(*dirs, d.Name())
 
-	return nil
+	foundDirs, err := file.Readdir(0)
+	if err != nil {
+		log.Fatal(err)
+	}
+	file.Close()
+
+	dirs = append(dirs, dir)
+
+	for _, foundDir := range foundDirs {
+		if foundDir.IsDir() {
+			scanDir(root, path.Join(base, dir), foundDir.Name())
+		}
+	}
 }
 
-func (m Manager) removeMoviePaths(dirs *[]string, moviePaths *[]string) *[]string {
-	var result = &[]string{}
+func (m Manager) removeMoviePaths(dirs []string, moviePaths []string) []string {
+	var result []string
 
-	for i := range *dirs {
-		dir := (*dirs)[i]
+	for i := range dirs {
+		dir := dirs[i]
 
-		if !containsString(*moviePaths, dir) {
-			*result = append(*result, dir)
+		if dir == "" {
+			continue
+		}
+
+		if !slices.Contains(moviePaths, dir) {
+			result = append(result, dir)
 		}
 	}
 
 	return result
 }
 
-// containsString : Returns true if the slice contains the string
-//
-//	in find, otherwise returns false.
-func containsString(slice []string, find string) bool {
-	for _, a := range slice {
-		if a == find {
+func getIgnorePath(paths []*data.IgnoredPath, name string) bool {
+	for i := range paths {
+		if strings.HasSuffix(paths[i].Path, name) {
 			return true
 		}
 	}
 	return false
-}
-
-func getIgnorePath(paths []*data.IgnoredPath, name string) *data.IgnoredPath {
-	for i := range paths {
-		if strings.HasSuffix(paths[i].Path, name) {
-			return paths[i]
-		}
-	}
-	return nil
 }

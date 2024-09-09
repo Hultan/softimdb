@@ -81,7 +81,7 @@ func (a *addMovieWindow) open() {
 			return
 		}
 		clearListBox(a.list)
-		a.fillList(a.list, *moviePaths)
+		a.fillList(a.list, moviePaths)
 
 		a.window.ShowAll()
 		a.window.QueueDraw()

@@ -93,7 +93,7 @@ func (d *Database) SearchMovies(currentView string, searchFor string, tagId int,
 }
 
 // GetAllMoviePaths returns a list of all the movie paths in the database. Used when adding new movies.
-func (d *Database) GetAllMoviePaths() (*[]string, error) {
+func (d *Database) GetAllMoviePaths() ([]string, error) {
 	db, err := d.getDatabase()
 	if err != nil {
 		return nil, err
@@ -104,9 +104,9 @@ func (d *Database) GetAllMoviePaths() (*[]string, error) {
 		return nil, result.Error
 	}
 
-	var paths = &[]string{}
+	var paths []string
 	for i := range movies {
-		*paths = append(*paths, movies[i].MoviePath)
+		paths = append(paths, movies[i].MoviePath)
 	}
 	return paths, nil
 }
