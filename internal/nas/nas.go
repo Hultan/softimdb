@@ -27,7 +27,7 @@ func ManagerNew(database *data.Database) *Manager {
 }
 
 // GetMovies returns a list of movie paths on the NAS.
-func (m Manager) GetMovies(config *config.Config) []string {
+func (m Manager) GetMovies(config *config.Config) ([]string, error) {
 	var err error
 	dirs = make([]string, 3000)
 
@@ -35,7 +35,7 @@ func (m Manager) GetMovies(config *config.Config) []string {
 	db := data.DatabaseNew(false, config)
 	ignoredPaths, err = db.GetAllIgnoredPaths()
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
 	scanDir(config.RootDir, "", "")
@@ -49,14 +49,16 @@ func (m Manager) GetMovies(config *config.Config) []string {
 	// Get movie paths
 	moviePaths, err := db.GetAllMoviePaths()
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
 	result := m.removeMoviePaths(dirs, moviePaths)
 
 	db.CloseDatabase()
 
-	return result
+	slices.Sort(result)
+
+	return result, nil
 }
 
 func scanDir(root, base, dir string) {

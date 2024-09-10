@@ -68,20 +68,29 @@ func (a *addMovieWindow) open() {
 	go func() {
 		// Find new paths on NAS
 		nasManager := nas.ManagerNew(a.database)
-		moviePaths := nasManager.GetMovies(a.config)
-		if moviePaths == nil {
-			_, err := dialog.Title("Error").
+		moviePaths, err := nasManager.GetMovies(a.config)
+		if err != nil {
+			_, _ = dialog.Title("Error").
 				ErrorIcon().
-				Text("Failed to access NAS, is it unlocked?").
+				Text("Failed to access NAS or database...").
 				Show()
 
-			if err != nil {
-				fmt.Printf("Error : %s", err)
-			}
 			return
 		}
+
 		clearListBox(a.list)
-		a.fillList(a.list, moviePaths)
+
+		if len(moviePaths) <= 0 {
+			label, err := gtk.LabelNew("No new movies found...")
+			if err != nil {
+				reportError(err)
+				log.Fatal(err)
+			}
+			label.SetHAlign(gtk.ALIGN_START)
+			a.list.Add(label)
+		} else {
+			a.fillList(a.list, moviePaths)
+		}
 
 		a.window.ShowAll()
 		a.window.QueueDraw()
@@ -192,7 +201,7 @@ func (a *addMovieWindow) onAddMovieButtonClicked() {
 
 	// Open movie dialog here
 	if a.mainWindow.movieWin == nil {
-		a.mainWindow.movieWin = newMovieWindow(a.mainWindow.builder, a.window)
+		a.mainWindow.movieWin = newMovieWindow(a.mainWindow.builder, a.window, a.database)
 	}
 	a.mainWindow.movieWin.open(info, nil, a.windowClosed)
 }

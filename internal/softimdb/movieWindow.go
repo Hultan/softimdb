@@ -38,11 +38,17 @@ type movieWindow struct {
 	movieInfo *movieInfo
 	movie     *data.Movie
 
+	db *data.Database
+
 	closeCallback func(gtk.ResponseType, *movieInfo, *data.Movie)
 }
 
-func newMovieWindow(builder *builder.Builder, parent gtk.IWindow) *movieWindow {
+var isNew bool
+
+func newMovieWindow(builder *builder.Builder, parent gtk.IWindow, db *data.Database) *movieWindow {
 	m := &movieWindow{}
+
+	m.db = db
 
 	m.window = builder.GetObject("movieWindow").(*gtk.Window)
 	m.window.SetTitle("Movie info window")
@@ -93,14 +99,24 @@ func newMovieWindow(builder *builder.Builder, parent gtk.IWindow) *movieWindow {
 	eventBox := builder.GetObject("imageEventBox").(*gtk.EventBox)
 	eventBox.Connect("button-press-event", m.onImageClick)
 
+	m.titleEntry.Connect("focus-out-event", m.onTitleFocusOut)
+
 	return m
 }
 
 func (m *movieWindow) open(info *movieInfo, movie *data.Movie, closeCallback func(gtk.ResponseType, *movieInfo,
 	*data.Movie)) {
+
 	if info == nil {
 		info = &movieInfo{}
 	}
+
+	isNew = false
+	if info.title == "" {
+		//  New movie
+		isNew = true
+	}
+
 	m.movie = movie
 	m.movieInfo = info
 	m.closeCallback = closeCallback
@@ -263,4 +279,42 @@ func (m *movieWindow) updateImage(image []byte) {
 		return
 	}
 	m.posterImage.SetFromPixbuf(pix)
+}
+
+func (m *movieWindow) onTitleFocusOut() {
+	if !isNew {
+		return
+	}
+
+	title, err := m.titleEntry.GetText()
+	if err != nil {
+		return
+	}
+
+	if title == "" {
+		return
+	}
+
+	movies, err := m.db.SearchMovies(string(viewAll), title, -1, "title asc")
+	if err != nil {
+		return
+	}
+
+	m.showSimilarMovies(movies)
+}
+
+func (m *movieWindow) showSimilarMovies(movies []*data.Movie) {
+	titles := ""
+
+	for i, movie := range movies {
+		if i > 5 {
+			break
+		}
+		titles += movie.Title + "\n"
+	}
+
+	if titles != "" {
+		_, _ = dialog.Title("Similar movies...").Text("There are similar movies in the DB:\n\n" + titles).
+			WarningIcon().OkButton().Show()
+	}
 }
