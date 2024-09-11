@@ -202,10 +202,10 @@
               </object>
             </child>
             <child>
-              <object class="GtkMenuItem" id="menuTags">
+              <object class="GtkMenuItem" id="menuGenres">
                 <property name="visible">True</property>
                 <property name="can-focus">False</property>
-                <property name="label" translatable="yes">Tags</property>
+                <property name="label" translatable="yes">Genres</property>
                 <property name="use-underline">True</property>
               </object>
             </child>
@@ -1211,10 +1211,10 @@ Show all movies that needs subtitles.</property>
       </object>
     </child>
     <child>
-      <object class="GtkMenuItem" id="popupTags">
+      <object class="GtkMenuItem" id="popupGenres">
         <property name="visible">True</property>
         <property name="can-focus">False</property>
-        <property name="label" translatable="yes">Tags</property>
+        <property name="label" translatable="yes">Genres</property>
         <property name="use-underline">True</property>
       </object>
     </child>

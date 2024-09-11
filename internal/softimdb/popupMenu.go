@@ -30,7 +30,7 @@ func newPopupMenu(window *MainWindow) *popupMenu {
 func (p *popupMenu) setup() {
 	p.popupMenu = p.mainWindow.builder.GetObject("popupMenu").(*gtk.Menu)
 
-	p.popupGenres = p.mainWindow.builder.GetObject("popupTags").(*gtk.MenuItem)
+	p.popupGenres = p.mainWindow.builder.GetObject("popupGenres").(*gtk.MenuItem)
 	p.popupOpenFolder = p.mainWindow.builder.GetObject("popupOpenFolder").(*gtk.MenuItem)
 	p.popupOpenIMDB = p.mainWindow.builder.GetObject("popupOpenIMDBPage").(*gtk.MenuItem)
 	p.popupOpenMovieInfo = p.mainWindow.builder.GetObject("popupOpenMovieInfo").(*gtk.MenuItem)

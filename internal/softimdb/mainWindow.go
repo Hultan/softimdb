@@ -243,7 +243,7 @@ func (m *MainWindow) setupMenu(window *gtk.ApplicationWindow) {
 	sortOrder = sortAscending
 
 	// Genres menu
-	menuGenres := m.builder.GetObject("menuTags").(*gtk.MenuItem)
+	menuGenres := m.builder.GetObject("menuGenres").(*gtk.MenuItem)
 	m.fillGenresMenu(menuGenres)
 }
 
