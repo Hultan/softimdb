@@ -25,7 +25,7 @@ type movieInfo struct {
 	toWatch       bool
 	needsSubtitle bool
 
-	tags            string // Info field only
+	genres          string // Info field only
 	image           []byte
 	imageHasChanged bool
 }
@@ -45,7 +45,7 @@ func newMovieInfoFromDatabase(movie *data.Movie) (*movieInfo, error) {
 		imdbRating:      fmt.Sprintf("%.1f", movie.ImdbRating),
 		imdbUrl:         movie.ImdbUrl,
 		imdbId:          movie.ImdbID,
-		tags:            getTagsString(movie.Tags),
+		genres:          getGenresString(movie.Genres),
 		image:           movie.Image,
 		imageHasChanged: false,
 	}, nil
@@ -65,7 +65,7 @@ func (m *movieInfo) toDatabase(movie *data.Movie) {
 	movie.ImdbID = m.imdbId
 	movie.ImdbUrl = m.imdbUrl
 	movie.ImdbRating = m.getImdbRating()
-	movie.Tags = m.getTags(m.tags)
+	movie.Genres = m.getGenres(m.genres)
 	if m.imageHasChanged {
 		movie.HasImage = true
 		movie.ImagePath = ""
@@ -89,22 +89,22 @@ func (m *movieInfo) getYear() int {
 	return year
 }
 
-func (m *movieInfo) getTags(tags string) []data.Tag {
-	var result []data.Tag
-	tagItems := strings.Split(tags, ",")
-	for _, item := range tagItems {
-		result = append(result, data.Tag{Name: item})
+func (m *movieInfo) getGenres(genres string) []data.Genre {
+	var result []data.Genre
+	genreItems := strings.Split(genres, ",")
+	for _, item := range genreItems {
+		result = append(result, data.Genre{Name: item})
 	}
 	return result
 }
 
-func getTagsString(tags []data.Tag) string {
+func getGenresString(genres []data.Genre) string {
 	result := ""
-	for _, tag := range tags {
+	for _, genre := range genres {
 		if result != "" {
 			result += ","
 		}
-		result += tag.Name
+		result += genre.Name
 	}
 	return result
 }

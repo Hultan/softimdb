@@ -194,12 +194,12 @@ func createRuntimeLabel(movie *data.Movie) *gtk.Label {
 func createMovieGenresLabel(movie *data.Movie) *gtk.Label {
 	var s string
 
-	for i := range movie.Tags {
-		tag := movie.Tags[i]
+	for i := range movie.Genres {
+		genre := movie.Genres[i]
 		if s != "" {
 			s += ", "
 		}
-		s += tag.Name
+		s += genre.Name
 	}
 	label, err := gtk.LabelNew("")
 	if err != nil {

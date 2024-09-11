@@ -139,7 +139,7 @@ func (m *movieWindow) open(info *movieInfo, movie *data.Movie, closeCallback fun
 	buffer.SetText(m.movieInfo.storyLine)
 	m.storyLineEntry.SetBuffer(buffer)
 	m.ratingEntry.SetText(m.movieInfo.imdbRating)
-	m.genresEntry.SetText(m.movieInfo.tags)
+	m.genresEntry.SetText(m.movieInfo.genres)
 	m.packEntry.SetText(m.movieInfo.pack)
 	m.runtimeEntry.SetText(strconv.Itoa(m.movieInfo.runtime))
 
@@ -218,7 +218,7 @@ func (m *movieWindow) saveMovie() bool {
 		return false
 	}
 	m.movieInfo.storyLine = storyLine
-	m.movieInfo.tags = getEntryText(m.genresEntry)
+	m.movieInfo.genres = getEntryText(m.genresEntry)
 	// Poster is set when clicking on the image
 
 	return true

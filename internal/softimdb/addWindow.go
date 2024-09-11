@@ -223,13 +223,13 @@ func (a *addMovieWindow) onRowActivated() {
 	a.moviePathEntry.SetText(path)
 }
 
-func (a *addMovieWindow) getTags(tags []string) []data.Tag {
-	var dataTags []data.Tag
+func (a *addMovieWindow) getGenres(genres []string) []data.Genre {
+	var dataGenres []data.Genre
 
-	for _, tag := range tags {
-		dataTag := data.Tag{Name: tag}
-		dataTags = append(dataTags, dataTag)
+	for _, genre := range genres {
+		dataGenre := data.Genre{Name: genre}
+		dataGenres = append(dataGenres, dataGenre)
 	}
 
-	return dataTags
+	return dataGenres
 }

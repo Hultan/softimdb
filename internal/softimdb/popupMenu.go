@@ -13,7 +13,7 @@ type popupMenu struct {
 	mainWindow *MainWindow
 	popupMenu  *gtk.Menu
 
-	popupTags          *gtk.MenuItem
+	popupGenres        *gtk.MenuItem
 	popupOpenFolder    *gtk.MenuItem
 	popupOpenIMDB      *gtk.MenuItem
 	popupOpenMovieInfo *gtk.MenuItem
@@ -30,7 +30,7 @@ func newPopupMenu(window *MainWindow) *popupMenu {
 func (p *popupMenu) setup() {
 	p.popupMenu = p.mainWindow.builder.GetObject("popupMenu").(*gtk.Menu)
 
-	p.popupTags = p.mainWindow.builder.GetObject("popupTags").(*gtk.MenuItem)
+	p.popupGenres = p.mainWindow.builder.GetObject("popupTags").(*gtk.MenuItem)
 	p.popupOpenFolder = p.mainWindow.builder.GetObject("popupOpenFolder").(*gtk.MenuItem)
 	p.popupOpenIMDB = p.mainWindow.builder.GetObject("popupOpenIMDBPage").(*gtk.MenuItem)
 	p.popupOpenMovieInfo = p.mainWindow.builder.GetObject("popupOpenMovieInfo").(*gtk.MenuItem)
@@ -64,15 +64,15 @@ func (p *popupMenu) setupEvents() {
 				log.Fatal(err)
 			}
 
-			tags, err := p.mainWindow.database.GetTags()
+			genres, err := p.mainWindow.database.GetGenres()
 			if err != nil {
 				reportError(err)
 				return
 			}
 
-			p.createTagMenu(tags, movie, menu)
-			p.popupTags.SetSubmenu(menu)
-			p.popupTags.ShowAll()
+			p.createGenreMenu(genres, movie, menu)
+			p.popupGenres.SetSubmenu(menu)
+			p.popupGenres.ShowAll()
 			p.popupMenu.PopupAtPointer(event)
 		},
 	)
@@ -108,52 +108,52 @@ func (p *popupMenu) setupEvents() {
 	)
 }
 
-func (p *popupMenu) createTagMenu(tags []data.Tag, movie *data.Movie, menu *gtk.Menu) {
-	for i := 0; i < len(tags); i++ {
-		tag := tags[i]
+func (p *popupMenu) createGenreMenu(genres []data.Genre, movie *data.Movie, menu *gtk.Menu) {
+	for i := 0; i < len(genres); i++ {
+		genre := genres[i]
 		item, err := gtk.CheckMenuItemNew()
 		if err != nil {
 			reportError(err)
 			log.Fatal(err)
 		}
-		item.SetLabel(tag.Name)
+		item.SetLabel(genre.Name)
 
-		for i := 0; i < len(movie.Tags); i++ {
-			if movie.Tags[i].Id == tag.Id {
+		for i := 0; i < len(movie.Genres); i++ {
+			if movie.Genres[i].Id == genre.Id {
 				item.SetActive(true)
 			}
 		}
 
 		menu.Add(item)
 
-		p.addTagActivateEvent(item, movie, &tag)
+		p.addGenreActivateEvent(item, movie, &genre)
 	}
 }
 
-func (p *popupMenu) addTag(movie *data.Movie, tag *data.Tag) {
-	movie.Tags = append(movie.Tags, *tag)
+func (p *popupMenu) addGenre(movie *data.Movie, genre *data.Genre) {
+	movie.Genres = append(movie.Genres, *genre)
 }
 
-func (p *popupMenu) removeTag(movie *data.Movie, tag *data.Tag) {
-	for i, t := range movie.Tags {
-		if t.Id == tag.Id {
-			movie.Tags = append(movie.Tags[:i], movie.Tags[i+1:]...)
+func (p *popupMenu) removeGenre(movie *data.Movie, genre *data.Genre) {
+	for i, t := range movie.Genres {
+		if t.Id == genre.Id {
+			movie.Genres = append(movie.Genres[:i], movie.Genres[i+1:]...)
 		}
 	}
 }
 
-func (p *popupMenu) addTagActivateEvent(item *gtk.CheckMenuItem, movie *data.Movie, tag *data.Tag) {
+func (p *popupMenu) addGenreActivateEvent(item *gtk.CheckMenuItem, movie *data.Movie, genre *data.Genre) {
 	item.Connect(
 		"activate", func() {
 			if item.GetActive() {
-				err := p.mainWindow.database.InsertMovieTag(movie, tag)
+				err := p.mainWindow.database.InsertMovieGenre(movie, genre)
 				if err == nil {
-					p.addTag(movie, tag)
+					p.addGenre(movie, genre)
 				}
 			} else {
-				err := p.mainWindow.database.RemoveMovieTag(movie, tag)
+				err := p.mainWindow.database.RemoveMovieGenre(movie, genre)
 				if err == nil {
-					p.removeTag(movie, tag)
+					p.removeGenre(movie, genre)
 				}
 			}
 		},

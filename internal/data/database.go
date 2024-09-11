@@ -26,7 +26,7 @@ func DatabaseNew(useTestDB bool, config *config.Config) *Database {
 	database.cache = imageCacheNew()
 	database.config = config
 
-	tagCache = NewTagCache()
+	genreCache = NewGenreCache()
 
 	return database
 }

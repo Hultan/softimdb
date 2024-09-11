@@ -1,30 +1,30 @@
 package data
 
-type TagCache struct {
-	tags []*Tag
+type GenreCache struct {
+	genres []*Genre
 }
 
-func NewTagCache() *TagCache {
-	return &TagCache{}
+func NewGenreCache() *GenreCache {
+	return &GenreCache{}
 }
 
-func (t *TagCache) GetByName(name string) *Tag {
-	for _, tag := range t.tags {
-		if tag.Name == name {
-			return tag
+func (t *GenreCache) GetByName(name string) *Genre {
+	for _, genre := range t.genres {
+		if genre.Name == name {
+			return genre
 		}
 	}
 	return nil
 }
 
-func (t *TagCache) add(tag *Tag) {
-	t.tags = append(t.tags, tag)
+func (t *GenreCache) add(genre *Genre) {
+	t.genres = append(t.genres, genre)
 }
 
-func (t *TagCache) getById(id int) *Tag {
-	for _, tag := range t.tags {
-		if tag.Id == id {
-			return tag
+func (t *GenreCache) getById(id int) *Genre {
+	for _, genre := range t.genres {
+		if genre.Id == id {
+			return genre
 		}
 	}
 	return nil

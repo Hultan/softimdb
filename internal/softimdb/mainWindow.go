@@ -51,7 +51,7 @@ type MainWindow struct {
 	countLabel                            *gtk.Label
 	database                              *data.Database
 	config                                *config.Config
-	menuNoTagItem                         *gtk.RadioMenuItem
+	menuNoGenreItem                       *gtk.RadioMenuItem
 	menuSortByName, menuSortByRating      *gtk.RadioMenuItem
 	menuSortByMyRating, menuSortByLength  *gtk.RadioMenuItem
 	menuSortByYear, menuSortById          *gtk.RadioMenuItem
@@ -242,9 +242,9 @@ func (m *MainWindow) setupMenu(window *gtk.ApplicationWindow) {
 	sortBy = sortByName
 	sortOrder = sortAscending
 
-	// Tags menu
-	menuTags := m.builder.GetObject("menuTags").(*gtk.MenuItem)
-	m.fillTagsMenu(menuTags)
+	// Genres menu
+	menuGenres := m.builder.GetObject("menuTags").(*gtk.MenuItem)
+	m.fillGenresMenu(menuGenres)
 }
 
 func (m *MainWindow) setupToolBar() {
@@ -348,23 +348,23 @@ func (m *MainWindow) refresh(search string, categoryId int, sortBy string) {
 	}
 }
 
-func (m *MainWindow) fillTagsMenu(menu *gtk.MenuItem) {
-	tags, _ := m.database.GetTags()
+func (m *MainWindow) fillGenresMenu(menu *gtk.MenuItem) {
+	genres, _ := m.database.GetGenres()
 
-	// Create and add tags menu
+	// Create and add genres menu
 	sub, _ := gtk.MenuNew()
 	menu.SetSubmenu(sub)
 
-	// No tag item
-	m.menuNoTagItem, _ = gtk.RadioMenuItemNewWithLabel(nil, "None")
-	group, _ := m.menuNoTagItem.GetGroup()
-	m.menuNoTagItem.SetActive(true)
-	m.menuNoTagItem.SetName("-1")
-	sub.Add(m.menuNoTagItem)
-	m.menuNoTagItem.Connect(
+	// No genre item
+	m.menuNoGenreItem, _ = gtk.RadioMenuItemNewWithLabel(nil, "None")
+	group, _ := m.menuNoGenreItem.GetGroup()
+	m.menuNoGenreItem.SetActive(true)
+	m.menuNoGenreItem.SetName("-1")
+	sub.Add(m.menuNoGenreItem)
+	m.menuNoGenreItem.Connect(
 		"activate", func() {
-			if m.menuNoTagItem.GetActive() {
-				m.searchTag(m.menuNoTagItem)
+			if m.menuNoGenreItem.GetActive() {
+				m.searchGenre(m.menuNoGenreItem)
 			}
 		},
 	)
@@ -373,14 +373,14 @@ func (m *MainWindow) fillTagsMenu(menu *gtk.MenuItem) {
 	sep, _ := gtk.SeparatorMenuItemNew()
 	sub.Add(sep)
 
-	// Tag items
-	for _, tag := range tags {
-		item, _ := gtk.RadioMenuItemNewWithLabel(group, tag.Name)
-		item.SetName(strconv.Itoa(tag.Id))
+	// Genre items
+	for _, genre := range genres {
+		item, _ := gtk.RadioMenuItemNewWithLabel(group, genre.Name)
+		item.SetName(strconv.Itoa(genre.Id))
 		item.Connect(
 			"activate", func() {
 				if item.GetActive() {
-					m.searchTag(item)
+					m.searchGenre(item)
 				}
 			},
 		)
@@ -388,7 +388,7 @@ func (m *MainWindow) fillTagsMenu(menu *gtk.MenuItem) {
 	}
 }
 
-func (m *MainWindow) searchTag(item *gtk.RadioMenuItem) {
+func (m *MainWindow) searchGenre(item *gtk.RadioMenuItem) {
 	name, _ := item.GetName()
 	i, _ := strconv.Atoi(name)
 	searchGenreId = i
@@ -522,7 +522,7 @@ func (m *MainWindow) onRefreshButtonClicked() {
 	searchGenreId = -1
 	sortBy = sortByName
 	sortOrder = sortAscending
-	m.menuNoTagItem.SetActive(true)
+	m.menuNoGenreItem.SetActive(true)
 	m.menuSortByName.SetActive(true)
 	m.menuSortAscending.SetActive(true)
 	m.refresh(searchFor, searchGenreId, getSortBy())
@@ -627,7 +627,7 @@ func (m *MainWindow) onOpenPackClicked() {
 	sortOrder = sortAscending
 	view.changeView(viewPacks)
 	m.searchEntry.SetText(searchFor)
-	m.menuNoTagItem.SetActive(true)
+	m.menuNoGenreItem.SetActive(true)
 	m.menuSortByName.SetActive(true)
 	m.menuSortAscending.SetActive(true)
 	m.refresh(searchFor, searchGenreId, getSortBy())

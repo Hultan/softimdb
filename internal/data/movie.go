@@ -21,7 +21,7 @@ type Movie struct {
 	StoryLine  string  `gorm:"column:story_line;size:65535"`
 	MoviePath  string  `gorm:"column:path;size:1024"`
 	Runtime    int     `gorm:"column:length"`
-	Tags       []Tag   `gorm:"-"`
+	Genres     []Genre `gorm:"-"`
 
 	HasImage      bool   `gorm:"-"`
 	Image         []byte `gorm:"-"`
@@ -38,7 +38,7 @@ func (m *Movie) TableName() string {
 }
 
 // SearchMovies returns all movies in the database that matches the search criteria.
-func (d *Database) SearchMovies(currentView string, searchFor string, tagId int, orderBy string) ([]*Movie, error) {
+func (d *Database) SearchMovies(currentView string, searchFor string, genreId int, orderBy string) ([]*Movie, error) {
 	db, err := d.getDatabase()
 	if err != nil {
 		return nil, err
@@ -56,10 +56,10 @@ func (d *Database) SearchMovies(currentView string, searchFor string, tagId int,
 		sqlOrderBy = orderBy
 	}
 
-	if tagId == -1 {
+	if genreId == -1 {
 		sqlWhere, sqlArgs = getStandardSearch(searchFor)
 	} else {
-		sqlJoin, sqlWhere, sqlArgs = getTagSearch(searchFor, tagId)
+		sqlJoin, sqlWhere, sqlArgs = getGenreSearch(searchFor, genreId)
 	}
 
 	sqlWhere = addViewSQL(currentView, sqlWhere)
@@ -79,7 +79,7 @@ func (d *Database) SearchMovies(currentView string, searchFor string, tagId int,
 		return nil, result.Error
 	}
 
-	movies, err = d.getTagsForMovies(movies)
+	movies, err = d.getGenresForMovies(movies)
 	if err != nil {
 		return nil, err
 	}
@@ -134,14 +134,14 @@ func (d *Database) InsertMovie(movie *Movie) error {
 				return result.Error
 			}
 
-			// Handle tags
-			for i := range movie.Tags {
-				tag, err := d.getOrInsertTag(&movie.Tags[i])
+			// Handle genres
+			for i := range movie.Genres {
+				genre, err := d.getOrInsertGenre(&movie.Genres[i])
 				if err != nil {
 					return err
 				}
 
-				err = d.InsertMovieTag(movie, tag)
+				err = d.InsertMovieGenre(movie, genre)
 				if err != nil {
 					return err
 				}
@@ -160,7 +160,7 @@ func (d *Database) InsertMovie(movie *Movie) error {
 }
 
 // UpdateMovie update a movie.
-func (d *Database) UpdateMovie(movie *Movie, updateTags bool) error {
+func (d *Database) UpdateMovie(movie *Movie, updateGenres bool) error {
 	db, err := d.getDatabase()
 	if err != nil {
 		return err
@@ -187,23 +187,23 @@ func (d *Database) UpdateMovie(movie *Movie, updateTags bool) error {
 				return result.Error
 			}
 
-			if !updateTags {
+			if !updateGenres {
 				return nil
 			}
 
-			// Handle tags
-			for i := range movie.Tags {
-				tag, err := d.getOrInsertTag(&movie.Tags[i])
+			// Handle genres
+			for i := range movie.Genres {
+				genre, err := d.getOrInsertGenre(&movie.Genres[i])
 				if err != nil {
 					return err
 				}
 
-				err = d.RemoveMovieTag(movie, tag)
+				err = d.RemoveMovieGenre(movie, genre)
 				if err != nil {
 					return err
 				}
 
-				err = d.InsertMovieTag(movie, tag)
+				err = d.InsertMovieGenre(movie, genre)
 				if err != nil {
 					return err
 				}
@@ -234,7 +234,7 @@ func (d *Database) DeleteMovie(rootDir string, movie *Movie) error {
 				return err
 			}
 
-			if err = d.deleteTagsForMovie(movie); err != nil {
+			if err = d.deleteGenresForMovie(movie); err != nil {
 				return err
 			}
 
@@ -280,21 +280,21 @@ func addViewSQL(view string, where string) string {
 	return where + sql
 }
 
-func getTagSearch(searchFor string, tagId int) (string, string, map[string]interface{}) {
+func getGenreSearch(searchFor string, genreId int) (string, string, map[string]interface{}) {
 	var sqlWhere, sqlJoin string
 	var sqlArgs map[string]interface{}
 	sqlArgs = make(map[string]interface{})
 
 	if searchFor == "" {
-		sqlJoin = "JOIN movie_tag on movies.id = movie_tag.movie_id"
-		sqlWhere = "movie_tag.tag_id = @tag"
-		sqlArgs["tag"] = tagId
+		sqlJoin = "JOIN movie_genre on movies.id = movie_genre.movie_id"
+		sqlWhere = "movie_genre.genre_id = @genre"
+		sqlArgs["genre"] = genreId
 	} else {
-		sqlJoin = "JOIN movie_tag on movies.id = movie_tag.movie_id"
+		sqlJoin = "JOIN movie_genre on movies.id = movie_genre.movie_id"
 		sqlWhere = "(title like @search OR sub_title like @search OR year like @search OR story_line like @search" +
-			") AND movie_tag.tag_id = @tag"
+			") AND movie_genre.genre_id = @genre"
 		sqlArgs["search"] = "%" + searchFor + "%"
-		sqlArgs["tag"] = tagId
+		sqlArgs["genre"] = genreId
 	}
 	return sqlJoin, sqlWhere, sqlArgs
 }
@@ -356,17 +356,17 @@ func (d *Database) getImagesForMovies(movies []*Movie) ([]*Movie, error) {
 	return movies, nil
 }
 
-func (d *Database) getTagsForMovies(movies []*Movie) ([]*Movie, error) {
+func (d *Database) getGenresForMovies(movies []*Movie) ([]*Movie, error) {
 	// Get images for movies
 	for i := range movies {
 		movie := movies[i]
 
-		// Load genres (tags)
-		tags, err := d.getTagsForMovie(movie)
+		// Load genres
+		genres, err := d.getGenresForMovie(movie)
 		if err != nil {
 			return nil, err
 		}
-		movie.Tags = tags
+		movie.Genres = genres
 	}
 	return movies, nil
 }
