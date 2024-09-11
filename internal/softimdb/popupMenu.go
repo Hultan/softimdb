@@ -2,7 +2,6 @@ package softimdb
 
 import (
 	"log"
-	"path"
 
 	"github.com/gotk3/gotk3/gdk"
 	"github.com/gotk3/gotk3/gtk"
@@ -80,11 +79,7 @@ func (p *popupMenu) setupEvents() {
 
 	p.popupOpenFolder.Connect(
 		"activate", func() {
-			movie := p.mainWindow.getSelectedMovie()
-			if movie == nil {
-				return
-			}
-			openInNemo(path.Join(p.mainWindow.config.RootDir, movie.MoviePath))
+			p.mainWindow.onOpenFolderClicked()
 		},
 	)
 

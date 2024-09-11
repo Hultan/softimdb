@@ -555,9 +555,15 @@ func (m *MainWindow) onKeyPressEvent(_ *gtk.ApplicationWindow, event *gdk.Event)
 		m.onRefreshButtonClicked()
 	case keyEvent.KeyVal() == gdk.KEY_F6:
 		m.onPlayMovieClicked()
-	case keyEvent.KeyVal() == gdk.KEY_f && ctrl:
+	case keyEvent.KeyVal() == gdk.KEY_i || keyEvent.KeyVal() == gdk.KEY_I:
+		m.onOpenIMDBClicked()
+	case keyEvent.KeyVal() == gdk.KEY_p || keyEvent.KeyVal() == gdk.KEY_P:
+		m.onOpenPackClicked()
+	case !ctrl && (keyEvent.KeyVal() == gdk.KEY_f || keyEvent.KeyVal() == gdk.KEY_F):
+		m.onOpenFolderClicked()
+	case ctrl && keyEvent.KeyVal() == gdk.KEY_f:
 		m.searchEntry.GrabFocus()
-	case keyEvent.KeyVal() == gdk.KEY_a && ctrl:
+	case ctrl && keyEvent.KeyVal() == gdk.KEY_a:
 		m.onOpenAddWindowClicked()
 	case (keyEvent.KeyVal() == gdk.KEY_q || keyEvent.KeyVal() == gdk.KEY_Q) && ctrl:
 		m.onClose()
@@ -625,6 +631,14 @@ func (m *MainWindow) onOpenPackClicked() {
 	m.menuSortByName.SetActive(true)
 	m.menuSortAscending.SetActive(true)
 	m.refresh(searchFor, searchGenreId, getSortBy())
+}
+
+func (m *MainWindow) onOpenFolderClicked() {
+	movie := m.getSelectedMovie()
+	if movie == nil {
+		return
+	}
+	openInNemo(path.Join(m.config.RootDir, movie.MoviePath))
 }
 
 func (m *MainWindow) onWindowClosed(r gtk.ResponseType, info *movieInfo, movie *data.Movie) {
