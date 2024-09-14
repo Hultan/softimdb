@@ -548,25 +548,32 @@ func (m *MainWindow) onClearSearchButtonClicked() {
 func (m *MainWindow) onKeyPressEvent(_ *gtk.ApplicationWindow, event *gdk.Event) {
 	keyEvent := gdk.EventKeyNewFromEvent(event)
 
-	ctrl := (keyEvent.State() & gdk.CONTROL_MASK) > 0
+	special := (keyEvent.State() & gdk.MOD2_MASK) != 0 // Used for special keys like F5, DELETE, HOME in X11 etc
+	ctrl := (keyEvent.State() & gdk.CONTROL_MASK) != 0
 
-	switch {
-	case keyEvent.KeyVal() == gdk.KEY_F5:
-		m.onRefreshButtonClicked()
-	case keyEvent.KeyVal() == gdk.KEY_F6:
-		m.onPlayMovieClicked()
-	case keyEvent.KeyVal() == gdk.KEY_i || keyEvent.KeyVal() == gdk.KEY_I:
-		m.onOpenIMDBClicked()
-	case keyEvent.KeyVal() == gdk.KEY_p || keyEvent.KeyVal() == gdk.KEY_P:
-		m.onOpenPackClicked()
-	case !ctrl && (keyEvent.KeyVal() == gdk.KEY_f || keyEvent.KeyVal() == gdk.KEY_F):
-		m.onOpenFolderClicked()
-	case ctrl && keyEvent.KeyVal() == gdk.KEY_f:
-		m.searchEntry.GrabFocus()
-	case ctrl && keyEvent.KeyVal() == gdk.KEY_a:
-		m.onOpenAddWindowClicked()
-	case (keyEvent.KeyVal() == gdk.KEY_q || keyEvent.KeyVal() == gdk.KEY_Q) && ctrl:
-		m.onClose()
+	if special {
+		switch {
+		case keyEvent.KeyVal() == gdk.KEY_F5:
+			m.onRefreshButtonClicked()
+		case keyEvent.KeyVal() == gdk.KEY_F6:
+			m.onPlayMovieClicked()
+		}
+	}
+	if ctrl {
+		switch {
+		case keyEvent.KeyVal() == gdk.KEY_i:
+			m.onOpenIMDBClicked()
+		case keyEvent.KeyVal() == gdk.KEY_p:
+			m.onOpenPackClicked()
+		case keyEvent.KeyVal() == gdk.KEY_f:
+			m.searchEntry.GrabFocus()
+		case keyEvent.KeyVal() == gdk.KEY_a:
+			m.onOpenAddWindowClicked()
+		case keyEvent.KeyVal() == gdk.KEY_q:
+			m.onClose()
+		case keyEvent.KeyVal() == gdk.KEY_o:
+			m.onOpenFolderClicked()
+		}
 	}
 }
 
