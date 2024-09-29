@@ -648,13 +648,28 @@ Show all movies that needs subtitles.</property>
               </packing>
             </child>
             <child>
-              <object class="GtkLabel" id="storyLineLabel">
-                <property name="visible">True</property>
-                <property name="can-focus">False</property>
-                <property name="wrap">True</property>
-                <attributes>
-                  <attribute name="font-desc" value="Sans 15"/>
-                </attributes>
+              <object class="GtkScrolledWindow" id="storyLineScrolledWindow">
+                <property name="height-request">90</property>
+                <property name="can-focus">True</property>
+                <property name="valign">start</property>
+                <property name="hscrollbar-policy">never</property>
+                <property name="shadow-type">in</property>
+                <child>
+                  <object class="GtkViewport">
+                    <property name="visible">True</property>
+                    <property name="can-focus">False</property>
+                    <child>
+                      <object class="GtkLabel" id="storyLineLabel">
+                        <property name="visible">True</property>
+                        <property name="can-focus">False</property>
+                        <property name="wrap">True</property>
+                        <attributes>
+                          <attribute name="font-desc" value="Sans 15"/>
+                        </attributes>
+                      </object>
+                    </child>
+                  </object>
+                </child>
               </object>
               <packing>
                 <property name="expand">False</property>

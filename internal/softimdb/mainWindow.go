@@ -44,6 +44,7 @@ type MainWindow struct {
 	window                                *gtk.ApplicationWindow
 	movieList                             *gtk.FlowBox
 	storyLineLabel                        *gtk.Label
+	storyLineScrolledWindow               *gtk.ScrolledWindow
 	searchEntry                           *gtk.Entry
 	searchButton                          *gtk.ToolButton
 	clearSearchButton                     *gtk.ToolButton
@@ -111,6 +112,7 @@ func NewMainWindow() *MainWindow {
 	m.popupMenu.setup()
 	m.setupMenu(m.window)
 	m.storyLineLabel = m.builder.GetObject("storyLineLabel").(*gtk.Label)
+	m.storyLineScrolledWindow = m.builder.GetObject("storyLineScrolledWindow").(*gtk.ScrolledWindow)
 	versionLabel := m.builder.GetObject("versionLabel").(*gtk.Label)
 	versionLabel.SetText("Version : " + applicationVersion)
 	m.countLabel = m.builder.GetObject("countLabel").(*gtk.Label)
@@ -140,6 +142,7 @@ func (m *MainWindow) Open(app *gtk.Application) {
 	m.window.SetApplication(app)
 	m.window.ShowAll()
 	view.changeView(viewToWatch)
+	m.storyLineScrolledWindow.Hide()
 	//m.onRefreshButtonClicked()
 }
 
@@ -557,6 +560,8 @@ func (m *MainWindow) onKeyPressEvent(_ *gtk.ApplicationWindow, event *gdk.Event)
 			m.onRefreshButtonClicked()
 		case keyEvent.KeyVal() == gdk.KEY_F6:
 			m.onPlayMovieClicked()
+		case keyEvent.KeyVal() == gdk.KEY_Escape:
+			m.movieList.UnselectAll()
 		}
 	}
 	if ctrl {
@@ -608,10 +613,12 @@ func (m *MainWindow) onOpenAboutDialogClicked() {
 func (m *MainWindow) onMovieListSelectionChanged(_ *gtk.FlowBox) {
 	movie := m.getSelectedMovie()
 	if movie == nil {
+		m.storyLineScrolledWindow.SetVisible(false)
 		return
 	}
 	story := `<span font="Sans Regular 10" foreground="#d49c6b">` + cleanString(movie.StoryLine) + `</span>`
 	m.storyLineLabel.SetMarkup(story)
+	m.storyLineScrolledWindow.SetVisible(true)
 }
 
 func (m *MainWindow) onMovieListDoubleClicked(_ *gtk.FlowBox) {
