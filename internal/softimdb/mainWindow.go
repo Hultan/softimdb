@@ -79,6 +79,7 @@ var searchGenreId int = -1
 var searchFor string = ""
 var currentView View
 var view viewManager
+var movieTitles []string
 
 // NewMainWindow : Creates a new MainWindow object
 func NewMainWindow() *MainWindow {
@@ -143,7 +144,12 @@ func (m *MainWindow) Open(app *gtk.Application) {
 	m.window.ShowAll()
 	view.changeView(viewToWatch)
 	m.storyLineScrolledWindow.Hide()
-	//m.onRefreshButtonClicked()
+	var err error
+	movieTitles, err = m.database.GetAllMovieTitles()
+	if err != nil {
+		reportError(err)
+		log.Fatal(err)
+	}
 }
 
 func (m *MainWindow) setupMenu(window *gtk.ApplicationWindow) {
@@ -419,6 +425,12 @@ func (m *MainWindow) saveMovieInfo(movieInfo *movieInfo, movie *data.Movie) {
 			Text("You need to restart the application to see the image change.").
 			OkButton().
 			Show()
+	}
+
+	if movie.SubTitle != "" {
+		movieTitles = append(movieTitles, fmt.Sprintf("%s (%s)", movie.Title, movie.SubTitle))
+	} else {
+		movieTitles = append(movieTitles, movie.Title)
 	}
 }
 

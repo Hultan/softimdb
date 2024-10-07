@@ -1,6 +1,7 @@
 package data
 
 import (
+	"fmt"
 	"os"
 	"path"
 	"strings"
@@ -109,6 +110,29 @@ func (d *Database) GetAllMoviePaths() ([]string, error) {
 		paths = append(paths, movies[i].MoviePath)
 	}
 	return paths, nil
+}
+
+// GetAllMovieTitles returns a list of all the movie title in the database. Used when adding new movies.
+func (d *Database) GetAllMovieTitles() ([]string, error) {
+	db, err := d.getDatabase()
+	if err != nil {
+		return nil, err
+	}
+
+	var movies []*Movie
+	if result := db.Find(&movies); result.Error != nil {
+		return nil, result.Error
+	}
+
+	var titles []string
+	for i := range movies {
+		if movies[i].SubTitle != "" {
+			titles = append(titles, fmt.Sprintf("%s (%s)", movies[i].Title, movies[i].SubTitle))
+		} else {
+			titles = append(titles, movies[i].Title)
+		}
+	}
+	return titles, nil
 }
 
 // InsertMovie adds a new movie to the database.

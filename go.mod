@@ -3,6 +3,7 @@ module github.com/hultan/softimdb
 go 1.22
 
 require (
+	github.com/gogf/gf/v2 v2.7.4
 	github.com/gotk3/gotk3 v0.6.3
 	github.com/hultan/crypto v1.0.1
 	github.com/hultan/dialog v1.0.2
@@ -16,5 +17,7 @@ require (
 	github.com/go-sql-driver/mysql v1.8.1 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect
+	go.opentelemetry.io/otel v1.14.0 // indirect
+	go.opentelemetry.io/otel/trace v1.14.0 // indirect
 	golang.org/x/text v0.17.0 // indirect
 )

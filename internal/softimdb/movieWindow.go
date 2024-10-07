@@ -6,10 +6,13 @@ import (
 	"log"
 	"os"
 	"path"
+	"slices"
 	"strconv"
+	"strings"
 
 	"github.com/hultan/dialog"
 
+	"github.com/gogf/gf/v2/text/gstr"
 	"github.com/gotk3/gotk3/gdk"
 	"github.com/gotk3/gotk3/gtk"
 
@@ -295,26 +298,61 @@ func (m *movieWindow) onTitleFocusOut() {
 		return
 	}
 
-	movies, err := m.db.SearchMovies(string(viewAll), title, -1, "title asc")
-	if err != nil {
-		return
-	}
-
-	m.showSimilarMovies(movies)
+	m.showSimilarMovies(m.findSimilarMovies(title))
 }
 
-func (m *movieWindow) showSimilarMovies(movies []*data.Movie) {
+func (m *movieWindow) showSimilarMovies(movies []movie) {
 	titles := ""
 
-	for i, movie := range movies {
+	for i, mov := range movies {
 		if i > 5 {
 			break
 		}
-		titles += movie.Title + "\n"
+		titles += fmt.Sprintf("%s\n", mov.title)
 	}
 
 	if titles != "" {
 		_, _ = dialog.Title("Similar movies...").Text("There are similar movies in the DB:\n\n" + titles).
 			WarningIcon().OkButton().Show()
 	}
+}
+
+type movie struct {
+	distance int
+	title    string
+}
+
+func (m *movieWindow) findSimilarMovies(title string) []movie {
+	var movies []movie
+
+	for _, movieTitle := range movieTitles {
+		l := gstr.Levenshtein(movieTitle, title, 1, 3, 1)
+		if containsI(title, movieTitle) {
+			l = 2
+		}
+		if containsI(movieTitle, title) {
+			l = 2
+		}
+		if equalsI(title, movieTitle) {
+			l = 1
+		}
+		movies = append(movies, movie{l, movieTitle})
+	}
+	slices.SortFunc(movies, func(a, b movie) int {
+		return a.distance - b.distance
+	})
+	//
+	//fmt.Println("-----------------------------------")
+	//for i := 0; i < 10; i++ {
+	//	fmt.Println(movies[i])
+	//}
+	return movies[:5]
+}
+
+func containsI(a, b string) bool {
+	return strings.Contains(strings.ToLower(b), strings.ToLower(a))
+}
+
+func equalsI(a, b string) bool {
+	return strings.ToLower(b) == strings.ToLower(a)
 }
