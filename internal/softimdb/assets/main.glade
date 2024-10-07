@@ -581,7 +581,7 @@ myrating:	// Searches my rating field
                 <property name="can-focus">False</property>
                 <property name="tooltip-text" translatable="yes">Needs subtitles view:
 Show all movies that needs subtitles.</property>
-                <property name="label" translatable="yes">Needs subtitles</property>
+                <property name="label" translatable="yes">Subtitles</property>
                 <property name="use-underline">True</property>
               </object>
               <packing>

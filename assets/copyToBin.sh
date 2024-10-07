@@ -17,8 +17,8 @@ desktopFolder="/home/per/.local/share/applications"
 
 cp -rf $codeFolder/$program/build/* $binFolder/$program
 cp -rf $codeFolder/$program/build/* $softtubeFolder/$program
-cp -rf $codeFolder/$program/assets $binFolder/$program
-cp -rf $codeFolder/$program/assets $softtubeFolder/$program
+# cp -rf $codeFolder/$program/assets $binFolder/$program
+# cp -rf $codeFolder/$program/assets $softtubeFolder/$program
 cp -rf $configFolder/softimdb $softtubeFolder/$program/config
 # cp -rf $cacheFolder/softimdb $softtubeFolder/$program/cache
 cp -rf $desktopFolder/softimdb.desktop $softtubeFolder/$program
