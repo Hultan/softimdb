@@ -664,6 +664,8 @@ Show all movies that needs subtitles.</property>
                       <object class="GtkLabel" id="storyLineLabel">
                         <property name="visible">True</property>
                         <property name="can-focus">False</property>
+                        <property name="halign">start</property>
+                        <property name="valign">start</property>
                         <property name="wrap">True</property>
                         <attributes>
                           <attribute name="font-desc" value="Sans 15"/>
