@@ -189,3 +189,26 @@ func resizeImage(imgData []byte) []byte {
 	}
 	return buf.Bytes()
 }
+
+func containsI(a, b string) bool {
+	return strings.Contains(strings.ToLower(b), strings.ToLower(a))
+}
+
+func equalsI(a, b string) bool {
+	return strings.ToLower(b) == strings.ToLower(a)
+}
+
+// doesExist checks if the file exists and is accessible.
+func doesExist(filename string) bool {
+	_, err := os.Stat(filename)
+	if err == nil {
+		// No error, so the file exists
+		return true
+	}
+	if os.IsNotExist(err) {
+		// The file does not exist
+		return false
+	}
+	// Other error types (e.g., permission issues) will also return false
+	return false
+}

@@ -201,7 +201,7 @@ func (a *addMovieWindow) onAddMovieButtonClicked() {
 
 	// Open movie dialog here
 	if a.mainWindow.movieWin == nil {
-		a.mainWindow.movieWin = newMovieWindow(a.mainWindow.builder, a.window, a.database)
+		a.mainWindow.movieWin = newMovieWindow(a.mainWindow.builder, a.window, a.database, a.config)
 	}
 	a.mainWindow.movieWin.open(info, nil, a.windowClosed)
 }

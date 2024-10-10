@@ -6,11 +6,13 @@ import (
 	"log"
 	"os"
 	"path"
+	"path/filepath"
 	"slices"
 	"strconv"
 	"strings"
 
 	"github.com/hultan/dialog"
+	"github.com/hultan/softimdb/internal/config"
 
 	"github.com/gogf/gf/v2/text/gstr"
 	"github.com/gotk3/gotk3/gdk"
@@ -42,19 +44,21 @@ type movieWindow struct {
 	movieInfo *movieInfo
 	movie     *data.Movie
 
-	db *data.Database
+	config *config.Config
+	db     *data.Database
 
 	closeCallback func(gtk.ResponseType, *movieInfo, *data.Movie)
 }
 
-var isNew bool
-var imdbScraped bool
+var scrapeImdbOnce bool
+var showSimilarOnce bool
 
-func newMovieWindow(builder *builder.Builder, parent gtk.IWindow, db *data.Database) *movieWindow {
+func newMovieWindow(builder *builder.Builder, parent gtk.IWindow, db *data.Database,
+	config *config.Config) *movieWindow {
 	m := &movieWindow{}
 
 	m.db = db
-
+	m.config = config
 	m.window = builder.GetObject("movieWindow").(*gtk.Window)
 	m.window.SetTitle("Movie info window")
 	m.window.SetTransientFor(parent)
@@ -117,13 +121,16 @@ func (m *movieWindow) open(info *movieInfo, movie *data.Movie, closeCallback fun
 		info = &movieInfo{}
 	}
 
-	isNew = false
+	scrapeImdbOnce = false
+	showSimilarOnce = false
 	if info.title == "" {
 		//  New movie
-		isNew = true
 		info.toWatch = true
+		info.needsSubtitle = !m.hasSubtitles(info.path)
+	} else {
+		scrapeImdbOnce = true
+		showSimilarOnce = true
 	}
-	imdbScraped = false
 
 	m.movie = movie
 	m.movieInfo = info
@@ -290,7 +297,7 @@ func (m *movieWindow) updateImage(image []byte) {
 }
 
 func (m *movieWindow) onTitleEntryFocusOut() {
-	if !isNew {
+	if showSimilarOnce {
 		return
 	}
 
@@ -304,10 +311,11 @@ func (m *movieWindow) onTitleEntryFocusOut() {
 	}
 
 	m.showSimilarMovies(m.findSimilarMovies(title))
+	showSimilarOnce = true
 }
 
 func (m *movieWindow) onIMDBEntryFocusOut() {
-	if !isNew || imdbScraped {
+	if scrapeImdbOnce {
 		return
 	}
 
@@ -339,7 +347,7 @@ func (m *movieWindow) onIMDBEntryFocusOut() {
 		_, _ = dialog.Title("Errors while retrieving IMDB data...").Text(txt).WarningIcon().OkButton().Show()
 	}
 
-	imdbScraped = true
+	scrapeImdbOnce = true
 }
 
 func (m *movieWindow) showSimilarMovies(movies []movie) {
@@ -382,18 +390,22 @@ func (m *movieWindow) findSimilarMovies(title string) []movie {
 	slices.SortFunc(movies, func(a, b movie) int {
 		return a.distance - b.distance
 	})
-	//
-	//fmt.Println("-----------------------------------")
-	//for i := 0; i < 10; i++ {
-	//	fmt.Println(movies[i])
-	//}
 	return movies[:5]
 }
 
-func containsI(a, b string) bool {
-	return strings.Contains(strings.ToLower(b), strings.ToLower(a))
-}
+func (m *movieWindow) hasSubtitles(dir string) bool {
+	movieFile, err := findMovieFile(filepath.Join(m.config.RootDir, dir))
+	if err != nil {
+		return false
+	}
+	movieFile = strings.TrimSuffix(movieFile, filepath.Ext(movieFile))
 
-func equalsI(a, b string) bool {
-	return strings.ToLower(b) == strings.ToLower(a)
+	srtPath := filepath.Join(m.config.RootDir, dir, movieFile+".srt")
+	subPath := filepath.Join(m.config.RootDir, dir, movieFile+".sub")
+
+	if doesExist(srtPath) || doesExist(subPath) {
+		return true
+	}
+
+	return false
 }

@@ -519,7 +519,7 @@ func (m *MainWindow) onEditMovieInfoClicked() {
 
 	// Open movie dialog here
 	if m.movieWin == nil {
-		m.movieWin = newMovieWindow(m.builder, m.window, m.database)
+		m.movieWin = newMovieWindow(m.builder, m.window, m.database, m.config)
 	}
 
 	m.movieWin.open(info, selectedMovie, m.onWindowClosed)
