@@ -16,13 +16,12 @@ type IMDBManager struct {
 }
 
 type IMDBMovie struct {
-	Title            string
-	Year             int
-	Poster           []byte
-	PosterHasChanged bool
-	Rating           float64
-	StoryLine        string
-	Tags             []string
+	Title     string
+	Year      int
+	Poster    []byte
+	Rating    float64
+	StoryLine string
+	Genres    []string
 }
 
 // ManagerNew creates a new IMDB IMDBManager
@@ -111,7 +110,7 @@ func (i IMDBManager) parseGoQueryDocument(doc *goquery.Document) *IMDBMovie {
 		Poster:    poster,
 		Rating:    rating,
 		StoryLine: storyLine,
-		Tags:      genres,
+		Genres:    genres,
 	}
 
 	return info
