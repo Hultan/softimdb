@@ -8,12 +8,11 @@ import (
 	"strconv"
 
 	"github.com/PuerkitoBio/goquery"
-
-	"github.com/hultan/softimdb/internal/data"
 )
 
 // IMDBManager represents a IMDB screen scraper.
 type IMDBManager struct {
+	Errors []error
 }
 
 type IMDBMovie struct {
@@ -32,13 +31,19 @@ func ManagerNew() IMDBManager {
 }
 
 // GetMovie fills in some IMDB information on the Movie instance passed.
-func (i IMDBManager) GetMovie(movie *data.Movie) (*IMDBMovie, error) {
-	doc, err := i.getGoQueryDocument(movie.ImdbUrl)
+func (i IMDBManager) GetMovie(url string) (*IMDBMovie, error) {
+	// Clear errors
+	i.Errors = nil
+
+	// Get GoQuery document from URL
+	doc, err := i.getGoQueryDocument(url)
 	if err != nil {
+		i.Errors = append(i.Errors, err)
 		return nil, err
 	}
 
-	info := i.parseGoQueryDocument(doc, movie)
+	// Parse GoQuery document
+	info := i.parseGoQueryDocument(doc)
 
 	return info, nil
 }
@@ -63,19 +68,42 @@ func (i IMDBManager) getGoQueryDocument(url string) (*goquery.Document, error) {
 	return doc, nil
 }
 
-func (i IMDBManager) parseGoQueryDocument(doc *goquery.Document, movie *data.Movie) *IMDBMovie {
+func (i IMDBManager) parseGoQueryDocument(doc *goquery.Document) *IMDBMovie {
 	// Title
-	title := getMovieTitle(doc)
+	title, err := getMovieTitle(doc)
+	if err != nil {
+		i.Errors = append(i.Errors, err)
+	}
+
 	// Year
-	year := getMovieYear(doc)
+	year, err := getMovieYear(doc)
+	if err != nil {
+		i.Errors = append(i.Errors, err)
+	}
+
 	// Get movie poster
-	poster := getMoviePoster(doc)
+	poster, err := getMoviePoster(doc)
+	if err != nil {
+		i.Errors = append(i.Errors, err)
+	}
+
 	// Rating
-	rating := getMovieRating(doc)
+	rating, err := getMovieRating(doc)
+	if err != nil {
+		i.Errors = append(i.Errors, err)
+	}
+
 	// StoryLine
-	storyLine := getMovieStoryLine(doc)
+	storyLine, err := getMovieStoryLine(doc)
+	if err != nil {
+		i.Errors = append(i.Errors, err)
+	}
+
 	// Genres
-	genres := getMovieGenres(doc)
+	genres, err := getMovieGenres(doc)
+	if err != nil {
+		i.Errors = append(i.Errors, err)
+	}
 
 	info := &IMDBMovie{
 		Title:     title,
@@ -89,7 +117,7 @@ func (i IMDBManager) parseGoQueryDocument(doc *goquery.Document, movie *data.Mov
 	return info
 }
 
-func getMovieGenres(doc *goquery.Document) []string {
+func getMovieGenres(doc *goquery.Document) ([]string, error) {
 	var genres []string
 
 	ok := false
@@ -105,60 +133,63 @@ func getMovieGenres(doc *goquery.Document) []string {
 	})
 	if !ok {
 		// We failed to retrieve at least one tag, abort
-		return nil
+		return nil, errors.New("could not find genre")
 	}
-	return genres
+	return genres, nil
 }
 
-func getMovieStoryLine(doc *goquery.Document) string {
+func getMovieStoryLine(doc *goquery.Document) (string, error) {
 	selection := doc.Find("div.ipc-html-content div")
 	storyLine := selection.Text()
 	if storyLine == "" {
 		// We retrieved an invalid storyline, abort
-		return ""
+		return "", errors.New("story line is empty")
 	}
-	return storyLine
+	return storyLine, nil
 }
 
-func getMovieRating(doc *goquery.Document) float64 {
+func getMovieRating(doc *goquery.Document) (float64, error) {
 	ratingString := doc.Find(".jGRxWM").Text()
 	rating, err := strconv.ParseFloat(ratingString[:3], 32)
-	if err != nil || rating < 1 || rating > 10 {
-		return -1
+	if err != nil {
+		return -1, err
 	}
-	return rating
+	if rating < 1 || rating > 10 {
+		return -1, errors.New(fmt.Sprintf("invalid IMDB rating: %s", ratingString))
+	}
+	return rating, nil
 }
 
-func getMoviePoster(doc *goquery.Document) []byte {
+func getMoviePoster(doc *goquery.Document) ([]byte, error) {
 	s := doc.Find("div.ipc-media--poster-l img.ipc-image").First()
 	imageSource, ok := s.Attr("src")
 	if !ok {
-		return nil
+		return nil, errors.New("could not find image source")
 	}
 	imageData, err := downloadFile(imageSource)
 	if err != nil {
-		return nil
+		return nil, errors.New("could not download image")
 	}
-	return imageData
+	return imageData, nil
 }
 
-func getMovieYear(doc *goquery.Document) int {
+func getMovieYear(doc *goquery.Document) (int, error) {
 	year := doc.Find(".itZqyK").Text()
 	yearInt, err := strconv.Atoi(year[:4])
 	if err != nil || yearInt < 1900 || yearInt > 2100 {
 		// We retrieved an invalid release year, abort
-		return -1
+		return -1, err
 	}
-	return yearInt
+	return yearInt, nil
 }
 
-func getMovieTitle(doc *goquery.Document) string {
+func getMovieTitle(doc *goquery.Document) (string, error) {
 	title := doc.Find(".sc-b73cd867-0").Text()
 	if title == "" {
 		// We failed to get the movie title, abort
-		return ""
+		return "", errors.New("title is empty")
 	}
-	return title
+	return title, nil
 }
 
 func downloadFile(url string) ([]byte, error) {
