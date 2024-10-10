@@ -18,6 +18,7 @@ import (
 
 	"github.com/hultan/softimdb/internal/builder"
 	"github.com/hultan/softimdb/internal/data"
+	"github.com/hultan/softimdb/internal/imdb"
 )
 
 type movieWindow struct {
@@ -47,6 +48,7 @@ type movieWindow struct {
 }
 
 var isNew bool
+var imdbScraped bool
 
 func newMovieWindow(builder *builder.Builder, parent gtk.IWindow, db *data.Database) *movieWindow {
 	m := &movieWindow{}
@@ -102,7 +104,8 @@ func newMovieWindow(builder *builder.Builder, parent gtk.IWindow, db *data.Datab
 	eventBox := builder.GetObject("imageEventBox").(*gtk.EventBox)
 	eventBox.Connect("button-press-event", m.onImageClick)
 
-	m.titleEntry.Connect("focus-out-event", m.onTitleFocusOut)
+	m.titleEntry.Connect("focus-out-event", m.onTitleEntryFocusOut)
+	m.imdbUrlEntry.Connect("focus-out-event", m.onIMDBEntryFocusOut)
 
 	return m
 }
@@ -118,7 +121,9 @@ func (m *movieWindow) open(info *movieInfo, movie *data.Movie, closeCallback fun
 	if info.title == "" {
 		//  New movie
 		isNew = true
+		info.toWatch = true
 	}
+	imdbScraped = false
 
 	m.movie = movie
 	m.movieInfo = info
@@ -284,12 +289,12 @@ func (m *movieWindow) updateImage(image []byte) {
 	m.posterImage.SetFromPixbuf(pix)
 }
 
-func (m *movieWindow) onTitleFocusOut() {
+func (m *movieWindow) onTitleEntryFocusOut() {
 	if !isNew {
 		return
 	}
 
-	title, err := m.titleEntry.GetText()
+	title, err := m.imdbUrlEntry.GetText()
 	if err != nil {
 		return
 	}
@@ -299,6 +304,42 @@ func (m *movieWindow) onTitleFocusOut() {
 	}
 
 	m.showSimilarMovies(m.findSimilarMovies(title))
+}
+
+func (m *movieWindow) onIMDBEntryFocusOut() {
+	if !isNew || imdbScraped {
+		return
+	}
+
+	url, err := m.imdbUrlEntry.GetText()
+	if err != nil {
+		return
+	}
+
+	if url == "" {
+		return
+	}
+
+	// TODO : Ask question
+	manager := imdb.ManagerNew()
+	movieImdb, err := manager.GetMovie(url)
+
+	if movieImdb != nil {
+		m.titleEntry.SetText(movieImdb.Title)
+		m.yearEntry.SetText(strconv.Itoa(movieImdb.Year))
+		m.ratingEntry.SetText(movieImdb.Rating)
+		m.runtimeEntry.SetText(strconv.Itoa(movieImdb.Runtime))
+	}
+
+	if err != nil {
+		txt := ""
+		for _, err := range manager.Errors {
+			txt += err.Error() + "\n"
+		}
+		_, _ = dialog.Title("Errors while retrieving IMDB data...").Text(txt).WarningIcon().OkButton().Show()
+	}
+
+	imdbScraped = true
 }
 
 func (m *movieWindow) showSimilarMovies(movies []movie) {
