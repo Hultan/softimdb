@@ -203,11 +203,22 @@ func getMovieStoryLine(doc *goquery.Document) (string, error) {
 }
 
 func getMovieRating(doc *goquery.Document) (string, error) {
-	return doc.Find(".imUuxf").First().Text(), nil
+	return doc.Find(`div[data-testid="hero-rating-bar__aggregate-rating__score"]`).Find("span").First().Text(), nil
 }
 
 func getMovieRuntime(doc *goquery.Document) (int, error) {
-	runtimeString := doc.Find("ul.sc-ec65ba05-2").Children().Last().First().Text()
+	// Initialize a variable to hold the runtime
+	var runtimeString string
+
+	// Use a specific selector to find the <ul> that is a child of the <div> containing the <h1>
+	doc.Find("div:has(h1[data-testid='hero__pageTitle']) > ul.ipc-inline-list > li").Each(func(i int, s *goquery.Selection) {
+		// Check if this <li> does not have any <a> elements
+		if s.Find("a").Length() == 0 {
+			// Get the text of the <li>
+			runtimeString = s.Text()
+		}
+	})
+
 	runtime, err := calcRuntime(runtimeString)
 	if err != nil {
 		return -1, err
@@ -253,7 +264,12 @@ func calcRuntime(runtimeString string) (int, error) {
 }
 
 func getMovieYear(doc *goquery.Document) (int, error) {
-	year := doc.Find("ul.sc-ec65ba05-2").First().First().Text()
+	// Use a specific selector to find the first <li> in the <ul> under the specific <div>
+	year := doc.Find("div:has(h1[data-testid='hero__pageTitle']) > ul.ipc-inline-list > li:first-child").Text()
+
+	// Trim any whitespace from the extracted text
+	year = strings.TrimSpace(year)
+	//year := doc.Find("ul.sc-ec65ba05-2").First().First().Text()
 	yearInt, err := strconv.Atoi(year[:4])
 	if err != nil || yearInt < 1900 || yearInt > 2100 {
 		// We retrieved an invalid release year, abort
@@ -263,7 +279,11 @@ func getMovieYear(doc *goquery.Document) (int, error) {
 }
 
 func getMovieTitle(doc *goquery.Document) (string, error) {
-	title := doc.Find(".hero__primary-text").Text()
+	title := doc.Find("h1[data-testid='hero__pageTitle'] > span.hero__primary-text").Text()
+
+	// Trim any whitespace from the extracted text
+	title = strings.TrimSpace(title)
+
 	if title == "" {
 		// We failed to get the movie title, abort
 		return "", errors.New("title is empty")
