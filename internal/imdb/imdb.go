@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -60,37 +61,68 @@ func (i *Manager) GetMovie(url string) (*Movie, error) {
 }
 
 func (i *Manager) getGoQueryDocument(url string) (*goquery.Document, error) {
-	opts := append(chromedp.DefaultExecAllocatorOptions[:],
-		chromedp.UserAgent("Mozilla/5.0"),
+	// Create a ChromeDP allocator with User-Agent header and flags
+	allocatorCtx, cancelAllocator := chromedp.NewExecAllocator(context.Background(),
+		append(chromedp.DefaultExecAllocatorOptions[:],
+			chromedp.UserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"),
+			chromedp.Flag("headless", false),
+		)...,
 	)
+	defer cancelAllocator()
 
-	allocCtx, cancel := chromedp.NewExecAllocator(context.Background(), opts...)
+	// Create a ChromeDP context with extended timeout
+	ctx, cancel := chromedp.NewContext(allocatorCtx, chromedp.WithLogf(log.Printf))
 	defer cancel()
 
-	// Create a new chromedp context
-	ctx, cancel := chromedp.NewContext(allocCtx)
+	// Set a timeout for the context to ensure it doesn't hang
+	ctx, cancel = context.WithTimeout(ctx, 60*time.Second)
 	defer cancel()
 
-	// Create a timeout context
-	ctx, cancel = context.WithTimeout(ctx, 15*time.Second)
-	defer cancel()
-
-	var htmlContent string
-
-	// Use chromedp to navigate to the page and retrieve the full HTML after rendering
+	var pageHTML string
 	err := chromedp.Run(ctx,
-		chromedp.Navigate(url), // Replace with the actual URL
-		chromedp.WaitVisible(`div.sc-3c16af05-0`, chromedp.ByQuery),
-		chromedp.ScrollIntoView(`div.sc-3c16af05-0`, chromedp.ByQuery),
-		chromedp.Sleep(5*time.Second),
-		chromedp.OuterHTML("html", &htmlContent), // Get the fully rendered HTML content
+		chromedp.Navigate(url),
+		chromedp.WaitReady("body", chromedp.ByQuery),
+
+		// Click the "Accept Cookies" button using data-testid
+		chromedp.ActionFunc(func(ctx context.Context) error {
+			err := chromedp.Click(`button[data-testid="accept-button"]`, chromedp.ByQuery).Do(ctx)
+			if err != nil {
+				log.Println("No cookie popup detected or click failed, continuing...")
+			}
+			return nil
+		}),
+
+		// Scroll the page smaller increments to trigger content loading
+		chromedp.ActionFunc(func(ctx context.Context) error {
+			for i := 0; i < 20; i++ { // Try up to 20 scrolls
+				err := chromedp.Evaluate(`window.scrollBy(0, 1200);`, nil).Do(ctx)
+				if err != nil {
+					log.Printf("Scroll attempt %d failed: %v\n", i+1, err)
+				}
+				time.Sleep(1 * time.Second) // Allow time for content to load
+
+				// Check if the storyline is now visible after each scroll
+				var isVisible bool
+				err = chromedp.Evaluate(`document.querySelector('div[data-testid="storyline-plot-summary"]') !== null`, &isVisible).Do(ctx)
+				if err != nil {
+					log.Println("Error checking storyline visibility:", err)
+				}
+				if isVisible {
+					log.Println("Storyline is now visible after scrolling!")
+					break
+				}
+			}
+			return nil
+		}),
+
+		// Capture the full page HTML after scrolling for parsing with GoQuery
+		chromedp.OuterHTML("html", &pageHTML),
 	)
 	if err != nil {
 		return nil, err
 	}
-	//fmt.Println(htmlContent)
 	// Load the HTML document
-	doc, err := goquery.NewDocumentFromReader(strings.NewReader(htmlContent))
+	doc, err := goquery.NewDocumentFromReader(strings.NewReader(pageHTML))
 	if err != nil {
 		return nil, err
 	}
@@ -141,13 +173,15 @@ func (i *Manager) parseGoQueryDocument(doc *goquery.Document) *Movie {
 }
 
 func getMovieStoryLine(doc *goquery.Document) (string, error) {
-	storyLine := doc.Find("div.sc-3c16af05-0.kefoZk").Find("div div div div").Text()
+	fmt.Println(doc.Html())
+	storyLine := doc.Find(`div[data-testid="storyline-plot-summary"]`).Text()
 	if storyLine == "" {
-		// We retrieved an invalid storyline, abort
+		// We retrieved an invalid storyLine, abort
 		return "", errors.New("story line is empty")
 	}
 	return storyLine, nil
 }
+
 func getMovieRating(doc *goquery.Document) (string, error) {
 	return doc.Find(".imUuxf").First().Text(), nil
 }

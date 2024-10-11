@@ -343,7 +343,7 @@ func (m *movieWindow) onIMDBEntryFocusOut() {
 			reportError(err)
 			log.Fatal(err)
 		}
-		buffer.SetText(m.movieInfo.storyLine)
+		buffer.SetText(movieImdb.StoryLine)
 		m.storyLineEntry.SetBuffer(buffer)
 	}
 
