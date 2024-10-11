@@ -99,7 +99,7 @@ func (i *Manager) getGoQueryDocument(url string) (*goquery.Document, error) {
 				if err != nil {
 					log.Printf("Scroll attempt %d failed: %v\n", i+1, err)
 				}
-				time.Sleep(1 * time.Second) // Allow time for content to load
+				time.Sleep(2 * time.Second) // Allow time for content to load
 
 				// Check if the storyline is now visible after each scroll
 				var isVisible bool

@@ -301,8 +301,9 @@ func (m *movieWindow) onTitleEntryFocusOut() {
 	if showSimilarOnce {
 		return
 	}
+	showSimilarOnce = true
 
-	title, err := m.imdbUrlEntry.GetText()
+	title, err := m.titleEntry.GetText()
 	if err != nil {
 		return
 	}
@@ -312,7 +313,6 @@ func (m *movieWindow) onTitleEntryFocusOut() {
 	}
 
 	m.showSimilarMovies(m.findSimilarMovies(title))
-	showSimilarOnce = true
 }
 
 func (m *movieWindow) onIMDBEntryFocusOut() {
