@@ -22,15 +22,13 @@ type Manager struct {
 
 type Movie struct {
 	// Done
-	Title   string
-	Year    int
-	Rating  string
-	Runtime int
-
-	// Not working
+	Title     string
+	Year      int
+	Rating    string
+	Runtime   int
 	StoryLine string
-	Poster    []byte
 	Genres    []string
+	Poster    []byte
 }
 
 // ManagerNew creates a new IMDB Manager
@@ -167,6 +165,12 @@ func (i *Manager) parseGoQueryDocument(doc *goquery.Document) *Movie {
 		i.Errors = append(i.Errors, err)
 	}
 
+	// Poster
+	poster, err := getMoviePoster(doc)
+	if err != nil {
+		i.Errors = append(i.Errors, err)
+	}
+
 	info := &Movie{
 		Title:     title,
 		Year:      year,
@@ -174,10 +178,24 @@ func (i *Manager) parseGoQueryDocument(doc *goquery.Document) *Movie {
 		Rating:    rating,
 		StoryLine: storyLine,
 		Genres:    genres,
+		Poster:    poster,
 	}
 
 	return info
 }
+
+func getMoviePoster(doc *goquery.Document) ([]byte, error) {
+	src, ok := doc.Find(`img[width="190"]`).Attr("src")
+	if ok {
+		imageData, err := downloadFile(src)
+		if err != nil {
+			return nil, err
+		}
+		return imageData, nil
+	}
+	return nil, errors.New("couldn't find movie poster")
+}
+
 func getMovieGenres(doc *goquery.Document) ([]string, error) {
 	var genres []string
 

@@ -338,6 +338,10 @@ func (m *movieWindow) onIMDBEntryFocusOut() {
 		m.yearEntry.SetText(strconv.Itoa(movieImdb.Year))
 		m.ratingEntry.SetText(movieImdb.Rating)
 		m.runtimeEntry.SetText(strconv.Itoa(movieImdb.Runtime))
+		genres := strings.Join(movieImdb.Genres, ", ")
+		m.genresEntry.SetText(genres)
+
+		// Story line
 		buffer, err := gtk.TextBufferNew(nil)
 		if err != nil {
 			reportError(err)
@@ -345,8 +349,14 @@ func (m *movieWindow) onIMDBEntryFocusOut() {
 		}
 		buffer.SetText(movieImdb.StoryLine)
 		m.storyLineEntry.SetBuffer(buffer)
-		genres := strings.Join(movieImdb.Genres, ", ")
-		m.genresEntry.SetText(genres)
+
+		// Movie poster
+		pix, err := gdk.PixbufNewFromBytesOnly(movieImdb.Poster)
+		if err != nil {
+			reportError(err)
+			log.Fatal(err)
+		}
+		m.posterImage.SetFromPixbuf(pix)
 	}
 
 	if err != nil {
