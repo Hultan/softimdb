@@ -33,12 +33,12 @@ type Movie struct {
 }
 
 // ManagerNew creates a new IMDB Manager
-func ManagerNew() Manager {
-	return Manager{}
+func ManagerNew() *Manager {
+	return &Manager{}
 }
 
 // GetMovie fills in some IMDB information on the Movie instance passed.
-func (i Manager) GetMovie(url string) (*Movie, error) {
+func (i *Manager) GetMovie(url string) (*Movie, error) {
 	// Clear errors
 	i.Errors = nil
 
@@ -59,7 +59,7 @@ func (i Manager) GetMovie(url string) (*Movie, error) {
 	return info, nil
 }
 
-func (i Manager) getGoQueryDocument(url string) (*goquery.Document, error) {
+func (i *Manager) getGoQueryDocument(url string) (*goquery.Document, error) {
 	opts := append(chromedp.DefaultExecAllocatorOptions[:],
 		chromedp.UserAgent("Mozilla/5.0"),
 	)
@@ -79,28 +79,16 @@ func (i Manager) getGoQueryDocument(url string) (*goquery.Document, error) {
 
 	// Use chromedp to navigate to the page and retrieve the full HTML after rendering
 	err := chromedp.Run(ctx,
-		chromedp.Navigate(url),        // Replace with the actual URL
-		chromedp.Sleep(5*time.Second), // Let page load completely
-		//chromedp.Evaluate(`element.scrollTop = element.scrollHeight);`, nil), // Simulate scroll
-		//chromedp.ActionFunc(func(ctx context.Context) error {
-		//	_, exp, err := runtime.Evaluate(`window.scrollTo(0,document.body.scrollHeight);`).Do(ctx)
-		//	if err != nil {
-		//		return err
-		//	}
-		//	if exp != nil {
-		//		return exp
-		//	}
-		//	return nil
-		//}),
-		//chromedp.Sleep(2*time.Second),
-		//chromedp.Evaluate(`window.scrollTo(0, document.body.scrollHeight);`, nil), // Simulate scroll
-		//chromedp.Sleep(2*time.Second),
+		chromedp.Navigate(url), // Replace with the actual URL
+		chromedp.WaitVisible(`div.sc-3c16af05-0`, chromedp.ByQuery),
+		chromedp.ScrollIntoView(`div.sc-3c16af05-0`, chromedp.ByQuery),
+		chromedp.Sleep(5*time.Second),
 		chromedp.OuterHTML("html", &htmlContent), // Get the fully rendered HTML content
 	)
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println(htmlContent)
+	//fmt.Println(htmlContent)
 	// Load the HTML document
 	doc, err := goquery.NewDocumentFromReader(strings.NewReader(htmlContent))
 	if err != nil {
@@ -110,7 +98,7 @@ func (i Manager) getGoQueryDocument(url string) (*goquery.Document, error) {
 	return doc, nil
 }
 
-func (i Manager) parseGoQueryDocument(doc *goquery.Document) *Movie {
+func (i *Manager) parseGoQueryDocument(doc *goquery.Document) *Movie {
 	// Title
 	title, err := getMovieTitle(doc)
 	if err != nil {
@@ -153,7 +141,7 @@ func (i Manager) parseGoQueryDocument(doc *goquery.Document) *Movie {
 }
 
 func getMovieStoryLine(doc *goquery.Document) (string, error) {
-	storyLine := doc.Find("span.gYsgBm").Text()
+	storyLine := doc.Find("div.sc-3c16af05-0.kefoZk").Find("div div div div").Text()
 	if storyLine == "" {
 		// We retrieved an invalid storyline, abort
 		return "", errors.New("story line is empty")

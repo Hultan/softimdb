@@ -128,6 +128,7 @@ func (m *movieWindow) open(info *movieInfo, movie *data.Movie, closeCallback fun
 		info.toWatch = true
 		info.needsSubtitle = !m.hasSubtitles(info.path)
 	} else {
+		// Edit movie
 		scrapeImdbOnce = true
 		showSimilarOnce = true
 	}
@@ -337,6 +338,13 @@ func (m *movieWindow) onIMDBEntryFocusOut() {
 		m.yearEntry.SetText(strconv.Itoa(movieImdb.Year))
 		m.ratingEntry.SetText(movieImdb.Rating)
 		m.runtimeEntry.SetText(strconv.Itoa(movieImdb.Runtime))
+		buffer, err := gtk.TextBufferNew(nil)
+		if err != nil {
+			reportError(err)
+			log.Fatal(err)
+		}
+		buffer.SetText(m.movieInfo.storyLine)
+		m.storyLineEntry.SetBuffer(buffer)
 	}
 
 	if err != nil {
