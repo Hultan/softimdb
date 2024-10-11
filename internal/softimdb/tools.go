@@ -6,10 +6,13 @@ import (
 	"fmt"
 	"html"
 	"image"
+	"image/jpeg"
 	"image/png"
 	"log"
 	"os"
 	"os/exec"
+	"path"
+	"path/filepath"
 	"regexp"
 	"runtime"
 	"strings"
@@ -211,4 +214,40 @@ func doesExist(filename string) bool {
 	}
 	// Other error types (e.g., permission issues) will also return false
 	return false
+}
+
+func saveMoviePoster(title string, poster []byte) (string, error) {
+	home, _ := os.UserHomeDir()
+	dir := path.Join(home, "Downloads")
+
+	// Create the directory if it doesn't exist
+	if err := os.MkdirAll(dir, os.ModePerm); err != nil {
+		return "", fmt.Errorf("failed to create directory: %v", err)
+	}
+
+	// Define the full path for the image
+	filePath := filepath.Join(dir, fmt.Sprintf("%s.jpg", title))
+
+	// Create the file
+	file, err := os.Create(filePath)
+	if err != nil {
+		return "", fmt.Errorf("failed to create file: %v", err)
+	}
+	defer file.Close()
+
+	// Decode the image from the byte slice
+	img, _, err := image.Decode(bytes.NewReader(poster))
+	if err != nil {
+		return "", fmt.Errorf("failed to decode image: %v", err)
+	}
+
+	// Set the JPEG quality (0-100)
+	jpegOptions := &jpeg.Options{Quality: 100}
+
+	// Encode the image to the file
+	if err := jpeg.Encode(file, img, jpegOptions); err != nil {
+		return "", fmt.Errorf("failed to encode image: %v", err)
+	}
+
+	return filePath, nil
 }

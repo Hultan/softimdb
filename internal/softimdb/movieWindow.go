@@ -351,12 +351,18 @@ func (m *movieWindow) onIMDBEntryFocusOut() {
 		m.storyLineEntry.SetBuffer(buffer)
 
 		// Movie poster
-		pix, err := gdk.PixbufNewFromBytesOnly(movieImdb.Poster)
+		fileName, err := saveMoviePoster(movieImdb.Title, movieImdb.Poster)
 		if err != nil {
 			reportError(err)
 			log.Fatal(err)
 		}
-		m.posterImage.SetFromPixbuf(pix)
+		fileData := getCorrectImageSize(fileName)
+		if fileData == nil || len(fileData) == 0 {
+			return
+		}
+		m.updateImage(fileData)
+		m.movieInfo.image = fileData
+		m.movieInfo.imageHasChanged = true
 	}
 
 	if err != nil {
