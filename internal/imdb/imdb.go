@@ -161,15 +161,35 @@ func (i *Manager) parseGoQueryDocument(doc *goquery.Document) *Movie {
 		i.Errors = append(i.Errors, err)
 	}
 
+	// Genres
+	genres, err := getMovieGenres(doc)
+	if err != nil {
+		i.Errors = append(i.Errors, err)
+	}
+
 	info := &Movie{
 		Title:     title,
 		Year:      year,
 		Runtime:   runtime,
 		Rating:    rating,
 		StoryLine: storyLine,
+		Genres:    genres,
 	}
 
 	return info
+}
+func getMovieGenres(doc *goquery.Document) ([]string, error) {
+	var genres []string
+
+	// Genres
+	doc.Find(`li[data-testid="storyline-genres"]`).Each(func(i int, s *goquery.Selection) {
+		// Find the <ul> within this <li> and iterate over its <li> children
+		s.Find("ul li").Each(func(j int, genre *goquery.Selection) {
+			// Get the text of each genre and append it to the genres slice
+			genres = append(genres, genre.Text())
+		})
+	})
+	return genres, nil
 }
 
 func getMovieStoryLine(doc *goquery.Document) (string, error) {

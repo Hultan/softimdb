@@ -345,6 +345,8 @@ func (m *movieWindow) onIMDBEntryFocusOut() {
 		}
 		buffer.SetText(movieImdb.StoryLine)
 		m.storyLineEntry.SetBuffer(buffer)
+		genres := strings.Join(movieImdb.Genres, ", ")
+		m.genresEntry.SetText(genres)
 	}
 
 	if err != nil {
