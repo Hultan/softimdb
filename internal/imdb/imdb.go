@@ -37,28 +37,28 @@ func ManagerNew() *Manager {
 }
 
 // GetMovie fills in some IMDB information on the Movie instance passed.
-func (i *Manager) GetMovie(url string) (*Movie, error) {
+func (m *Manager) GetMovie(url string) (*Movie, error) {
 	// Clear errors
-	i.Errors = nil
+	m.Errors = nil
 
 	// Get GoQuery document from URL
-	doc, err := i.getGoQueryDocument(url)
+	doc, err := m.getGoQueryDocument(url)
 	if err != nil {
-		i.Errors = append(i.Errors, err)
+		m.Errors = append(m.Errors, err)
 		return nil, err
 	}
 
 	// Parse GoQuery document
-	info := i.parseGoQueryDocument(doc)
+	info := m.parseGoQueryDocument(doc)
 
-	if len(i.Errors) > 0 {
-		return info, i.Errors[0]
+	if len(m.Errors) > 0 {
+		return info, m.Errors[0]
 	}
 
 	return info, nil
 }
 
-func (i *Manager) getGoQueryDocument(url string) (*goquery.Document, error) {
+func (m *Manager) getGoQueryDocument(url string) (*goquery.Document, error) {
 	// Create a ChromeDP allocator with User-Agent header and flags
 	allocatorCtx, cancelAllocator := chromedp.NewExecAllocator(context.Background(),
 		append(chromedp.DefaultExecAllocatorOptions[:],
@@ -73,10 +73,27 @@ func (i *Manager) getGoQueryDocument(url string) (*goquery.Document, error) {
 	defer cancel()
 
 	// Set a timeout for the context to ensure it doesn't hang
-	ctx, cancel = context.WithTimeout(ctx, 60*time.Second)
+	ctx, cancel = context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
 
+	// Get the Html from the Url
+	pageHTML, err := m.scrapeUrl(url, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// Load the HTML document
+	doc, err := goquery.NewDocumentFromReader(strings.NewReader(pageHTML))
+	if err != nil {
+		return nil, err
+	}
+
+	return doc, nil
+}
+
+func (m *Manager) scrapeUrl(url string, ctx context.Context) (string, error) {
 	var pageHTML string
+
 	err := chromedp.Run(ctx,
 		chromedp.Navigate(url),
 		chromedp.WaitReady("body", chromedp.ByQuery),
@@ -116,59 +133,51 @@ func (i *Manager) getGoQueryDocument(url string) (*goquery.Document, error) {
 		// Capture the full page HTML after scrolling for parsing with GoQuery
 		chromedp.OuterHTML("html", &pageHTML),
 	)
-	if err != nil {
-		return nil, err
-	}
-	// Load the HTML document
-	doc, err := goquery.NewDocumentFromReader(strings.NewReader(pageHTML))
-	if err != nil {
-		return nil, err
-	}
 
-	return doc, nil
+	return pageHTML, err
 }
 
-func (i *Manager) parseGoQueryDocument(doc *goquery.Document) *Movie {
+func (m *Manager) parseGoQueryDocument(doc *goquery.Document) *Movie {
 	// Title
-	title, err := getMovieTitle(doc)
+	title, err := m.getMovieTitle(doc)
 	if err != nil {
-		i.Errors = append(i.Errors, err)
+		m.Errors = append(m.Errors, err)
 	}
 
 	// Year
-	year, err := getMovieYear(doc)
+	year, err := m.getMovieYear(doc)
 	if err != nil {
-		i.Errors = append(i.Errors, err)
+		m.Errors = append(m.Errors, err)
 	}
 
 	// Runtime
-	runtime, err := getMovieRuntime(doc)
+	runtime, err := m.getMovieRuntime(doc)
 	if err != nil {
-		i.Errors = append(i.Errors, err)
+		m.Errors = append(m.Errors, err)
 	}
 
 	// Rating
-	rating, err := getMovieRating(doc)
+	rating, err := m.getMovieRating(doc)
 	if err != nil {
-		i.Errors = append(i.Errors, err)
+		m.Errors = append(m.Errors, err)
 	}
 
 	// StoryLine
-	storyLine, err := getMovieStoryLine(doc)
+	storyLine, err := m.getMovieStoryLine(doc)
 	if err != nil {
-		i.Errors = append(i.Errors, err)
+		m.Errors = append(m.Errors, err)
 	}
 
 	// Genres
-	genres, err := getMovieGenres(doc)
+	genres, err := m.getMovieGenres(doc)
 	if err != nil {
-		i.Errors = append(i.Errors, err)
+		m.Errors = append(m.Errors, err)
 	}
 
 	// Poster
-	poster, err := getMoviePoster(doc)
+	poster, err := m.getMoviePoster(doc)
 	if err != nil {
-		i.Errors = append(i.Errors, err)
+		m.Errors = append(m.Errors, err)
 	}
 
 	info := &Movie{
@@ -184,10 +193,10 @@ func (i *Manager) parseGoQueryDocument(doc *goquery.Document) *Movie {
 	return info
 }
 
-func getMoviePoster(doc *goquery.Document) ([]byte, error) {
+func (m *Manager) getMoviePoster(doc *goquery.Document) ([]byte, error) {
 	src, ok := doc.Find(`img[width="190"]`).Attr("src")
 	if ok {
-		imageData, err := downloadFile(src)
+		imageData, err := m.downloadFile(src)
 		if err != nil {
 			return nil, err
 		}
@@ -196,7 +205,7 @@ func getMoviePoster(doc *goquery.Document) ([]byte, error) {
 	return nil, errors.New("couldn't find movie poster")
 }
 
-func getMovieGenres(doc *goquery.Document) ([]string, error) {
+func (m *Manager) getMovieGenres(doc *goquery.Document) ([]string, error) {
 	var genres []string
 
 	// Genres
@@ -210,7 +219,7 @@ func getMovieGenres(doc *goquery.Document) ([]string, error) {
 	return genres, nil
 }
 
-func getMovieStoryLine(doc *goquery.Document) (string, error) {
+func (m *Manager) getMovieStoryLine(doc *goquery.Document) (string, error) {
 	fmt.Println(doc.Html())
 	storyLine := doc.Find(`div[data-testid="storyline-plot-summary"]`).Text()
 	if storyLine == "" {
@@ -220,11 +229,11 @@ func getMovieStoryLine(doc *goquery.Document) (string, error) {
 	return storyLine, nil
 }
 
-func getMovieRating(doc *goquery.Document) (string, error) {
+func (m *Manager) getMovieRating(doc *goquery.Document) (string, error) {
 	return doc.Find(`div[data-testid="hero-rating-bar__aggregate-rating__score"]`).Find("span").First().Text(), nil
 }
 
-func getMovieRuntime(doc *goquery.Document) (int, error) {
+func (m *Manager) getMovieRuntime(doc *goquery.Document) (int, error) {
 	// Initialize a variable to hold the runtime
 	var runtimeString string
 
@@ -237,14 +246,14 @@ func getMovieRuntime(doc *goquery.Document) (int, error) {
 		}
 	})
 
-	runtime, err := calcRuntime(runtimeString)
+	runtime, err := m.calcRuntime(runtimeString)
 	if err != nil {
 		return -1, err
 	}
 	return runtime, nil
 }
 
-func calcRuntime(runtimeString string) (int, error) {
+func (m *Manager) calcRuntime(runtimeString string) (int, error) {
 	items := strings.Split(runtimeString, " ")
 	if len(items) != 1 && len(items) != 2 {
 		return -1, errors.New(fmt.Sprintf("invalid IMDB runtime: %s", runtimeString))
@@ -311,7 +320,7 @@ func calcRuntime(runtimeString string) (int, error) {
 //	return -1, errors.New("valid year not found in list items")
 //}
 
-func getMovieYear(doc *goquery.Document) (int, error) {
+func (m *Manager) getMovieYear(doc *goquery.Document) (int, error) {
 	// Use a specific selector to find the first <li> in the <ul> under the specific <div>
 	year := doc.Find("div:has(h1[data-testid='hero__pageTitle']) > ul.ipc-inline-list > li:first-child").Text()
 
@@ -326,7 +335,7 @@ func getMovieYear(doc *goquery.Document) (int, error) {
 	return yearInt, nil
 }
 
-func getMovieTitle(doc *goquery.Document) (string, error) {
+func (m *Manager) getMovieTitle(doc *goquery.Document) (string, error) {
 	title := doc.Find("h1[data-testid='hero__pageTitle'] > span.hero__primary-text").Text()
 
 	// Trim any whitespace from the extracted text
@@ -339,7 +348,7 @@ func getMovieTitle(doc *goquery.Document) (string, error) {
 	return title, nil
 }
 
-func downloadFile(url string) ([]byte, error) {
+func (m *Manager) downloadFile(url string) ([]byte, error) {
 	// Get the response bytes from the url
 	response, err := http.Get(url)
 	if err != nil {
