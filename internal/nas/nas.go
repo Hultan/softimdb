@@ -3,7 +3,6 @@ package nas
 import (
 	"log"
 	"os"
-	"path"
 	"slices"
 	"strings"
 
@@ -38,7 +37,17 @@ func (m Manager) GetMovies(config *config.Config) ([]string, error) {
 		return nil, err
 	}
 
-	scanDir(config.RootDir, "", "")
+	dir, err := os.Open(config.RootDir)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer dir.Close()
+
+	// Read all the file and directory names
+	dirs, err = dir.Readdirnames(0) // 0 means read all entries
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	for i, dir := range dirs {
 		if getIgnorePath(ignoredPaths, dir) {
@@ -59,31 +68,6 @@ func (m Manager) GetMovies(config *config.Config) ([]string, error) {
 	slices.Sort(result)
 
 	return result, nil
-}
-
-func scanDir(root, base, dir string) {
-	file, err := os.Open(path.Join(root, base, dir))
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	if dir != "" && getIgnorePath(ignoredPaths, dir) {
-		return
-	}
-
-	foundDirs, err := file.Readdir(0)
-	if err != nil {
-		log.Fatal(err)
-	}
-	file.Close()
-
-	dirs = append(dirs, dir)
-
-	for _, foundDir := range foundDirs {
-		if foundDir.IsDir() {
-			scanDir(root, path.Join(base, dir), foundDir.Name())
-		}
-	}
 }
 
 func (m Manager) removeMoviePaths(dirs []string, moviePaths []string) []string {
