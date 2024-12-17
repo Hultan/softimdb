@@ -93,7 +93,12 @@ func openBrowser(url string) {
 
 func findMovieFile(path string) (string, error) {
 	// Movie file extensions to look for
-	var ext = []string{"mp4", "mkv", "avi", "webm"}
+	var ext = []string{
+		"mp4",
+		"mkv",
+		"avi",
+		"webm",
+	}
 
 	f, err := os.Open(path)
 	if err != nil {
@@ -225,6 +230,8 @@ func saveMoviePoster(title string, poster []byte) (string, error) {
 		return "", fmt.Errorf("failed to create directory: %v", err)
 	}
 
+	title = cleanTitle(title)
+
 	// Define the full path for the image
 	filePath := filepath.Join(dir, fmt.Sprintf("%s.jpg", title))
 
@@ -250,4 +257,10 @@ func saveMoviePoster(title string, poster []byte) (string, error) {
 	}
 
 	return filePath, nil
+}
+
+func cleanTitle(title string) string {
+	t := strings.Replace(title, " ", "_", -1)
+	t = strings.Replace(t, "/", "-", -1)
+	return t
 }

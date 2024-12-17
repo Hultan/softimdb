@@ -15,6 +15,8 @@ import (
 	"github.com/chromedp/chromedp"
 )
 
+const constYearSelector = "div:has(h1[data-testid='hero__pageTitle']) > ul.ipc-inline-list > li:nth-child([CHILD])"
+
 // Manager represents a IMDB screen scraper.
 type Manager struct {
 	Errors []error
@@ -290,48 +292,30 @@ func (m *Manager) calcRuntime(runtimeString string) (int, error) {
 	return hours*60 + minutes, nil
 }
 
-// TODO : Replace getMovieYear with this one, that takes care of the rare
-// TODO : cases where the first LI element is not the year, but rather a
-// TODO : text like for example "Video".
-// TODO : Example URL : https://www.imdb.com/title/tt1160018/?ref_=nv_sr_srsg_0_tt_2_nm_6_in_0_q_Prarie%2520Feve
-// TODO : This function needs to be tested though...
+func (m *Manager) getMovieYear(doc *goquery.Document) (yearInt int, err error) {
+	for i := 1; i < 2; i++ {
+		selector := strings.Replace(constYearSelector, "[CHILD]", strconv.Itoa(i), -1)
+		year := doc.Find(selector).Text()
+		if yearInt, err = m.parseYear(year); err == nil {
+			break
+		}
+	}
 
-//func getMovieYear(doc *goquery.Document) (int, error) {
-//	// Find all <li> elements within the specific <ul> under the <div> with the correct <h1>
-//	liElements := doc.Find("div:has(h1[data-testid='hero__pageTitle']) > ul.ipc-inline-list > li")
-//
-//	// Iterate over each <li> element
-//	for i := 0; i < liElements.Length(); i++ {
-//		li := liElements.Eq(i).Text()
-//		li = strings.TrimSpace(li)
-//
-//		// Check if the first four characters are a valid year
-//		if len(li) >= 4 {
-//			yearStr := li[:4]
-//			yearInt, err := strconv.Atoi(yearStr)
-//			if err == nil && yearInt >= 1900 && yearInt <= 2100 {
-//				// We found a valid year, return it
-//				return yearInt, nil
-//			}
-//		}
-//	}
-//
-//	// If no valid year was found, return an error
-//	return -1, errors.New("valid year not found in list items")
-//}
+	if err != nil {
+		return -1, err
+	}
 
-func (m *Manager) getMovieYear(doc *goquery.Document) (int, error) {
-	// Use a specific selector to find the first <li> in the <ul> under the specific <div>
-	year := doc.Find("div:has(h1[data-testid='hero__pageTitle']) > ul.ipc-inline-list > li:first-child").Text()
+	return yearInt, nil
+}
 
-	// Trim any whitespace from the extracted text
+func (m *Manager) parseYear(year string) (int, error) {
 	year = strings.TrimSpace(year)
-	//year := doc.Find("ul.sc-ec65ba05-2").First().First().Text()
 	yearInt, err := strconv.Atoi(year[:4])
 	if err != nil || yearInt < 1900 || yearInt > 2100 {
 		// We retrieved an invalid release year, abort
 		return -1, err
 	}
+
 	return yearInt, nil
 }
 
