@@ -11,18 +11,19 @@ import (
 
 // Movie represents a movie in the database.
 type Movie struct {
-	Id         int     `gorm:"column:id;primary_key"`
-	Title      string  `gorm:"column:title;size:100"`
-	SubTitle   string  `gorm:"column:sub_title;size:100"`
-	Year       int     `gorm:"column:year;"`
-	ImdbRating float32 `gorm:"column:imdb_rating;"`
-	MyRating   int     `gorm:"column:my_rating;"`
-	ImdbUrl    string  `gorm:"column:imdb_url;size:1024"`
-	ImdbID     string  `gorm:"column:imdb_id;size:9"`
-	StoryLine  string  `gorm:"column:story_line;size:65535"`
-	MoviePath  string  `gorm:"column:path;size:1024"`
-	Runtime    int     `gorm:"column:length"`
-	Genres     []Genre `gorm:"-"`
+	Id         int      `gorm:"column:id;primary_key"`
+	Title      string   `gorm:"column:title;size:100"`
+	SubTitle   string   `gorm:"column:sub_title;size:100"`
+	Year       int      `gorm:"column:year;"`
+	ImdbRating float32  `gorm:"column:imdb_rating;"`
+	MyRating   int      `gorm:"column:my_rating;"`
+	ImdbUrl    string   `gorm:"column:imdb_url;size:1024"`
+	ImdbID     string   `gorm:"column:imdb_id;size:9"`
+	StoryLine  string   `gorm:"column:story_line;size:65535"`
+	MoviePath  string   `gorm:"column:path;size:1024"`
+	Runtime    int      `gorm:"column:length"`
+	Genres     []Genre  `gorm:"-"`
+	Persons    []Person `gorm:"-"`
 
 	HasImage      bool   `gorm:"-"`
 	Image         []byte `gorm:"-"`
@@ -38,8 +39,9 @@ func (m *Movie) TableName() string {
 	return "movies"
 }
 
-// SearchMovies returns all movies in the database that matches the search criteria.
-func (d *Database) SearchMovies(currentView string, searchFor string, genreId int, orderBy string) ([]*Movie, error) {
+// SearchMoviesEx returns all movies in the database that matches the search criteria.
+func (d *Database) SearchMoviesEx(currentView string, searchFor string, genreId int, orderBy string,
+	onlyNotProcessed bool) ([]*Movie, error) {
 	db, err := d.getDatabase()
 	if err != nil {
 		return nil, err
@@ -57,8 +59,12 @@ func (d *Database) SearchMovies(currentView string, searchFor string, genreId in
 		sqlOrderBy = orderBy
 	}
 
+	if genreId != -1 && onlyNotProcessed {
+		panic("onlyNotProcessed does not work with genre search")
+	}
+
 	if genreId == -1 {
-		sqlWhere, sqlArgs = getStandardSearch(searchFor)
+		sqlWhere, sqlArgs = getStandardSearch(searchFor, onlyNotProcessed)
 	} else {
 		sqlJoin, sqlWhere, sqlArgs = getGenreSearch(searchFor, genreId)
 	}
@@ -76,11 +82,20 @@ func (d *Database) SearchMovies(currentView string, searchFor string, genreId in
 			query = query.Where(sqlWhere, sqlArgs)
 		}
 	}
-	if result := query.Order(sqlOrderBy).Find(&movies); result.Error != nil {
+	query = query.Order(sqlOrderBy)
+	if onlyNotProcessed {
+		query = query.Limit(1)
+	}
+	if result := query.Find(&movies); result.Error != nil {
 		return nil, result.Error
 	}
 
 	movies, err = d.getGenresForMovies(movies)
+	if err != nil {
+		return nil, err
+	}
+
+	movies, err = d.getPersonsForMovies(movies)
 	if err != nil {
 		return nil, err
 	}
@@ -91,6 +106,11 @@ func (d *Database) SearchMovies(currentView string, searchFor string, genreId in
 	}
 
 	return movies, nil
+}
+
+// SearchMovies returns all movies in the database that matches the search criteria.
+func (d *Database) SearchMovies(currentView string, searchFor string, genreId int, orderBy string) ([]*Movie, error) {
+	return d.SearchMoviesEx(currentView, searchFor, genreId, orderBy, false)
 }
 
 // GetAllMoviePaths returns a list of all the movie paths in the database. Used when adding new movies.
@@ -112,7 +132,7 @@ func (d *Database) GetAllMoviePaths() ([]string, error) {
 	return paths, nil
 }
 
-// GetAllMovieTitles returns a list of all the movie title in the database. Used when adding new movies.
+// GetAllMovieTitles returns a list of all the movie titles in the database. Used when adding new movies.
 func (d *Database) GetAllMovieTitles() ([]string, error) {
 	db, err := d.getDatabase()
 	if err != nil {
@@ -166,6 +186,19 @@ func (d *Database) InsertMovie(movie *Movie) error {
 				}
 
 				err = d.InsertMovieGenre(movie, genre)
+				if err != nil {
+					return err
+				}
+			}
+
+			// Handle persons
+			for i := range movie.Persons {
+				person, err := d.InsertPerson(&movie.Persons[i])
+				if err != nil {
+					return err
+				}
+
+				err = d.InsertMoviePerson(movie, person)
 				if err != nil {
 					return err
 				}
@@ -245,6 +278,48 @@ func (d *Database) UpdateMovie(movie *Movie, updateGenres bool) error {
 	return nil
 }
 
+// UpdateMoviePersons update a movie with its directors, writers and actors.
+func (d *Database) UpdateMoviePersons(movie *Movie) error {
+	db, err := d.getDatabase()
+	if err != nil {
+		return err
+	}
+
+	err = db.Transaction(
+		func(tx *gorm.DB) error {
+			// Handle persons
+			for i := range movie.Persons {
+				person, err := d.GetPerson(movie.Persons[i].Name)
+				if err != nil {
+					return err
+				}
+				if person == nil {
+					person, err = d.InsertPerson(&movie.Persons[i])
+					if err != nil {
+						return err
+					}
+				}
+
+				person.Type = movie.Persons[i].Type
+
+				err = d.InsertMoviePerson(movie, person)
+				if err != nil {
+					return err
+				}
+			}
+
+			return nil
+		},
+	)
+
+	// Check transaction error
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // DeleteMovie removes a movie from the database.
 func (d *Database) DeleteMovie(rootDir string, movie *Movie) error {
 	db, err := d.getDatabase()
@@ -259,6 +334,10 @@ func (d *Database) DeleteMovie(rootDir string, movie *Movie) error {
 			}
 
 			if err = d.deleteGenresForMovie(movie); err != nil {
+				return err
+			}
+
+			if err = d.deletePersonsForMovie(movie); err != nil {
 				return err
 			}
 
@@ -323,7 +402,7 @@ func getGenreSearch(searchFor string, genreId int) (string, string, map[string]i
 	return sqlJoin, sqlWhere, sqlArgs
 }
 
-func getStandardSearch(searchFor string) (string, map[string]interface{}) {
+func getStandardSearch(searchFor string, onlyNotProcessed bool) (string, map[string]interface{}) {
 	var sqlWhere string
 	var sqlArgs map[string]interface{}
 	sqlArgs = make(map[string]interface{})
@@ -345,6 +424,15 @@ func getStandardSearch(searchFor string) (string, map[string]interface{}) {
 		}
 		sqlArgs["search"] = search
 	}
+
+	if onlyNotProcessed {
+		if sqlWhere != "" {
+			sqlWhere = "processed=false && (" + sqlWhere + ")"
+		} else {
+			sqlWhere = "processed=false"
+		}
+	}
+
 	return sqlWhere, sqlArgs
 }
 
@@ -395,6 +483,21 @@ func (d *Database) getGenresForMovies(movies []*Movie) ([]*Movie, error) {
 	return movies, nil
 }
 
+func (d *Database) getPersonsForMovies(movies []*Movie) ([]*Movie, error) {
+	// Get images for movies
+	for i := range movies {
+		movie := movies[i]
+
+		// Load persons
+		persons, err := d.GetPersonsForMovie(movie)
+		if err != nil {
+			return nil, err
+		}
+		movie.Persons = persons
+	}
+	return movies, nil
+}
+
 func (d *Database) getMovieImage(movie *Movie) {
 
 	// Get image (if it exists)
@@ -406,4 +509,22 @@ func (d *Database) getMovieImage(movie *Movie) {
 		movie.Image = img.Data
 		movie.HasImage = true
 	}
+}
+
+// SetProcessed sets the movie as processed
+func (d *Database) SetProcessed(movie *Movie) error {
+	db, err := d.getDatabase()
+	if err != nil {
+		return err
+	}
+
+	updates := make(map[string]interface{}, 1)
+
+	updates["processed"] = true
+
+	if result := db.Model(&movie).Updates(updates); result.Error != nil {
+		return result.Error
+	}
+
+	return nil
 }

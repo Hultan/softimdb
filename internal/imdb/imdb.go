@@ -13,6 +13,7 @@ import (
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/chromedp/chromedp"
+	"github.com/hultan/softimdb/internal/data"
 )
 
 const constYearSelector = "div:has(h1[data-testid='hero__pageTitle']) > ul.ipc-inline-list > li:nth-child([CHILD])"
@@ -30,6 +31,7 @@ type Movie struct {
 	Runtime   int
 	StoryLine string
 	Genres    []string
+	Persons   []data.Person
 	Poster    []byte
 }
 
@@ -75,7 +77,7 @@ func (m *Manager) getGoQueryDocument(url string) (*goquery.Document, error) {
 	defer cancel()
 
 	// Set a timeout for the context to ensure it doesn't hang
-	ctx, cancel = context.WithTimeout(ctx, 30*time.Second)
+	ctx, cancel = context.WithTimeout(ctx, 45*time.Second)
 	defer cancel()
 
 	// Get the Html from the Url
@@ -116,7 +118,7 @@ func (m *Manager) scrapeUrl(url string, ctx context.Context) (string, error) {
 				if err != nil {
 					log.Printf("Scroll attempt %d failed: %v\n", i+1, err)
 				}
-				time.Sleep(2 * time.Second) // Allow time for content to load
+				time.Sleep(3 * time.Second) // Allow time for content to load
 
 				// Check if the storyline is now visible after each scroll
 				var isVisible bool
@@ -176,6 +178,12 @@ func (m *Manager) parseGoQueryDocument(doc *goquery.Document) *Movie {
 		m.Errors = append(m.Errors, err)
 	}
 
+	// Persons
+	people, err := m.getMoviePeople(doc)
+	if err != nil {
+		m.Errors = append(m.Errors, err)
+	}
+
 	// Poster
 	poster, err := m.getMoviePoster(doc)
 	if err != nil {
@@ -189,6 +197,7 @@ func (m *Manager) parseGoQueryDocument(doc *goquery.Document) *Movie {
 		Rating:    rating,
 		StoryLine: storyLine,
 		Genres:    genres,
+		Persons:   people,
 		Poster:    poster,
 	}
 
@@ -222,7 +231,6 @@ func (m *Manager) getMovieGenres(doc *goquery.Document) ([]string, error) {
 }
 
 func (m *Manager) getMovieStoryLine(doc *goquery.Document) (string, error) {
-	fmt.Println(doc.Html())
 	storyLine := doc.Find(`div[data-testid="storyline-plot-summary"]`).Text()
 	if storyLine == "" {
 		// We retrieved an invalid storyLine, abort
@@ -265,10 +273,13 @@ func (m *Manager) calcRuntime(runtimeString string) (int, error) {
 	var err error
 	switch len(items) {
 	case 1:
-		if !strings.HasSuffix(items[0], "m") {
+		if strings.HasSuffix(items[0], "m") {
+			minutes, err = strconv.Atoi(items[0][:len(items[0])-1])
+		} else if strings.HasSuffix(items[0], "h") {
+			hours, err = strconv.Atoi(items[0][:len(items[0])-1])
+		} else {
 			return -1, errors.New(fmt.Sprintf("invalid IMDB runtime: %s", runtimeString))
 		}
-		minutes, err = strconv.Atoi(items[0][:len(items[0])-1])
 		if err != nil {
 			return -1, err
 		}
@@ -293,7 +304,7 @@ func (m *Manager) calcRuntime(runtimeString string) (int, error) {
 }
 
 func (m *Manager) getMovieYear(doc *goquery.Document) (yearInt int, err error) {
-	for i := 1; i < 2; i++ {
+	for i := 1; i <= 2; i++ {
 		selector := strings.Replace(constYearSelector, "[CHILD]", strconv.Itoa(i), -1)
 		year := doc.Find(selector).Text()
 		if yearInt, err = m.parseYear(year); err == nil {
@@ -310,7 +321,10 @@ func (m *Manager) getMovieYear(doc *goquery.Document) (yearInt int, err error) {
 
 func (m *Manager) parseYear(year string) (int, error) {
 	year = strings.TrimSpace(year)
-	yearInt, err := strconv.Atoi(year[:4])
+	if len(year) > 4 {
+		year = year[:4]
+	}
+	yearInt, err := strconv.Atoi(year)
 	if err != nil || yearInt < 1900 || yearInt > 2100 {
 		// We retrieved an invalid release year, abort
 		return -1, err
@@ -353,4 +367,40 @@ func (m *Manager) downloadFile(url string) ([]byte, error) {
 	}
 
 	return fileData, err
+}
+
+func (m *Manager) getMoviePeople(doc *goquery.Document) ([]data.Person, error) {
+	// Directors
+	var persons []data.Person
+	doc.Find(".sc-70a366cc-3 li.ipc-metadata-list__item:contains('Director') ." +
+		"ipc-metadata-list-item__list-content-item--link").Each(
+		func(i int, s *goquery.Selection) {
+			name := s.Text()
+			persons = append(persons, data.Person{
+				Name: name,
+				Type: data.Director,
+			})
+		})
+
+	// Writers
+	doc.Find(".sc-70a366cc-3 li.ipc-metadata-list__item:contains('Writers') ." +
+		"ipc-metadata-list-item__list-content-item--link").Each(
+		func(i int, s *goquery.Selection) {
+			name := s.Text()
+			persons = append(persons, data.Person{
+				Name: name,
+				Type: data.Writer,
+			})
+		})
+
+	// Actors
+	doc.Find(".sc-cd7dc4b7-5 .sc-cd7dc4b7-1").Each(
+		func(i int, s *goquery.Selection) {
+			name := s.Text()
+			persons = append(persons, data.Person{
+				Name: name,
+				Type: data.Actor,
+			})
+		})
+	return persons, nil
 }
