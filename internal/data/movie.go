@@ -63,7 +63,10 @@ func (d *Database) SearchMoviesEx(currentView string, searchFor string, genreId 
 		panic("onlyNotProcessed does not work with genre search")
 	}
 
-	if genreId == -1 {
+	if strings.HasPrefix(searchFor, "actor:") {
+		searchFor = searchFor[len("actor:"):]
+		sqlJoin, sqlWhere, sqlArgs = getPersonSearch(searchFor)
+	} else if genreId == -1 {
 		sqlWhere, sqlArgs = getStandardSearch(searchFor, onlyNotProcessed)
 	} else {
 		sqlJoin, sqlWhere, sqlArgs = getGenreSearch(searchFor, genreId)
@@ -399,6 +402,19 @@ func getGenreSearch(searchFor string, genreId int) (string, string, map[string]i
 		sqlArgs["search"] = "%" + searchFor + "%"
 		sqlArgs["genre"] = genreId
 	}
+	return sqlJoin, sqlWhere, sqlArgs
+}
+
+func getPersonSearch(searchFor string) (string, string, map[string]interface{}) {
+	var sqlWhere, sqlJoin string
+	var sqlArgs map[string]interface{}
+	sqlArgs = make(map[string]interface{})
+
+	sqlJoin = "JOIN movie_person on movies.id = movie_person.movie_id "
+	sqlJoin += "JOIN person on person.id = movie_person.person_id"
+	sqlWhere = "person.name = @searchFor"
+	sqlArgs["searchFor"] = searchFor
+
 	return sqlJoin, sqlWhere, sqlArgs
 }
 
