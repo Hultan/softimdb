@@ -11,12 +11,11 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/hultan/dialog"
-	"github.com/hultan/softimdb/internal/config"
-
 	"github.com/gogf/gf/v2/text/gstr"
 	"github.com/gotk3/gotk3/gdk"
 	"github.com/gotk3/gotk3/gtk"
+	"github.com/hultan/dialog"
+	"github.com/hultan/softimdb/internal/config"
 
 	"github.com/hultan/softimdb/internal/builder"
 	"github.com/hultan/softimdb/internal/data"
@@ -40,6 +39,8 @@ type movieWindow struct {
 	posterImage              *gtk.Image
 	runtimeEntry             *gtk.Entry
 	deleteButton             *gtk.Button
+	castAndCrewList          *gtk.ListBox
+	movieStack               *gtk.Stack
 
 	movieInfo *movieInfo
 	movie     *data.Movie
@@ -105,9 +106,11 @@ func newMovieWindow(builder *builder.Builder, parent gtk.IWindow, db *data.Datab
 	m.packEntry = builder.GetObject("packEntry").(*gtk.Entry)
 	m.posterImage = builder.GetObject("posterImage").(*gtk.Image)
 	m.runtimeEntry = builder.GetObject("runtimeEntry").(*gtk.Entry)
+	m.castAndCrewList = builder.GetObject("castAndCrewList").(*gtk.ListBox)
+	m.movieStack = builder.GetObject("movieStack").(*gtk.Stack)
+
 	eventBox := builder.GetObject("imageEventBox").(*gtk.EventBox)
 	eventBox.Connect("button-press-event", m.onImageClick)
-
 	m.titleEntry.Connect("focus-out-event", m.onTitleEntryFocusOut)
 	m.imdbUrlEntry.Connect("focus-out-event", m.onIMDBEntryFocusOut)
 
@@ -164,6 +167,9 @@ func (m *movieWindow) open(info *movieInfo, movie *data.Movie, closeCallback fun
 	} else {
 		m.updateImage(m.movieInfo.image)
 	}
+
+	m.fillCastAndCrewPage()
+	m.movieStack.SetVisibleChildName("MoviePage")
 
 	m.window.ShowAll()
 	m.imdbUrlEntry.GrabFocus()
@@ -411,7 +417,10 @@ func (m *movieWindow) findSimilarMovies(title string) []movie {
 		if equalsI(title, movieTitle) {
 			l = 1
 		}
-		movies = append(movies, movie{l, movieTitle})
+		movies = append(movies, movie{
+			l,
+			movieTitle,
+		})
 	}
 	slices.SortFunc(movies, func(a, b movie) int {
 		return a.distance - b.distance
@@ -434,4 +443,65 @@ func (m *movieWindow) hasSubtitles(dir string) bool {
 	}
 
 	return false
+}
+
+func (m *movieWindow) fillCastAndCrewPage() {
+	// Clear the list before adding new items
+	m.castAndCrewList.GetChildren().Foreach(func(item interface{}) {
+		m.castAndCrewList.Remove(item.(gtk.IWidget))
+	})
+
+	// Director(s)
+	label := getLabel("Director(s)", true)
+	m.castAndCrewList.Add(label)
+
+	for _, person := range m.movie.Persons {
+		if person.Type == data.Director {
+			m.castAndCrewList.Add(getLabel(person.Name, false))
+		}
+	}
+
+	label = getLabel("", false)
+	m.castAndCrewList.Add(label)
+
+	// Writer(s)
+	label = getLabel("Writer(s)", true)
+	m.castAndCrewList.Add(label)
+
+	for _, person := range m.movie.Persons {
+		if person.Type == data.Writer {
+			m.castAndCrewList.Add(getLabel(person.Name, false))
+		}
+	}
+
+	label = getLabel("", false)
+	m.castAndCrewList.Add(label)
+
+	// Actor(s)
+	label = getLabel("Actor(s)", true)
+	m.castAndCrewList.Add(label)
+
+	for _, person := range m.movie.Persons {
+		if person.Type == data.Actor {
+			m.castAndCrewList.Add(getLabel(person.Name, false))
+		}
+	}
+}
+
+func getLabel(text string, header bool) *gtk.Label {
+	label, err := gtk.LabelNew("")
+	if err != nil {
+		log.Fatal(err)
+	}
+	size := 15
+	weight := "normal"
+	color := "#f1e3ae"
+	if header {
+		size = 18
+		weight = "bold"
+		color = "#91834e"
+	}
+	m := fmt.Sprintf("<span foreground='%s' weight='%s' size='%dpt'>%s</span>", color, weight, size, text)
+	label.SetMarkup(m)
+	return label
 }
