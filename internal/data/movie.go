@@ -34,6 +34,13 @@ type Movie struct {
 	NeedsSubtitle bool   `gorm:"column:needsSubtitle"`
 }
 
+var personType = map[string]int{
+	"person":   -1,
+	"director": 0,
+	"writer":   1,
+	"actor":    2,
+}
+
 // TableName returns the name of the table.
 func (m *Movie) TableName() string {
 	return "movies"
@@ -63,9 +70,11 @@ func (d *Database) SearchMoviesEx(currentView string, searchFor string, genreId 
 		panic("onlyNotProcessed does not work with genre search")
 	}
 
-	if strings.HasPrefix(searchFor, "actor:") {
-		searchFor = searchFor[len("actor:"):]
-		sqlJoin, sqlWhere, sqlArgs = getPersonSearch(searchFor)
+	parts := strings.Split(searchFor, ":")
+	typ, ok := personType[parts[0]]
+	if ok {
+		searchFor = searchFor[len(parts[0])+1:]
+		sqlJoin, sqlWhere, sqlArgs = getPersonSearch(searchFor, typ)
 	} else if genreId == -1 {
 		sqlWhere, sqlArgs = getStandardSearch(searchFor, onlyNotProcessed)
 	} else {
@@ -89,7 +98,8 @@ func (d *Database) SearchMoviesEx(currentView string, searchFor string, genreId 
 	if onlyNotProcessed {
 		query = query.Limit(1)
 	}
-	if result := query.Find(&movies); result.Error != nil {
+
+	if result := query.Distinct().Find(&movies); result.Error != nil {
 		return nil, result.Error
 	}
 
@@ -405,15 +415,19 @@ func getGenreSearch(searchFor string, genreId int) (string, string, map[string]i
 	return sqlJoin, sqlWhere, sqlArgs
 }
 
-func getPersonSearch(searchFor string) (string, string, map[string]interface{}) {
+func getPersonSearch(searchFor string, typ int) (string, string, map[string]interface{}) {
 	var sqlWhere, sqlJoin string
-	var sqlArgs map[string]interface{}
-	sqlArgs = make(map[string]interface{})
+	var sqlArgs = make(map[string]interface{})
 
 	sqlJoin = "JOIN movie_person on movies.id = movie_person.movie_id "
 	sqlJoin += "JOIN person on person.id = movie_person.person_id"
-	sqlWhere = "person.name = @searchFor"
-	sqlArgs["searchFor"] = searchFor
+	sqlWhere = "person.name like @search"
+	sqlArgs["search"] = "%" + searchFor + "%"
+
+	if typ >= 0 && typ <= 2 {
+		sqlWhere += " AND movie_person.type = @type"
+		sqlArgs["type"] = typ
+	}
 
 	return sqlJoin, sqlWhere, sqlArgs
 }

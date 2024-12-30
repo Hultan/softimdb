@@ -433,7 +433,11 @@ year:		// Searches release year field
 pack:		// Searches pack field
 imdb:		// Searches imdb rating field
 myrating:	// Searches my rating field
-</property>
+
+director:	// Searches movies directed by
+writer: 		// Searches movies written by
+actor:		// Searches movies with an actor
+person:		// Searches movies with director, writer or actor</property>
                   </object>
                 </child>
               </object>
