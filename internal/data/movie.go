@@ -457,7 +457,7 @@ func getStandardSearch(searchFor string, onlyNotProcessed bool) (string, map[str
 
 	if onlyNotProcessed {
 		if sqlWhere != "" {
-			sqlWhere = "processed=false && (" + sqlWhere + ")"
+			sqlWhere = "processed=false AND (" + sqlWhere + ")"
 		} else {
 			sqlWhere = "processed=false"
 		}
