@@ -25,6 +25,7 @@ type movieInfo struct {
 	toWatch       bool
 	needsSubtitle bool
 
+	persons         []data.Person
 	genres          string // Info field only
 	image           []byte
 	imageHasChanged bool
@@ -66,6 +67,9 @@ func (m *movieInfo) toDatabase(movie *data.Movie) {
 	movie.ImdbUrl = m.imdbUrl
 	movie.ImdbRating = m.getImdbRating()
 	movie.Genres = m.getGenres(m.genres)
+	for _, person := range m.persons {
+		movie.Persons = append(movie.Persons, person)
+	}
 	if m.imageHasChanged {
 		movie.HasImage = true
 		movie.ImagePath = ""

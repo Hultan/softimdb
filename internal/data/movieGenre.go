@@ -22,9 +22,11 @@ func (d *Database) InsertMovieGenre(movie *Movie, Genre *Genre) error {
 		return err
 	}
 
-	movieGenre := MovieGenre{MovieId: movie.Id, GenreId: Genre.Id}
+	movieGenre := MovieGenre{
+		MovieId: movie.Id,
+		GenreId: Genre.Id,
+	}
 
-	// If it does not, create it
 	if result := db.Create(movieGenre); result.Error != nil {
 		return result.Error
 	}
@@ -37,11 +39,32 @@ func (d *Database) RemoveMovieGenre(movie *Movie, genre *Genre) error {
 	if err != nil {
 		return err
 	}
-	sql := fmt.Sprintf("delete from movie_genre where movie_id = %v and genre_id = %v", movie.Id, genre.Id)
+
+	sqlString := "delete from movie_genre where movie_id = %v and genre_id = %v"
+	sql := fmt.Sprintf(sqlString, movie.Id, genre.Id)
 	tx := db.Exec(sql)
 
 	if tx.Error != nil {
 		return tx.Error
+	}
+
+	return nil
+}
+
+// getOrInsertMovieGenre creates a movie_genre record if it does not exist.
+func (d *Database) getOrInsertMovieGenre(movie *Movie, genre *Genre) error {
+	db, err := d.getDatabase()
+	if err != nil {
+		return err
+	}
+
+	movieGenre := MovieGenre{
+		MovieId: movie.Id,
+		GenreId: genre.Id,
+	}
+
+	if result := db.FirstOrCreate(movieGenre); result.Error != nil {
+		return result.Error
 	}
 
 	return nil

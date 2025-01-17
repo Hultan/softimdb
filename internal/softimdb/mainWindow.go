@@ -407,7 +407,7 @@ func (m *MainWindow) searchGenre(item *gtk.RadioMenuItem) {
 func (m *MainWindow) saveMovieInfo(movieInfo *movieInfo, movie *data.Movie) {
 	movieInfo.toDatabase(movie)
 
-	err := m.database.UpdateMovie(movie, true)
+	err := m.database.UpdateMovie(movie)
 	if err != nil {
 		reportError(err)
 		return

@@ -60,7 +60,6 @@ func (d *Database) InsertPerson(person *Person) (*Person, error) {
 
 	person.Name = strings.Trim(person.Name, " \t\n")
 
-	// If it does not, create it
 	if result := db.Create(person); result.Error != nil {
 		return nil, result.Error
 	}

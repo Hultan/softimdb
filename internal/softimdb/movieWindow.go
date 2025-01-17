@@ -122,6 +122,7 @@ func (m *movieWindow) open(info *movieInfo, movie *data.Movie, closeCallback fun
 
 	if info == nil {
 		info = &movieInfo{}
+		// TODO : Disable cast and crew tab here
 	}
 
 	scrapeImdbOnce = false
@@ -168,7 +169,9 @@ func (m *movieWindow) open(info *movieInfo, movie *data.Movie, closeCallback fun
 		m.updateImage(m.movieInfo.image)
 	}
 
-	m.fillCastAndCrewPage()
+	if m.movie != nil {
+		m.fillCastAndCrewPage()
+	}
 	m.movieStack.SetVisibleChildName("MoviePage")
 
 	m.window.ShowAll()
@@ -242,6 +245,14 @@ func (m *movieWindow) saveMovie() bool {
 	m.movieInfo.storyLine = storyLine
 	m.movieInfo.genres = getEntryText(m.genresEntry)
 	// Poster is set when clicking on the image
+
+	//for _, person := range m.movie.Persons {
+	//	p := data.Person{
+	//		Name: person.Name,
+	//		Type: person.Type,
+	//	}
+	//	m.movieInfo.persons = append(m.movieInfo.persons, p)
+	//}
 
 	return true
 }
@@ -369,6 +380,13 @@ func (m *movieWindow) onIMDBEntryFocusOut() {
 		m.updateImage(fileData)
 		m.movieInfo.image = fileData
 		m.movieInfo.imageHasChanged = true
+
+		var p data.Person
+		for _, person := range movieImdb.Persons {
+			p.Name = person.Name
+			p.Type = data.PersonType(person.Type)
+			m.movieInfo.persons = append(m.movieInfo.persons, p)
+		}
 	}
 
 	if err != nil {
