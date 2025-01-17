@@ -63,7 +63,7 @@ func (d *Database) getOrInsertMovieGenre(movie *Movie, genre *Genre) error {
 		GenreId: genre.Id,
 	}
 
-	if result := db.FirstOrCreate(movieGenre); result.Error != nil {
+	if result := db.FirstOrCreate(&movieGenre); result.Error != nil {
 		return result.Error
 	}
 
