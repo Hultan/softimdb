@@ -205,13 +205,26 @@ func (d *Database) InsertMovie(movie *Movie) error {
 			}
 
 			// Handle persons
-			for i := range movie.Persons {
-				person, err := d.InsertPerson(&movie.Persons[i])
+			for _, person := range movie.Persons {
+				// To prevent a problem with the type getting overwritten
+				// with the zero value (0 = Director) for existing persons
+				t := person.Type
+
+				p, err := d.GetPerson(person.Name)
 				if err != nil {
 					return err
 				}
 
-				err = d.InsertMoviePerson(movie, person)
+				if p == nil {
+					p, err = d.InsertPerson(&person)
+					if err != nil {
+						return err
+					}
+				}
+
+				p.Type = t
+
+				err = d.InsertMoviePerson(movie, p)
 				if err != nil {
 					return err
 				}
@@ -230,7 +243,7 @@ func (d *Database) InsertMovie(movie *Movie) error {
 }
 
 // UpdateMovie update a movie.
-func (d *Database) UpdateMovie(movie *Movie, updateGenres bool) error {
+func (d *Database) UpdateMovie(movie *Movie) error {
 	db, err := d.getDatabase()
 	if err != nil {
 		return err
@@ -257,10 +270,6 @@ func (d *Database) UpdateMovie(movie *Movie, updateGenres bool) error {
 				return result.Error
 			}
 
-			if !updateGenres {
-				return nil
-			}
-
 			// Handle genres
 			for i := range movie.Genres {
 				genre, err := d.getOrInsertGenre(&movie.Genres[i])
@@ -268,12 +277,7 @@ func (d *Database) UpdateMovie(movie *Movie, updateGenres bool) error {
 					return err
 				}
 
-				err = d.RemoveMovieGenre(movie, genre)
-				if err != nil {
-					return err
-				}
-
-				err = d.InsertMovieGenre(movie, genre)
+				err = d.getOrInsertMovieGenre(movie, genre)
 				if err != nil {
 					return err
 				}

@@ -13,17 +13,27 @@ import (
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/chromedp/chromedp"
-	"github.com/hultan/softimdb/internal/data"
 )
 
 const constYearSelector = "div:has(h1[data-testid='hero__pageTitle']) > ul.ipc-inline-list > li:nth-child([CHILD])"
+
+const (
+	Director int = iota
+	Writer
+	Actor
+)
 
 // Manager represents a IMDB screen scraper.
 type Manager struct {
 	Errors []error
 }
 
-type Movie struct {
+type PersonImdb struct {
+	Name string
+	Type int
+}
+
+type MovieImdb struct {
 	// Done
 	Title     string
 	Year      int
@@ -31,7 +41,7 @@ type Movie struct {
 	Runtime   int
 	StoryLine string
 	Genres    []string
-	Persons   []data.Person
+	Persons   []PersonImdb
 	Poster    []byte
 }
 
@@ -41,7 +51,7 @@ func ManagerNew() *Manager {
 }
 
 // GetMovie fills in some IMDB information on the Movie instance passed.
-func (m *Manager) GetMovie(url string) (*Movie, error) {
+func (m *Manager) GetMovie(url string) (*MovieImdb, error) {
 	// Clear errors
 	m.Errors = nil
 
@@ -141,7 +151,7 @@ func (m *Manager) scrapeUrl(url string, ctx context.Context) (string, error) {
 	return pageHTML, err
 }
 
-func (m *Manager) parseGoQueryDocument(doc *goquery.Document) *Movie {
+func (m *Manager) parseGoQueryDocument(doc *goquery.Document) *MovieImdb {
 	// Title
 	title, err := m.getMovieTitle(doc)
 	if err != nil {
@@ -190,7 +200,7 @@ func (m *Manager) parseGoQueryDocument(doc *goquery.Document) *Movie {
 		m.Errors = append(m.Errors, err)
 	}
 
-	info := &Movie{
+	info := &MovieImdb{
 		Title:     title,
 		Year:      year,
 		Runtime:   runtime,
@@ -369,16 +379,17 @@ func (m *Manager) downloadFile(url string) ([]byte, error) {
 	return fileData, err
 }
 
-func (m *Manager) getMoviePeople(doc *goquery.Document) ([]data.Person, error) {
+func (m *Manager) getMoviePeople(doc *goquery.Document) ([]PersonImdb, error) {
+	var persons []PersonImdb
+
 	// Directors
-	var persons []data.Person
 	doc.Find(".sc-70a366cc-3 li.ipc-metadata-list__item:contains('Director') ." +
 		"ipc-metadata-list-item__list-content-item--link").Each(
 		func(i int, s *goquery.Selection) {
 			name := s.Text()
-			persons = append(persons, data.Person{
+			persons = append(persons, PersonImdb{
 				Name: name,
-				Type: data.Director,
+				Type: Director,
 			})
 		})
 
@@ -387,9 +398,9 @@ func (m *Manager) getMoviePeople(doc *goquery.Document) ([]data.Person, error) {
 		"ipc-metadata-list-item__list-content-item--link").Each(
 		func(i int, s *goquery.Selection) {
 			name := s.Text()
-			persons = append(persons, data.Person{
+			persons = append(persons, PersonImdb{
 				Name: name,
-				Type: data.Writer,
+				Type: Writer,
 			})
 		})
 
@@ -397,10 +408,11 @@ func (m *Manager) getMoviePeople(doc *goquery.Document) ([]data.Person, error) {
 	doc.Find(".sc-cd7dc4b7-5 .sc-cd7dc4b7-1").Each(
 		func(i int, s *goquery.Selection) {
 			name := s.Text()
-			persons = append(persons, data.Person{
+			persons = append(persons, PersonImdb{
 				Name: name,
-				Type: data.Actor,
+				Type: Actor,
 			})
 		})
+
 	return persons, nil
 }
