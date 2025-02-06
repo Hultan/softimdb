@@ -1,13 +1,11 @@
 package main
 
 import (
-	"fmt"
 	"math/rand"
 	"time"
 
 	"github.com/hultan/softimdb/internal/config"
 	"github.com/hultan/softimdb/internal/data"
-	"github.com/hultan/softimdb/internal/imdb"
 )
 
 func main() {
@@ -34,48 +32,48 @@ func main() {
 }
 
 func updateMovie(quitChannel chan bool) {
-	db, err := openDatabase()
-	if err != nil {
-		panic(err)
-	}
-	defer db.CloseDatabase()
-
-	movies, err := db.SearchMoviesEx("all", "", -1, "id", true)
-	if err != nil {
-		panic(err)
-	}
-
-	if len(movies) == 0 {
-		quitChannel <- false
-		return
-	}
-
-	fmt.Println("=======================")
-	fmt.Println(movies[0].Title)
-	fmt.Println("=======================")
-
-	manager := imdb.ManagerNew()
-	movie, err := manager.GetMovie(movies[0].ImdbUrl)
-	if err != nil {
-		//panic(err)
-	}
-	if movie == nil {
-		panic(err)
-	}
-
-	movies[0].Persons = movie.Persons
-
-	err = db.UpdateMoviePersons(movies[0])
-	if err != nil {
-		panic(err)
-	}
-
-	err = db.SetProcessed(movies[0])
-	if err != nil {
-		panic(err)
-	}
-
-	quitChannel <- true
+	//db, err := openDatabase()
+	//if err != nil {
+	//	panic(err)
+	//}
+	//defer db.CloseDatabase()
+	//
+	//movies, err := db.SearchMoviesEx("all", "", -1, "id", true)
+	//if err != nil {
+	//	panic(err)
+	//}
+	//
+	//if len(movies) == 0 {
+	//	quitChannel <- false
+	//	return
+	//}
+	//
+	//fmt.Println("=======================")
+	//fmt.Println(movies[0].Title)
+	//fmt.Println("=======================")
+	//
+	//manager := imdb.ManagerNew()
+	//movie, err := manager.GetMovie(movies[0].ImdbUrl)
+	//if err != nil {
+	//	//panic(err)
+	//}
+	//if movie == nil {
+	//	panic(err)
+	//}
+	//
+	//movies[0].Persons = movie.Persons
+	//
+	//err = db.UpdateMoviePersons(movies[0])
+	//if err != nil {
+	//	panic(err)
+	//}
+	//
+	//err = db.SetProcessed(movies[0])
+	//if err != nil {
+	//	panic(err)
+	//}
+	//
+	//quitChannel <- true
 }
 
 func openDatabase() (*data.Database, error) {

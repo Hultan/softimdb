@@ -7,7 +7,6 @@ import (
 	"html"
 	"image"
 	"image/jpeg"
-	"image/png"
 	"log"
 	"os"
 	"os/exec"
@@ -181,7 +180,7 @@ func getCorrectImageSize(fileName string) []byte {
 	return data
 }
 
-// resizeImage resizes the image to 190x280 and converts it to a PNG file
+// resizeImage resizes the image to 190x280 and converts it to a JPG file
 func resizeImage(imgData []byte) []byte {
 	img, _, err := image.Decode(bytes.NewReader(imgData))
 	if err != nil {
@@ -190,7 +189,7 @@ func resizeImage(imgData []byte) []byte {
 	}
 	imgResized := resize.Resize(imageWidth, imageHeight, img, resize.Lanczos2)
 	buf := new(bytes.Buffer)
-	err = png.Encode(buf, imgResized)
+	err = jpeg.Encode(buf, imgResized, &jpeg.Options{Quality: 85})
 	if err != nil {
 		reportError(err)
 		return nil

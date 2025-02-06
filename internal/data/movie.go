@@ -496,7 +496,7 @@ func (d *Database) getImagesForMovies(movies []*Movie) ([]*Movie, error) {
 
 		// Image is not in cache, so load it from database
 		// and store it in cache
-		d.getMovieImage(movie)
+		d.getImageForMovie(movie)
 		d.cache.save(movie.Id, movie.Image)
 	}
 	return movies, nil
@@ -532,7 +532,7 @@ func (d *Database) getPersonsForMovies(movies []*Movie) ([]*Movie, error) {
 	return movies, nil
 }
 
-func (d *Database) getMovieImage(movie *Movie) {
+func (d *Database) getImageForMovie(movie *Movie) {
 
 	// Get image (if it exists)
 	if movie.ImageId > 0 {

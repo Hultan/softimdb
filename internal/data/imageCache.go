@@ -8,7 +8,7 @@ type ImageCache struct {
 // imageCacheNew creates a new ImageCache.
 func imageCacheNew() *ImageCache {
 	cache := new(ImageCache)
-	cache.data = make(map[int][]byte, 1000)
+	cache.data = make(map[int][]byte, 2000)
 
 	return cache
 }
