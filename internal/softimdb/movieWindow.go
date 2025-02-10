@@ -137,6 +137,10 @@ func (m *movieWindow) open(info *movieInfo, movie *data.Movie, closeCallback fun
 		showSimilarOnce = true
 	}
 
+	// We show the window here as well, since we are going to the
+	// database to load person below, and that causes a short delay
+	m.window.ShowAll()
+
 	// Load persons for movie (they are no longer loaded in the main load)
 	persons, err := m.db.GetPersonsForMovie(movie)
 	if err != nil {
