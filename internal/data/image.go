@@ -16,11 +16,56 @@ type image struct {
 	Data []byte `gorm:"column:image;"`
 }
 
-const imageCache = "/home/per/.cache/"
+const imageCachePath = "/home/per/.cache/"
 
 // TableName returns the name of the table.
 func (i *image) TableName() string {
 	return "image"
+}
+
+// createImage inserts an image into the database.
+func (d *Database) createImage(image *image) error {
+	db, err := d.getDatabase()
+	if err != nil {
+		return err
+	}
+	if result := db.Create(image); result.Error != nil {
+		return result.Error
+	}
+
+	return nil
+}
+
+// readImage returns an image from the database.
+func (d *Database) readImage(id int) (*image, error) {
+	image := image{}
+
+	// Load from cache
+	cachePath := path.Join(imageCachePath, "softimdb", fmt.Sprintf("%d.jpg", id))
+	if d.existCachedImage(cachePath) {
+		fmt.Println("Loading cached image : ", fmt.Sprintf("%d.jpg", id))
+		image.Id = id
+		err := d.getCachedImage(&image, cachePath)
+		if err == nil {
+			return &image, nil
+		}
+	}
+
+	fmt.Println("Loading image from database : ", fmt.Sprintf("%d.png", id))
+	db, err := d.getDatabase()
+	if err != nil {
+		return nil, err
+	}
+	if result := db.Where("Id=?", id).First(&image); result.Error != nil {
+		return nil, result.Error
+	}
+
+	// Store in cache
+	if !d.existCachedImage(cachePath) {
+		d.storeCachedImage(&image, cachePath)
+	}
+
+	return &image, nil
 }
 
 // UpdateImage replaces an image in the database.
@@ -56,38 +101,6 @@ func (d *Database) UpdateImage(movie *Movie, imageData []byte) error {
 	return nil
 }
 
-// getImage returns an image from the database.
-func (d *Database) getImage(id int) (*image, error) {
-	image := image{}
-
-	// Load from cache
-	cachePath := path.Join(imageCache, "softimdb", fmt.Sprintf("%d.jpg", id))
-	if d.existCachedImage(cachePath) {
-		fmt.Println("Loading cached image : ", fmt.Sprintf("%d.jpg", id))
-		image.Id = id
-		err := d.getCachedImage(&image, cachePath)
-		if err == nil {
-			return &image, nil
-		}
-	}
-
-	fmt.Println("Loading image from database : ", fmt.Sprintf("%d.png", id))
-	db, err := d.getDatabase()
-	if err != nil {
-		return nil, err
-	}
-	if result := db.Where("Id=?", id).First(&image); result.Error != nil {
-		return nil, result.Error
-	}
-
-	// Store in cache
-	if !d.existCachedImage(cachePath) {
-		d.storeCachedImage(&image, cachePath)
-	}
-
-	return &image, nil
-}
-
 // deleteImage inserts an image into the database.
 func (d *Database) deleteImage(movie *Movie) error {
 	db, err := d.getDatabase()
@@ -102,47 +115,9 @@ func (d *Database) deleteImage(movie *Movie) error {
 	return nil
 }
 
-// insertImage inserts an image into the database.
-func (d *Database) insertImage(image *image) error {
-	db, err := d.getDatabase()
-	if err != nil {
-		return err
-	}
-	if result := db.Create(image); result.Error != nil {
-		return result.Error
-	}
-
-	return nil
-}
-
 //
 // Cached images
 //
-
-func (d *Database) storeCachedImage(image *image, cachePath string) {
-	if !d.existCachedImage(path.Join(imageCache, "softimdb")) {
-		err := os.Mkdir(path.Join(imageCache, "softimdb"), os.ModePerm)
-		if err != nil {
-			return
-		}
-	}
-
-	file, err := os.Create(cachePath)
-	if err != nil {
-		return
-	}
-	defer func() {
-		err = file.Close()
-		if err != nil {
-			log.Print(err)
-		}
-	}()
-
-	_, err = file.Write(image.Data)
-	if err != nil {
-		return
-	}
-}
 
 // existCachedImage returns true if an image exists in the cache.
 func (d *Database) existCachedImage(cachePath string) bool {
@@ -171,4 +146,29 @@ func (d *Database) getCachedImage(image *image, cachePath string) error {
 	}
 	image.Data = data
 	return nil
+}
+
+func (d *Database) storeCachedImage(image *image, cachePath string) {
+	if !d.existCachedImage(path.Join(imageCachePath, "softimdb")) {
+		err := os.Mkdir(path.Join(imageCachePath, "softimdb"), os.ModePerm)
+		if err != nil {
+			return
+		}
+	}
+
+	file, err := os.Create(cachePath)
+	if err != nil {
+		return
+	}
+	defer func() {
+		err = file.Close()
+		if err != nil {
+			log.Print(err)
+		}
+	}()
+
+	_, err = file.Write(image.Data)
+	if err != nil {
+		return
+	}
 }

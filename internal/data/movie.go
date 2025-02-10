@@ -180,7 +180,7 @@ func (d *Database) InsertMovie(movie *Movie) error {
 			// Insert image
 			if movie.HasImage && len(movie.Image) > 0 {
 				image := image{Data: movie.Image}
-				err = d.insertImage(&image)
+				err = d.createImage(&image)
 				if err != nil {
 					return err
 				}
@@ -536,7 +536,7 @@ func (d *Database) getImageForMovie(movie *Movie) {
 
 	// Get image (if it exists)
 	if movie.ImageId > 0 {
-		img, err := d.getImage(movie.ImageId)
+		img, err := d.readImage(movie.ImageId)
 		if err != nil {
 			return
 		}

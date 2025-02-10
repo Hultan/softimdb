@@ -2,8 +2,8 @@ package softimdb
 
 const (
 	applicationTitle     = "SoftImdb"
-	applicationVersion   = "v 2.7.9"
-	applicationCopyRight = "©SoftTeam AB, 2020"
+	applicationVersion   = "v 2.8.0"
+	applicationCopyRight = "©SoftTeam AB, 2025"
 	listMargin           = 3
 	listSpacing          = 0
 	imageWidth           = 190
