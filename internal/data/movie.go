@@ -100,7 +100,7 @@ func (d *Database) SearchMoviesEx(currentView string, searchFor string, genreId 
 		query = query.Limit(1)
 	}
 
-	query.Debug().Find(&movies)
+	// query.Debug().Find(&movies)
 
 	if result := query.Distinct().Find(&movies); result.Error != nil {
 		return nil, result.Error
@@ -515,7 +515,7 @@ func (d *Database) getGenresForMovies(movies []*Movie) ([]*Movie, error) {
 	return movies, nil
 }
 
-func (d *Database) getPersonsForMovies(movies []*Movie) ([]*Movie, error) {
+func (d *Database) GetPersonsForMovies(movies []*Movie) ([]*Movie, error) {
 	// Get images for movies
 	for i := range movies {
 		movie := movies[i]

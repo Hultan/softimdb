@@ -137,6 +137,13 @@ func (m *movieWindow) open(info *movieInfo, movie *data.Movie, closeCallback fun
 		showSimilarOnce = true
 	}
 
+	// Load persons for movie (they are no longer loaded in the main load)
+	persons, err := m.db.GetPersonsForMovie(movie)
+	if err != nil {
+		return
+	}
+	movie.Persons = persons
+
 	m.movie = movie
 	m.movieInfo = info
 	m.closeCallback = closeCallback
