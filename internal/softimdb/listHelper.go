@@ -13,10 +13,6 @@ import (
 type ListHelper struct {
 }
 
-func ListHelperNew() *ListHelper {
-	return new(ListHelper)
-}
-
 // CreateMovieCard creates a movie card (a gtk.Frame) to be placed in a gtk.FlowBox
 func (l *ListHelper) CreateMovieCard(movie *data.Movie) *gtk.Frame {
 	// Create a gtk.Frame to contain the movie card and provide it with a border

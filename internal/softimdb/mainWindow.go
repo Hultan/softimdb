@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	"github.com/gotk3/gotk3/gdk"
+	"github.com/gotk3/gotk3/glib"
 	"github.com/gotk3/gotk3/gtk"
 	"github.com/hultan/dialog"
 
@@ -293,7 +294,7 @@ func (m *MainWindow) fillMovieList(searchFor string, categoryId int, sortBy stri
 		log.Fatal(err)
 	}
 
-	listHelper := ListHelperNew()
+	listHelper := &ListHelper{}
 	clearFlowBox(m.movieList)
 	runtime.GC()
 
@@ -310,15 +311,48 @@ func (m *MainWindow) fillMovieList(searchFor string, categoryId int, sortBy stri
 	}
 	gtk.AddProviderForScreen(screen, cssProvider, gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
 
-	for i := range movies {
-		movie := movies[i]
-		m.movies[movie.Id] = movie
-		card := listHelper.CreateMovieCard(movie)
-		m.movieList.Add(card)
-		card.SetName("movie_" + strconv.Itoa(movie.Id))
+	numMovies := 30
+	if len(movies) < numMovies {
+		numMovies = len(movies)
 	}
 
+	for i := 0; i < numMovies; i++ {
+		movie := movies[i]
+		m.movies[movie.Id] = movie
+		m.addMovieToList(listHelper, movie, false)
+	}
 	m.updateCountLabel(len(movies))
+
+	m.window.ShowAll()
+
+	go func() {
+		for i := numMovies; i < len(movies); i++ {
+			movie := movies[i]
+			m.movies[movie.Id] = movie
+			m.addMovieToList(listHelper, movie, true)
+		}
+
+		glib.IdleAdd(func() bool {
+			m.movieList.ShowAll()
+			m.updateCountLabel(len(movies))
+			return false
+		})
+	}()
+}
+
+func (m *MainWindow) addMovieToList(listHelper *ListHelper, movie *data.Movie, background bool) {
+	if background {
+		glib.IdleAdd(func() bool {
+			card := listHelper.CreateMovieCard(movie)
+			card.SetName("movie_" + strconv.Itoa(movie.Id))
+			m.movieList.Add(card)
+			return false
+		})
+	} else {
+		card := listHelper.CreateMovieCard(movie)
+		card.SetName("movie_" + strconv.Itoa(movie.Id))
+		m.movieList.Add(card)
+	}
 }
 
 func (m *MainWindow) getSelectedMovie() *data.Movie {

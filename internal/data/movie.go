@@ -94,21 +94,19 @@ func (d *Database) SearchMoviesEx(currentView string, searchFor string, genreId 
 			query = query.Where(sqlWhere, sqlArgs)
 		}
 	}
+
 	query = query.Order(sqlOrderBy)
 	if onlyNotProcessed {
 		query = query.Limit(1)
 	}
+
+	query.Debug().Find(&movies)
 
 	if result := query.Distinct().Find(&movies); result.Error != nil {
 		return nil, result.Error
 	}
 
 	movies, err = d.getGenresForMovies(movies)
-	if err != nil {
-		return nil, err
-	}
-
-	movies, err = d.getPersonsForMovies(movies)
 	if err != nil {
 		return nil, err
 	}
