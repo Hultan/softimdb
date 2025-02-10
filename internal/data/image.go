@@ -43,7 +43,7 @@ func (d *Database) readImage(id int) (*image, error) {
 	// Load from cache
 	cachePath := path.Join(imageCachePath, "softimdb", fmt.Sprintf("%d.jpg", id))
 	if d.existCachedImage(cachePath) {
-		fmt.Println("Loading cached image : ", fmt.Sprintf("%d.jpg", id))
+		//fmt.Println("Loading cached image : ", fmt.Sprintf("%d.jpg", id))
 		image.Id = id
 		err := d.getCachedImage(&image, cachePath)
 		if err == nil {
@@ -51,7 +51,7 @@ func (d *Database) readImage(id int) (*image, error) {
 		}
 	}
 
-	fmt.Println("Loading image from database : ", fmt.Sprintf("%d.png", id))
+	//fmt.Println("Loading image from database : ", fmt.Sprintf("%d.png", id))
 	db, err := d.getDatabase()
 	if err != nil {
 		return nil, err
