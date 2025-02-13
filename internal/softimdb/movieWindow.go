@@ -141,12 +141,14 @@ func (m *movieWindow) open(info *movieInfo, movie *data.Movie, closeCallback fun
 	// database to load person below, and that causes a short delay
 	m.window.ShowAll()
 
-	// Load persons for movie (they are no longer loaded in the main load)
-	persons, err := m.db.GetPersonsForMovie(movie)
-	if err != nil {
-		return
+	if movie != nil {
+		// Load persons for movie (they are no longer loaded in the main load)
+		persons, err := m.db.GetPersonsForMovie(movie)
+		if err != nil {
+			return
+		}
+		movie.Persons = persons
 	}
-	movie.Persons = persons
 
 	m.movie = movie
 	m.movieInfo = info
