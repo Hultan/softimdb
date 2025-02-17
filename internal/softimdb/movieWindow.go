@@ -271,7 +271,14 @@ func (m *movieWindow) saveMovie() bool {
 }
 
 func (m *movieWindow) deleteMovie() bool {
-	response, err := dialog.Title("Delete movie...").Text("Do you want to delete this movie?").YesNoButtons().
+	var title string
+	if len(m.movieInfo.title) <= 30 {
+		title = m.movieInfo.title
+	} else {
+		title = m.movieInfo.title[:27] + "..."
+	}
+	msg := fmt.Sprintf("Do you want to delete the movie '%s'?", title)
+	response, err := dialog.Title("Delete movie...").Text(msg).YesNoButtons().Width(450).
 		WarningIcon().Show()
 
 	if err != nil {
