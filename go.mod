@@ -5,7 +5,7 @@ go 1.24
 require (
 	github.com/PuerkitoBio/goquery v1.10.2
 	github.com/chromedp/chromedp v0.13.0
-	github.com/gotk3/gotk3 v0.6.4
+	github.com/gotk3/gotk3 v0.6.5-0.20240618185848-ff349ae13f56
 	github.com/hultan/crypto v1.0.1
 	github.com/hultan/dialog v1.0.4
 	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646
