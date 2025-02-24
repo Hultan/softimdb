@@ -11,11 +11,11 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/gogf/gf/v2/text/gstr"
 	"github.com/gotk3/gotk3/gdk"
 	"github.com/gotk3/gotk3/gtk"
 	"github.com/hultan/dialog"
 	"github.com/hultan/softimdb/internal/config"
+	"github.com/texttheater/golang-levenshtein/levenshtein"
 
 	"github.com/hultan/softimdb/internal/builder"
 	"github.com/hultan/softimdb/internal/data"
@@ -349,7 +349,8 @@ func (m *movieWindow) onTitleEntryFocusOut() {
 		return
 	}
 
-	m.showSimilarMovies(m.findSimilarMovies(title))
+	similar := findSimilarMovies(title, movieTitles, 5)
+	m.showSimilarMovies(similar)
 }
 
 func (m *movieWindow) onIMDBEntryFocusOut() {
@@ -423,16 +424,19 @@ func (m *movieWindow) onIMDBEntryFocusOut() {
 func (m *movieWindow) showSimilarMovies(movies []movie) {
 	titles := ""
 
-	for i, mov := range movies {
-		if i > 5 {
-			break
-		}
+	for _, mov := range movies {
 		titles += fmt.Sprintf("%s\n", mov.title)
 	}
+	titles = strings.TrimSuffix(titles, "\n")
 
 	if titles != "" {
-		_, _ = dialog.Title("Similar movies...").Text("There are similar movies in the DB:\n\n" + titles).
-			WarningIcon().OkButton().Show()
+		_, _ = dialog.Title("Similar movies...").
+			Text("There are similar movies in the DB:").
+			ExtraHeight(90).
+			Extra(titles).
+			WarningIcon().
+			OkButton().
+			Show()
 	}
 }
 
@@ -441,30 +445,31 @@ type movie struct {
 	title    string
 }
 
-func (m *movieWindow) findSimilarMovies(title string) []movie {
-	var movies []movie
-
-	for _, movieTitle := range movieTitles {
-		l := gstr.Levenshtein(movieTitle, title, 1, 3, 1)
-		if containsI(title, movieTitle) {
-			l = 2
-		}
-		if containsI(movieTitle, title) {
-			l = 2
-		}
-		if equalsI(title, movieTitle) {
-			l = 1
-		}
-		movies = append(movies, movie{
-			l,
-			movieTitle,
-		})
-	}
-	slices.SortFunc(movies, func(a, b movie) int {
-		return a.distance - b.distance
-	})
-	return movies[:5]
-}
+//
+//func (m *movieWindow) findSimilarMovies(newTitle string) []movie {
+//	var movies []movie
+//
+//	for _, existingTitle := range movieTitles {
+//		l := gstr.Levenshtein(existingTitle, newTitle, 1, 3, 1)
+//		if containsI(newTitle, existingTitle) {
+//			l = 2
+//		}
+//		if containsI(existingTitle, newTitle) {
+//			l = 2
+//		}
+//		if equalsI(newTitle, existingTitle) {
+//			l = 1
+//		}
+//		movies = append(movies, movie{
+//			l,
+//			existingTitle,
+//		})
+//	}
+//	slices.SortFunc(movies, func(a, b movie) int {
+//		return a.distance - b.distance
+//	})
+//	return movies[:10]
+//}
 
 func (m *movieWindow) hasSubtitles(dir string) bool {
 	movieFile, err := findMovieFile(filepath.Join(m.config.RootDir, dir))
@@ -542,4 +547,71 @@ func getLabel(text string, header bool) *gtk.Label {
 	m := fmt.Sprintf("<span foreground='%s' weight='%s' size='%dpt'>%s</span>", color, weight, size, text)
 	label.SetMarkup(m)
 	return label
+}
+
+func findSimilarMovies(newTitle string, existingTitles []string, maxReturnedMovies int) []movie {
+	var movies []movie
+
+	if newTitle == "" {
+		return []movie{}
+	}
+
+	for _, existingTitle := range existingTitles {
+		l := compareTitles(newTitle, existingTitle)
+		movies = append(movies, movie{
+			l,
+			existingTitle,
+		})
+	}
+	slices.SortFunc(movies, func(a, b movie) int {
+		if a.distance > b.distance {
+			return -1
+		} else if a.distance == b.distance {
+			return 0
+		}
+		return 1
+	})
+	//fmt.Println(movies)
+	return movies[:maxReturnedMovies]
+}
+
+// Compute similarity between two movie titles
+func compareTitles(title1, title2 string) int {
+	// Split titles into words
+	words1 := strings.Fields(strings.ToLower(title1))
+	words2 := strings.Fields(strings.ToLower(title2))
+
+	// Matrix to track best word matches
+	wordMatches := make([]float64, len(words1))
+
+	// Compare each word in title1 with the most similar word in title2
+	for i, w1 := range words1 {
+		bestScore := 0.0
+		for _, w2 := range words2 {
+			// Calculate Levenshtein distance for each word
+			dist := levenshtein.DistanceForStrings([]rune(w1), []rune(w2), levenshtein.DefaultOptions)
+			// Convert distance to similarity score (normalized to 0-1)
+			score := 1 - float64(dist)/float64(len(w1)+len(w2)) // Normalized similarity
+			if score > bestScore {
+				bestScore = score
+			}
+		}
+		wordMatches[i] = bestScore // Store best match
+	}
+
+	// Average word match similarity
+	wordScore := 0.0
+	for _, s := range wordMatches {
+		wordScore += s
+	}
+	wordScore /= float64(len(words1))
+
+	// Levenshtein distance on full titles (normalized to 0-1)
+	fullDist := levenshtein.DistanceForStrings([]rune(title1), []rune(title2), levenshtein.DefaultOptions)
+	fullTitleScore := 1 - float64(fullDist)/float64(len(title1)+len(title2))
+
+	// Weighted similarity: 30% word-based, 70% full-string Levenshtein
+	finalScore := (wordScore * 0.3) + (fullTitleScore * 0.7)
+
+	return int(finalScore * 1000)
 }
