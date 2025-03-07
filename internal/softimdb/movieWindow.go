@@ -392,15 +392,16 @@ func (m *movieWindow) onIMDBEntryFocusOut() {
 		fileName, err := saveMoviePoster(movieImdb.Title, movieImdb.Poster)
 		if err != nil {
 			reportError(err)
-			log.Fatal(err)
-		}
-		fileData := getCorrectImageSize(fileName)
-		if fileData == nil || len(fileData) == 0 {
 			return
+		} else {
+			fileData := getCorrectImageSize(fileName)
+			if fileData == nil || len(fileData) == 0 {
+				return
+			}
+			m.updateImage(fileData)
+			m.movieInfo.image = fileData
+			m.movieInfo.imageHasChanged = true
 		}
-		m.updateImage(fileData)
-		m.movieInfo.image = fileData
-		m.movieInfo.imageHasChanged = true
 
 		var p data.Person
 		for _, person := range movieImdb.Persons {
