@@ -95,6 +95,7 @@ func (m *movieInfo) getYear() int {
 
 func (m *movieInfo) getGenres(genres string) []data.Genre {
 	var result []data.Genre
+	genres = strings.Trim(genres, " ")
 	genreItems := strings.Split(genres, ",")
 	for _, item := range genreItems {
 		result = append(result, data.Genre{Name: item})
