@@ -41,25 +41,26 @@ func openInNemo(path string) {
 }
 
 // openProcess : Opens a command with the specified arguments
-func openProcess(command string, args ...string) string {
-
+func openProcess(command string, args ...string) {
 	cmd := exec.Command(command, args...)
-	// Forces the new process to detach from the GitDiscover process
-	// so that it does not die when GitDiscover dies
+	// This detaches the process from the parent, so that
+	// if SoftIMDB quits, Nemo remains open.
 	cmd.SysProcAttr = &syscall.SysProcAttr{
-		Setpgid: true,
+		Setpgid: true, // Detach from parent process group
 	}
 
-	output, err := cmd.CombinedOutput()
+	// Start the command without waiting for it to finish
+	err := cmd.Start()
 	if err != nil {
-		log.Println(err)
+		log.Println("Failed to start process:", err)
+		return
 	}
+
+	// Release the process so it doesn't become a zombie
 	err = cmd.Process.Release()
 	if err != nil {
-		log.Println(err)
+		log.Println("Failed to release process:", err)
 	}
-
-	return string(output)
 }
 
 func getIdFromUrl(url string) (string, error) {
