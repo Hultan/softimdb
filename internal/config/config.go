@@ -4,6 +4,9 @@ import (
 	"encoding/json"
 	"log"
 	"os"
+	"os/user"
+	"path/filepath"
+	"strings"
 )
 
 type Config struct {
@@ -21,8 +24,13 @@ type DatabaseSection struct {
 
 // LoadConfig : Loads the config
 func LoadConfig(path string) (*Config, error) {
+	p, err := expandPath(path)
+	if err != nil {
+		return nil, err
+	}
+
 	// Open Loader file
-	configFile, err := os.Open(path)
+	configFile, err := os.Open(p)
 	if err != nil {
 		return nil, err
 	}
@@ -40,4 +48,17 @@ func LoadConfig(path string) (*Config, error) {
 	}
 
 	return config, nil
+}
+
+// expandPath expands a path with "~" to the full home directory path
+func expandPath(path string) (string, error) {
+	if strings.HasPrefix(path, "~") {
+		usr, err := user.Current()
+		if err != nil {
+			return "", err
+		}
+		homeDir := usr.HomeDir
+		return filepath.Join(homeDir, path[1:]), nil
+	}
+	return path, nil
 }

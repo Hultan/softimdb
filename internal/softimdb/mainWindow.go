@@ -35,7 +35,7 @@ var needsSubtitleIcon []byte
 //go:embed assets/softimdb.css
 var mainCss string
 
-const configFile = "/home/per/.config/softteam/softimdb/config.json"
+const configFile = "~/.config/softteam/softimdb/config.json"
 
 type MainWindow struct {
 	builder *builder.Builder
