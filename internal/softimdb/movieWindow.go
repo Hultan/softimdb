@@ -434,7 +434,7 @@ func (m *movieWindow) showSimilarMovies(movies []movie) {
 		_, _ = dialog.Title("Similar movies...").
 			Text("There are similar movies in the DB:").
 			ExtraHeight(90).
-			Extra(titles).
+			ExtraExpand(titles).
 			WarningIcon().
 			OkButton().
 			Show()

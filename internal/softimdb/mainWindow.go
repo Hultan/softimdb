@@ -310,7 +310,7 @@ func (m *MainWindow) fillMovieList(searchFor string, categoryId int, sortBy stri
 	}
 	gtk.AddProviderForScreen(screen, cssProvider, gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
 
-	for i, _ := range movies {
+	for i := range movies {
 		movie := movies[i]
 		m.movies[movie.Id] = movie
 		card := listHelper.CreateMovieCard(movie)
@@ -442,7 +442,7 @@ func (m *MainWindow) deleteMovie(movie *data.Movie) {
 		msg := fmt.Sprintf("Failed to delete movie from NAS. "+
 			"Some directories or files might need to be removed manually from path='%s'.", moviePath)
 
-		_, _ = dialog.Title("Failed to delete movie").Text(msg).Extra(err.Error()).
+		_, _ = dialog.Title("Failed to delete movie").Text(msg).ExtraExpand(err.Error()).
 			ErrorIcon().OkButton().Show()
 		return
 	} else if err != nil {
