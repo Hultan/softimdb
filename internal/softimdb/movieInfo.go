@@ -13,22 +13,22 @@ type movieInfo struct {
 	subTitle  string
 	storyLine string
 	year      string
-	path      string
-	pack      string
+	myRating  int
+	moviePath string
 	runtime   int
+	genres    string // Info field only
+	persons   []data.Person
 
 	imdbRating string
 	imdbUrl    string
 	imdbId     string
 
-	myRating      int
-	toWatch       bool
-	needsSubtitle bool
-
-	persons         []data.Person
-	genres          string // Info field only
 	image           []byte
 	imageHasChanged bool
+
+	toWatch       bool
+	pack          string
+	needsSubtitle bool
 }
 
 func newMovieInfoFromDatabase(movie *data.Movie) (*movieInfo, error) {
@@ -38,10 +38,10 @@ func newMovieInfoFromDatabase(movie *data.Movie) (*movieInfo, error) {
 		storyLine:       movie.StoryLine,
 		year:            fmt.Sprintf("%d", movie.Year),
 		myRating:        movie.MyRating,
+		moviePath:       movie.MoviePath,
 		runtime:         movie.Runtime,
 		toWatch:         movie.ToWatch,
 		needsSubtitle:   movie.NeedsSubtitle,
-		path:            movie.MoviePath,
 		pack:            movie.Pack,
 		imdbRating:      fmt.Sprintf("%.1f", movie.ImdbRating),
 		imdbUrl:         movie.ImdbUrl,
@@ -56,7 +56,7 @@ func (m *movieInfo) toDatabase(movie *data.Movie) {
 	movie.Title = m.title
 	movie.SubTitle = m.subTitle
 	movie.StoryLine = m.storyLine
-	movie.MoviePath = m.path
+	movie.MoviePath = m.moviePath
 	movie.Pack = m.pack
 	movie.Year = m.getYear()
 	movie.MyRating = m.myRating
@@ -72,7 +72,6 @@ func (m *movieInfo) toDatabase(movie *data.Movie) {
 	}
 	if m.imageHasChanged {
 		movie.HasImage = true
-		movie.ImagePath = ""
 		movie.Image = m.image
 	}
 }

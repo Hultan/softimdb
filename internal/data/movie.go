@@ -11,24 +11,26 @@ import (
 
 // Movie represents a movie in the database.
 type Movie struct {
-	Id         int      `gorm:"column:id;primary_key"`
-	Title      string   `gorm:"column:title;size:100"`
-	SubTitle   string   `gorm:"column:sub_title;size:100"`
-	Year       int      `gorm:"column:year;"`
-	ImdbRating float32  `gorm:"column:imdb_rating;"`
-	MyRating   int      `gorm:"column:my_rating;"`
-	ImdbUrl    string   `gorm:"column:imdb_url;size:1024"`
-	ImdbID     string   `gorm:"column:imdb_id;size:9"`
-	StoryLine  string   `gorm:"column:story_line;size:65535"`
-	MoviePath  string   `gorm:"column:path;size:1024"`
-	Runtime    int      `gorm:"column:length"`
-	Genres     []Genre  `gorm:"-"`
-	Persons    []Person `gorm:"-"`
+	Id int `gorm:"column:id;primary_key"`
 
-	HasImage      bool   `gorm:"-"`
-	Image         []byte `gorm:"-"`
-	ImageId       int    `gorm:"column:image_id;"`
-	ImagePath     string `gorm:"column:image_path;size:1024"` // Not used yet
+	Title     string   `gorm:"column:title;size:100"`
+	SubTitle  string   `gorm:"column:sub_title;size:100"`
+	StoryLine string   `gorm:"column:story_line;size:65535"`
+	Year      int      `gorm:"column:year;"`
+	MyRating  int      `gorm:"column:my_rating;"`
+	MoviePath string   `gorm:"column:path;size:1024"`
+	Runtime   int      `gorm:"column:length"`
+	Genres    []Genre  `gorm:"-"`
+	Persons   []Person `gorm:"-"`
+
+	ImdbRating float32 `gorm:"column:imdb_rating;"`
+	ImdbUrl    string  `gorm:"column:imdb_url;size:1024"`
+	ImdbID     string  `gorm:"column:imdb_id;size:9"`
+
+	HasImage bool   `gorm:"-"`
+	Image    []byte `gorm:"-"`
+	ImageId  int    `gorm:"column:image_id;"`
+
 	ToWatch       bool   `gorm:"column:to_watch"`
 	Pack          string `gorm:"column:pack"`
 	NeedsSubtitle bool   `gorm:"column:needsSubtitle"`

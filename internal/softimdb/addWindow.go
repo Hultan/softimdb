@@ -196,7 +196,7 @@ func (a *addMovieWindow) onAddMovieButtonClicked() {
 	}
 
 	info := &movieInfo{
-		path: moviePath,
+		moviePath: moviePath,
 	}
 
 	// Open movie dialog here

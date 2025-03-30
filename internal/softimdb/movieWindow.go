@@ -130,7 +130,7 @@ func (m *movieWindow) open(info *movieInfo, movie *data.Movie, closeCallback fun
 	if info.title == "" {
 		//  New movie
 		info.toWatch = true
-		info.needsSubtitle = !m.hasSubtitles(info.path)
+		info.needsSubtitle = !m.hasSubtitles(info.moviePath)
 	} else {
 		// Edit movie
 		scrapeImdbOnce = true
@@ -157,7 +157,7 @@ func (m *movieWindow) open(info *movieInfo, movie *data.Movie, closeCallback fun
 
 	// Fill form with data
 	m.imdbUrlEntry.SetText(m.movieInfo.imdbUrl)
-	m.pathEntry.SetText(m.movieInfo.path)
+	m.pathEntry.SetText(m.movieInfo.moviePath)
 	m.titleEntry.SetText(m.movieInfo.title)
 	m.subTitleEntry.SetText(m.movieInfo.subTitle)
 	m.yearEntry.SetText(fmt.Sprintf("%d", m.movieInfo.getYear()))
@@ -193,7 +193,7 @@ func (m *movieWindow) open(info *movieInfo, movie *data.Movie, closeCallback fun
 
 func (m *movieWindow) saveMovie() bool {
 	// Fill fields
-	m.movieInfo.path = getEntryText(m.pathEntry)
+	m.movieInfo.moviePath = getEntryText(m.pathEntry)
 	m.movieInfo.imdbUrl = getEntryText(m.imdbUrlEntry)
 	id, err := getIdFromUrl(m.movieInfo.imdbUrl)
 	if err != nil {
