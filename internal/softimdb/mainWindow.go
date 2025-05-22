@@ -74,12 +74,17 @@ const (
 	viewNeedsSubtitles      = "needsSubtitles"
 )
 
-var sortBy, sortOrder string = sortByName, sortAscending
-var searchGenreId int = -1
-var searchFor string = ""
-var currentView View
-var view viewManager
-var movieTitles []string
+var (
+	sortBy, sortOrder = sortByName, sortAscending
+	searchGenreId     = -1
+	searchFor         = ""
+	currentView       View
+	view              viewManager
+	movieTitles       []string
+	showPrivateGenres = true
+	genresSubMenu     *gtk.Menu
+	genresMenu        *gtk.MenuItem
+)
 
 // NewMainWindow : Creates a new MainWindow object
 func NewMainWindow() *MainWindow {
@@ -252,8 +257,8 @@ func (m *MainWindow) setupMenu(window *gtk.ApplicationWindow) {
 	sortOrder = sortAscending
 
 	// Genres menu
-	menuGenres := m.builder.GetObject("menuGenres").(*gtk.MenuItem)
-	m.fillGenresMenu(menuGenres)
+	genresMenu = m.builder.GetObject("menuGenres").(*gtk.MenuItem)
+	m.fillGenresMenu()
 }
 
 func (m *MainWindow) setupToolBar() {
@@ -357,12 +362,13 @@ func (m *MainWindow) refresh(search string, categoryId int, sortBy string) {
 	}
 }
 
-func (m *MainWindow) fillGenresMenu(menu *gtk.MenuItem) {
+func (m *MainWindow) fillGenresMenu() {
 	genres, _ := m.database.GetGenres()
 
 	// Create and add genres menu
 	sub, _ := gtk.MenuNew()
-	menu.SetSubmenu(sub)
+	genresSubMenu = sub
+	genresMenu.SetSubmenu(sub)
 
 	// No genre item
 	m.menuNoGenreItem, _ = gtk.RadioMenuItemNewWithLabel(nil, "None")
@@ -384,16 +390,18 @@ func (m *MainWindow) fillGenresMenu(menu *gtk.MenuItem) {
 
 	// Genre items
 	for _, genre := range genres {
-		item, _ := gtk.RadioMenuItemNewWithLabel(group, genre.Name)
-		item.SetName(strconv.Itoa(genre.Id))
-		item.Connect(
-			"activate", func() {
-				if item.GetActive() {
-					m.searchGenre(item)
-				}
-			},
-		)
-		sub.Add(item)
+		if showPrivateGenres || !genre.IsPrivate {
+			item, _ := gtk.RadioMenuItemNewWithLabel(group, genre.Name)
+			item.SetName(strconv.Itoa(genre.Id))
+			item.Connect(
+				"activate", func() {
+					if item.GetActive() {
+						m.searchGenre(item)
+					}
+				},
+			)
+			sub.Add(item)
+		}
 	}
 }
 
@@ -582,6 +590,8 @@ func (m *MainWindow) onKeyPressEvent(_ *gtk.ApplicationWindow, event *gdk.Event)
 			m.onOpenIMDBClicked()
 		case keyEvent.KeyVal() == gdk.KEY_p:
 			m.onOpenPackClicked()
+		case keyEvent.KeyVal() == gdk.KEY_h:
+			m.onShowHidePrivateClicked()
 		case keyEvent.KeyVal() == gdk.KEY_f:
 			m.searchEntry.GrabFocus()
 		case keyEvent.KeyVal() == gdk.KEY_a:
@@ -681,4 +691,14 @@ func (m *MainWindow) onWindowClosed(r gtk.ResponseType, info *movieInfo, movie *
 		// Unknown response
 		// Handle as cancel
 	}
+}
+
+func (m *MainWindow) onShowHidePrivateClicked() {
+	showPrivateGenres = !showPrivateGenres
+	m.refresh(searchFor, searchGenreId, getSortBy())
+
+	genresSubMenu.Destroy()
+	genresSubMenu = nil
+	m.fillGenresMenu()
+	genresSubMenu.ShowAll()
 }

@@ -112,10 +112,12 @@ func (m *movieInfo) getGenres(genres string) []data.Genre {
 func getGenresString(genres []data.Genre) string {
 	result := ""
 	for _, genre := range genres {
-		if result != "" {
-			result += ","
+		if showPrivateGenres || !genre.IsPrivate {
+			if result != "" {
+				result += ","
+			}
+			result += genre.Name
 		}
-		result += genre.Name
 	}
 	return result
 }

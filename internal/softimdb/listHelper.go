@@ -192,10 +192,12 @@ func createMovieGenresLabel(movie *data.Movie) *gtk.Label {
 
 	for i := range movie.Genres {
 		genre := movie.Genres[i]
-		if s != "" {
-			s += ", "
+		if showPrivateGenres || !genre.IsPrivate {
+			if s != "" {
+				s += ", "
+			}
+			s += genre.Name
 		}
-		s += genre.Name
 	}
 	label, err := gtk.LabelNew("")
 	if err != nil {

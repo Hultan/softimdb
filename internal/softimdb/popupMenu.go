@@ -111,22 +111,25 @@ func (p *popupMenu) setupEvents() {
 func (p *popupMenu) createGenreMenu(genres []data.Genre, movie *data.Movie, menu *gtk.Menu) {
 	for i := 0; i < len(genres); i++ {
 		genre := genres[i]
-		item, err := gtk.CheckMenuItemNew()
-		if err != nil {
-			reportError(err)
-			log.Fatal(err)
-		}
-		item.SetLabel(genre.Name)
 
-		for i := 0; i < len(movie.Genres); i++ {
-			if movie.Genres[i].Id == genre.Id {
-				item.SetActive(true)
+		if showPrivateGenres || !genre.IsPrivate {
+			item, err := gtk.CheckMenuItemNew()
+			if err != nil {
+				reportError(err)
+				log.Fatal(err)
 			}
+			item.SetLabel(genre.Name)
+
+			for i := 0; i < len(movie.Genres); i++ {
+				if movie.Genres[i].Id == genre.Id {
+					item.SetActive(true)
+				}
+			}
+
+			menu.Add(item)
+
+			p.addGenreActivateEvent(item, movie, &genre)
 		}
-
-		menu.Add(item)
-
-		p.addGenreActivateEvent(item, movie, &genre)
 	}
 }
 
