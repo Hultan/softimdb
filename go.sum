@@ -28,8 +28,8 @@ github.com/gotk3/gotk3 v0.6.5-0.20240618185848-ff349ae13f56 h1:eR+xxC8qqKuPMTucZ
 github.com/gotk3/gotk3 v0.6.5-0.20240618185848-ff349ae13f56/go.mod h1:/hqFpkNa9T3JgNAE2fLvCdov7c5bw//FHNZrZ3Uv9/Q=
 github.com/hultan/crypto v1.0.1 h1:QXln6IFU0/RJOr1o50pwiBEZ4xV56hf9TnfcLot8tP8=
 github.com/hultan/crypto v1.0.1/go.mod h1:Al02tqJQ4Kh8UhEMMGQMe8CtlWcFL3pbdhztdOph0OY=
-github.com/hultan/dialog v1.0.5 h1:0hlm1CTfSdXcS5VNVtCKppDcIxD9+7dZwAW2MTOhAKE=
-github.com/hultan/dialog v1.0.5/go.mod h1:74ll1dTs76eCAOQnubQQ9AsQV3sdRtR9Uf9tTvexI5w=
+github.com/hultan/dialog v1.0.6 h1:ytyIOJ3499bS5qoWJtiwnNIkV5oLNf6LvMPqplzLD6c=
+github.com/hultan/dialog v1.0.6/go.mod h1:y9HCPNO8g2GuA5VlNPulMOrunCTW2zJUOgWxyF2mxGM=
 github.com/jinzhu/inflection v1.0.0 h1:K317FqzuhWc8YvSVlFMCCUb36O/S9MCKRDI7QkRKD/E=
 github.com/jinzhu/inflection v1.0.0/go.mod h1:h+uFLlag+Qp1Va5pdKtLDYj+kHp5pxUVkryuEj+Srlc=
 github.com/jinzhu/now v1.1.5 h1:/o9tlHleP7gOFmsnYNz3RGnqzefHA47wQpKrrdTIwXQ=

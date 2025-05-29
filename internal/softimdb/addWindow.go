@@ -150,13 +150,6 @@ func (a *addMovieWindow) insertMovie(info *movieInfo, _ *data.Movie) {
 }
 
 func (a *addMovieWindow) onIgnorePathButtonClicked() {
-	msg := "Are you sure you want to ignore this folder?"
-	response, _ := dialog.Title(applicationTitle).Text(msg).
-		QuestionIcon().YesNoButtons().Show()
-	if response == gtk.RESPONSE_NO {
-		return
-	}
-
 	row := a.list.GetSelectedRow()
 	if row == nil {
 		return
@@ -166,20 +159,31 @@ func (a *addMovieWindow) onIgnorePathButtonClicked() {
 		return
 	}
 
+	var path string
 	label, ok := widget.(*gtk.Label)
 	if ok {
-		path, err := label.GetText()
+		path, err = label.GetText()
 		if err != nil {
 			return
 		}
-		ignorePath := data.IgnoredPath{Path: path}
-		err = a.database.InsertIgnorePath(&ignorePath)
-		if err != nil {
-			return
-		}
-
-		a.list.Remove(row)
 	}
+
+	response, _ := dialog.Title(applicationTitle).
+		Text("Ignore folder?").
+		ExtraExpand("Are you sure you want to ignore the folder '%s'?", path).
+		ExtraHeight(70).
+		QuestionIcon().YesNoButtons().Show()
+	if response == gtk.RESPONSE_NO {
+		return
+	}
+
+	ignorePath := data.IgnoredPath{Path: path}
+	err = a.database.InsertIgnorePath(&ignorePath)
+	if err != nil {
+		return
+	}
+
+	a.list.Remove(row)
 }
 
 func (a *addMovieWindow) onAddMovieButtonClicked() {
@@ -187,7 +191,6 @@ func (a *addMovieWindow) onAddMovieButtonClicked() {
 	if moviePath == "" {
 		_, err := dialog.Title(applicationTitle).Text("Movie path cannot be empty").
 			ErrorIcon().OkButton().Show()
-
 		if err != nil {
 			fmt.Printf("Error : %s", err)
 		}

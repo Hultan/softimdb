@@ -7,7 +7,7 @@ require (
 	github.com/chromedp/chromedp v0.13.0
 	github.com/gotk3/gotk3 v0.6.5-0.20240618185848-ff349ae13f56
 	github.com/hultan/crypto v1.0.1
-	github.com/hultan/dialog v1.0.5
+	github.com/hultan/dialog v1.0.6
 	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646
 	github.com/stretchr/testify v1.10.0
 	github.com/texttheater/golang-levenshtein/levenshtein v0.0.0-20200805054039-cae8b0eaed6c
