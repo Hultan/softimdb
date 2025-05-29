@@ -548,8 +548,7 @@ func (m *MainWindow) onSearchButtonClicked() {
 		reportError(err)
 		log.Fatal(err)
 	}
-	search = strings.Trim(search, " ")
-	m.search.forWhat = search
+	m.search.forWhat = strings.Trim(search, " ")
 	m.refresh(m.search, m.sort)
 }
 
@@ -601,7 +600,7 @@ func (m *MainWindow) onOpenAboutDialogClicked() {
 	about.SetDestroyWithParent(true)
 	about.SetTransientFor(m.window)
 	about.SetProgramName(applicationTitle)
-	about.SetComments("An movie library application...")
+	about.SetComments("A movie library application...")
 	about.SetVersion(applicationVersion)
 	about.SetCopyright(applicationCopyRight)
 
