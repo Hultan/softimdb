@@ -56,6 +56,11 @@ type search struct {
 	forWhat string
 }
 
+type view struct {
+	manager viewManager
+	current View
+}
+
 type MainWindow struct {
 	builder *builder.Builder
 
@@ -84,13 +89,12 @@ type MainWindow struct {
 
 	search search
 	sort   sort
+	view   view
 
 	movies map[int]*data.Movie
 }
 
 var (
-	currentView       View
-	view              viewManager
 	movieTitles       []string
 	showPrivateGenres = true
 )
@@ -146,7 +150,7 @@ func NewMainWindow() *MainWindow {
 	_ = m.movieList.Connect("selected-children-changed", m.onMovieListSelectionChanged)
 	_ = m.movieList.Connect("child-activated", m.onMovieListDoubleClicked)
 
-	view = newViewManager(m)
+	m.view.manager = newViewManager(m)
 
 	return m
 }
@@ -157,7 +161,7 @@ func (m *MainWindow) Open(app *gtk.Application) {
 	m.application = app
 	m.window.SetApplication(app)
 	m.window.ShowAll()
-	view.changeView(viewToWatch)
+	m.view.manager.changeView(viewToWatch)
 	m.storyLineScrolledWindow.Hide()
 	var err error
 	movieTitles, err = m.database.GetAllMovieTitles()
@@ -302,7 +306,7 @@ func (m *MainWindow) setupToolBar() {
 }
 
 func (m *MainWindow) fillMovieList(searchFor string, categoryId int, sortBy string) {
-	movies, err := m.database.SearchMovies(string(currentView), searchFor, categoryId, sortBy)
+	movies, err := m.database.SearchMovies(string(m.view.current), searchFor, categoryId, sortBy)
 	if err != nil {
 		reportError(err)
 		log.Fatal(err)
@@ -671,7 +675,7 @@ func (m *MainWindow) onOpenPackClicked() {
 	m.search.genreId = -1
 	m.sort.by = sortByName
 	m.sort.order = sortAscending
-	view.changeView(viewPacks)
+	m.view.manager.changeView(viewPacks)
 	m.searchEntry.SetText(m.search.forWhat)
 	m.menuNoGenreItem.SetActive(true)
 	m.menuSortByName.SetActive(true)

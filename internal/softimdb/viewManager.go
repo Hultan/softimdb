@@ -19,7 +19,7 @@ func newViewManager(m *MainWindow) viewManager {
 
 	_ = w.viewAllButton.Connect("toggled", func() {
 		if w.viewAllButton.GetActive() {
-			currentView = viewAll
+			m.view.current = viewAll
 			w.viewPacksButton.SetActive(false)
 			w.viewToWatchButton.SetActive(false)
 			w.viewNoRatingButton.SetActive(false)
@@ -29,7 +29,7 @@ func newViewManager(m *MainWindow) viewManager {
 	})
 	_ = w.viewPacksButton.Connect("toggled", func() {
 		if w.viewPacksButton.GetActive() {
-			currentView = viewPacks
+			m.view.current = viewPacks
 			w.viewAllButton.SetActive(false)
 			w.viewToWatchButton.SetActive(false)
 			w.viewNoRatingButton.SetActive(false)
@@ -39,7 +39,7 @@ func newViewManager(m *MainWindow) viewManager {
 	})
 	_ = w.viewToWatchButton.Connect("toggled", func() {
 		if w.viewToWatchButton.GetActive() {
-			currentView = viewToWatch
+			m.view.current = viewToWatch
 			w.viewAllButton.SetActive(false)
 			w.viewPacksButton.SetActive(false)
 			w.viewNoRatingButton.SetActive(false)
@@ -49,7 +49,7 @@ func newViewManager(m *MainWindow) viewManager {
 	})
 	_ = w.viewNoRatingButton.Connect("toggled", func() {
 		if w.viewNoRatingButton.GetActive() {
-			currentView = viewNoRating
+			m.view.current = viewNoRating
 			w.viewAllButton.SetActive(false)
 			w.viewPacksButton.SetActive(false)
 			w.viewToWatchButton.SetActive(false)
@@ -59,7 +59,7 @@ func newViewManager(m *MainWindow) viewManager {
 	})
 	_ = w.viewNeedsSubtitlesButton.Connect("toggled", func() {
 		if w.viewNeedsSubtitlesButton.GetActive() {
-			currentView = viewNeedsSubtitles
+			m.view.current = viewNeedsSubtitles
 			w.viewAllButton.SetActive(false)
 			w.viewPacksButton.SetActive(false)
 			w.viewToWatchButton.SetActive(false)
