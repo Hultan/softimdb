@@ -10,7 +10,6 @@ import (
 	"log"
 	"os"
 	"os/exec"
-	"path"
 	"path/filepath"
 	"regexp"
 	"runtime"
@@ -35,18 +34,18 @@ func reportError(err error) {
 		ErrorIcon().OkButton().Show()
 }
 
-// openInNemo : Opens a new nemo instance with the specified folder opened
+// openInNemo opens a new nemo instance with the specified folder opened
 func openInNemo(path string) {
 	openProcess("nemo", path)
 }
 
-// openProcess : Opens a command with the specified arguments
+// openProcess opens a command with the specified arguments
 func openProcess(command string, args ...string) {
 	cmd := exec.Command(command, args...)
-	// This detaches the process from the parent, so that
+	// This detaches the process from the parent so that
 	// if SoftIMDB quits, Nemo remains open.
 	cmd.SysProcAttr = &syscall.SysProcAttr{
-		Setpgid: true, // Detach from parent process group
+		Setpgid: true, // Detach from the parent process group
 	}
 
 	// Start the command without waiting for it to finish
@@ -102,7 +101,7 @@ func findMovieFile(path string) (string, error) {
 
 	f, err := os.Open(path)
 	if err != nil {
-		_, _ = dialog.Title("Failed to open file!").Text("Is the NAS unlocked?").WarningIcon().OkButton().Show()
+		_, _ = dialog.Title("Failed to open path!").Text("Is the NAS unlocked? Check path '%s'.", path).WarningIcon().OkButton().Show()
 		return "", err
 	}
 	files, err := f.Readdirnames(0)
@@ -146,7 +145,7 @@ func clearListBox(list *gtk.ListBox) {
 	}
 }
 
-// ClearFlowBox : Clears a gtk.FlowBox
+// ClearFlowBox clears a gtk.FlowBox
 func clearFlowBox(list *gtk.FlowBox) {
 	children := list.GetChildren()
 	if children == nil {
@@ -198,14 +197,6 @@ func resizeImage(imgData []byte) []byte {
 	return buf.Bytes()
 }
 
-func containsI(a, b string) bool {
-	return strings.Contains(strings.ToLower(b), strings.ToLower(a))
-}
-
-func equalsI(a, b string) bool {
-	return strings.ToLower(b) == strings.ToLower(a)
-}
-
 // doesExist checks if the file exists and is accessible.
 func doesExist(filename string) bool {
 	_, err := os.Stat(filename)
@@ -221,46 +212,60 @@ func doesExist(filename string) bool {
 	return false
 }
 
+func cleanTitle(title string) string {
+	t := strings.Replace(title, " ", "_", -1)
+	t = strings.Replace(t, "/", "-", -1)
+	return t
+}
+
 func saveMoviePoster(title string, poster []byte) (string, error) {
-	home, _ := os.UserHomeDir()
-	dir := path.Join(home, "Downloads")
-
-	// Create the directory if it doesn't exist
-	if err := os.MkdirAll(dir, os.ModePerm); err != nil {
-		return "", fmt.Errorf("failed to create directory: %v", err)
-	}
-
-	title = cleanTitle(title)
-
-	// Define the full path for the image
-	filePath := filepath.Join(dir, fmt.Sprintf("%s.jpg", title))
-
-	// Create the file
-	file, err := os.Create(filePath)
+	filePath, err := getPosterFilePath(title)
 	if err != nil {
-		return "", fmt.Errorf("failed to create file: %v", err)
+		return "", err
 	}
-	defer file.Close()
 
-	// Decode the image from the byte slice
 	img, _, err := image.Decode(bytes.NewReader(poster))
 	if err != nil {
-		return "", fmt.Errorf("failed to decode image: %v", err)
+		return "", fmt.Errorf("failed to decode image: %w", err)
 	}
 
-	// Set the JPEG quality (0-100)
-	jpegOptions := &jpeg.Options{Quality: 100}
-
-	// Encode the image to the file
-	if err := jpeg.Encode(file, img, jpegOptions); err != nil {
-		return "", fmt.Errorf("failed to encode image: %v", err)
+	if err := saveJPEGImage(filePath, img, 100); err != nil {
+		return "", err
 	}
 
 	return filePath, nil
 }
 
-func cleanTitle(title string) string {
-	t := strings.Replace(title, " ", "_", -1)
-	t = strings.Replace(t, "/", "-", -1)
-	return t
+func getPosterFilePath(title string) (string, error) {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return "", fmt.Errorf("failed to get user home directory: %w", err)
+	}
+	dir := filepath.Join(home, "Downloads")
+
+	if err := os.MkdirAll(dir, os.ModePerm); err != nil {
+		return "", fmt.Errorf("failed to create directory %s: %w", dir, err)
+	}
+
+	filename := fmt.Sprintf("%s.jpg", cleanTitle(title))
+	return filepath.Join(dir, filename), nil
+}
+
+func saveJPEGImage(filePath string, img image.Image, quality int) (err error) {
+	file, err := os.Create(filePath)
+	if err != nil {
+		return fmt.Errorf("failed to create file %s: %w", filePath, err)
+	}
+	defer func() {
+		if cerr := file.Close(); cerr != nil && err == nil {
+			err = fmt.Errorf("failed to close file %s: %w", filePath, cerr)
+		}
+	}()
+
+	jpegOptions := &jpeg.Options{Quality: quality}
+	if err := jpeg.Encode(file, img, jpegOptions); err != nil {
+		return fmt.Errorf("failed to encode JPEG to %s: %w", filePath, err)
+	}
+
+	return nil
 }

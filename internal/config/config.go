@@ -2,7 +2,7 @@ package config
 
 import (
 	"encoding/json"
-	"log"
+	"fmt"
 	"os"
 	"os/user"
 	"path/filepath"
@@ -35,9 +35,8 @@ func LoadConfig(path string) (*Config, error) {
 		return nil, err
 	}
 	defer func() {
-		err = configFile.Close()
-		if err != nil {
-			log.Fatal(err)
+		if closeErr := configFile.Close(); closeErr != nil && err == nil {
+			err = fmt.Errorf("close failed: %w", closeErr)
 		}
 	}()
 

@@ -340,11 +340,7 @@ func (m *movieWindow) onTitleEntryFocusOut() {
 	}
 	showSimilarOnce = true
 
-	title, err := m.titleEntry.GetText()
-	if err != nil {
-		return
-	}
-
+	title := getEntryText(m.titleEntry)
 	if title == "" {
 		return
 	}
@@ -358,16 +354,11 @@ func (m *movieWindow) onIMDBEntryFocusOut() {
 		return
 	}
 
-	url, err := m.imdbUrlEntry.GetText()
-	if err != nil {
-		return
-	}
-
+	url := getEntryText(m.imdbUrlEntry)
 	if url == "" {
 		return
 	}
 
-	// TODO : Ask question
 	manager := imdb.ManagerNew()
 	movieImdb, err := manager.GetMovie(url)
 

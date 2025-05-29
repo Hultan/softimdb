@@ -3,7 +3,6 @@ package data
 import (
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"path"
 
@@ -134,9 +133,8 @@ func (d *Database) getCachedImage(image *image, cachePath string) error {
 		return err
 	}
 	defer func() {
-		err = file.Close()
-		if err != nil {
-			log.Print(err)
+		if closeErr := file.Close(); closeErr != nil && err == nil {
+			err = fmt.Errorf("close failed: %w", closeErr)
 		}
 	}()
 
@@ -161,9 +159,8 @@ func (d *Database) storeCachedImage(image *image, cachePath string) {
 		return
 	}
 	defer func() {
-		err = file.Close()
-		if err != nil {
-			log.Print(err)
+		if closeErr := file.Close(); closeErr != nil && err == nil {
+			err = fmt.Errorf("close failed: %w", closeErr)
 		}
 	}()
 

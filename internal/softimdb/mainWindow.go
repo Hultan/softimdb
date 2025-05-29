@@ -543,11 +543,7 @@ func (m *MainWindow) onRefreshButtonClicked() {
 }
 
 func (m *MainWindow) onSearchButtonClicked() {
-	search, err := m.searchEntry.GetText()
-	if err != nil {
-		reportError(err)
-		log.Fatal(err)
-	}
+	search := getEntryText(m.searchEntry)
 	m.search.forWhat = strings.Trim(search, " ")
 	m.refresh(m.search, m.sort)
 }
