@@ -397,19 +397,13 @@ func (m *MainWindow) addGenreMenu(sub *gtk.Menu, group *glib.SList, genre data.G
 	item.Connect(
 		"activate", func() {
 			if item.GetActive() {
-				m.searchGenre(item)
+				m.search.genreId = genre.Id
+				m.refresh(m.search, m.sort)
 			}
 		},
 	)
 	sub.Add(item)
 	return item
-}
-
-func (m *MainWindow) searchGenre(item *gtk.RadioMenuItem) {
-	name, _ := item.GetName()
-	i, _ := strconv.Atoi(name)
-	m.search.genreId = i
-	m.refresh(m.search, m.sort)
 }
 
 func (m *MainWindow) saveMovieInfo(movieInfo *movieInfo, movie *data.Movie) {
@@ -519,11 +513,8 @@ func (m *MainWindow) onEditMovieInfoClicked() {
 		return
 	}
 
-	info, err := newMovieInfoFromDatabase(selectedMovie)
-	if err != nil {
-		reportError(err)
-		return
-	}
+	info := &movieInfo{}
+	info.fromDatabase(selectedMovie)
 
 	// Open the movie dialog here
 	if m.movieWin == nil {

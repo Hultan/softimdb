@@ -31,25 +31,23 @@ type movieInfo struct {
 	needsSubtitle bool
 }
 
-func newMovieInfoFromDatabase(movie *data.Movie) (*movieInfo, error) {
-	return &movieInfo{
-		title:           movie.Title,
-		subTitle:        movie.SubTitle,
-		storyLine:       movie.StoryLine,
-		year:            fmt.Sprintf("%d", movie.Year),
-		myRating:        movie.MyRating,
-		moviePath:       movie.MoviePath,
-		runtime:         movie.Runtime,
-		toWatch:         movie.ToWatch,
-		needsSubtitle:   movie.NeedsSubtitle,
-		pack:            movie.Pack,
-		imdbRating:      fmt.Sprintf("%.1f", movie.ImdbRating),
-		imdbUrl:         movie.ImdbUrl,
-		imdbId:          movie.ImdbID,
-		genres:          getGenresString(movie.Genres),
-		image:           movie.Image,
-		imageHasChanged: false,
-	}, nil
+func (m *movieInfo) fromDatabase(movie *data.Movie) {
+	m.title = movie.Title
+	m.subTitle = movie.SubTitle
+	m.storyLine = movie.StoryLine
+	m.year = fmt.Sprintf("%d", movie.Year)
+	m.myRating = movie.MyRating
+	m.moviePath = movie.MoviePath
+	m.runtime = movie.Runtime
+	m.toWatch = movie.ToWatch
+	m.needsSubtitle = movie.NeedsSubtitle
+	m.pack = movie.Pack
+	m.imdbRating = fmt.Sprintf("%.1f", movie.ImdbRating)
+	m.imdbUrl = movie.ImdbUrl
+	m.imdbId = movie.ImdbID
+	m.genres = getGenresString(movie.Genres)
+	m.image = movie.Image
+	m.imageHasChanged = false
 }
 
 func (m *movieInfo) toDatabase(movie *data.Movie) {
