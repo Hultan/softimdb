@@ -120,7 +120,7 @@ func findMovieFile(path string) (string, error) {
 	return "", nil
 }
 
-func getSortBy() string {
+func getSortBy(sortBy, sortOrder string) string {
 	return fmt.Sprintf("%s %s", sortBy, sortOrder)
 }
 
