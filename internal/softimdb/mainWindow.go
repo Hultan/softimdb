@@ -57,6 +57,8 @@ type MainWindow struct {
 	menuSortByMyRating, menuSortByLength  *gtk.RadioMenuItem
 	menuSortByYear, menuSortById          *gtk.RadioMenuItem
 	menuSortAscending, menuSortDescending *gtk.RadioMenuItem
+	genresSubMenu                         *gtk.Menu
+	genresMenu                            *gtk.MenuItem
 
 	movieWin    *movieWindow
 	addMovieWin *addMovieWindow
@@ -82,8 +84,6 @@ var (
 	view              viewManager
 	movieTitles       []string
 	showPrivateGenres = true
-	genresSubMenu     *gtk.Menu
-	genresMenu        *gtk.MenuItem
 )
 
 // NewMainWindow : Creates a new MainWindow object
@@ -257,7 +257,7 @@ func (m *MainWindow) setupMenu(window *gtk.ApplicationWindow) {
 	sortOrder = sortAscending
 
 	// Genres menu
-	genresMenu = m.builder.GetObject("menuGenres").(*gtk.MenuItem)
+	m.genresMenu = m.builder.GetObject("menuGenres").(*gtk.MenuItem)
 	m.fillGenresMenu()
 }
 
@@ -367,8 +367,8 @@ func (m *MainWindow) fillGenresMenu() {
 
 	// Create and add genres menu
 	sub, _ := gtk.MenuNew()
-	genresSubMenu = sub
-	genresMenu.SetSubmenu(sub)
+	m.genresSubMenu = sub
+	m.genresMenu.SetSubmenu(sub)
 
 	// No genre item
 	m.menuNoGenreItem, _ = gtk.RadioMenuItemNewWithLabel(nil, "None")
@@ -697,8 +697,8 @@ func (m *MainWindow) onShowHidePrivateClicked() {
 	showPrivateGenres = !showPrivateGenres
 	m.refresh(searchFor, searchGenreId, getSortBy())
 
-	genresSubMenu.Destroy()
-	genresSubMenu = nil
+	m.genresSubMenu.Destroy()
+	m.genresSubMenu = nil
 	m.fillGenresMenu()
-	genresSubMenu.ShowAll()
+	m.genresSubMenu.ShowAll()
 }
