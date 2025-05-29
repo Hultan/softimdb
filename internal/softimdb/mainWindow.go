@@ -62,7 +62,12 @@ type view struct {
 }
 
 type MainWindow struct {
-	builder *builder.Builder
+	builder     *builder.Builder
+	database    *data.Database
+	config      *config.Config
+	popupMenu   *popupMenu
+	movieWin    *movieWindow
+	addMovieWin *addMovieWindow
 
 	application                           *gtk.Application
 	window                                *gtk.ApplicationWindow
@@ -72,10 +77,7 @@ type MainWindow struct {
 	searchEntry                           *gtk.Entry
 	searchButton                          *gtk.ToolButton
 	clearSearchButton                     *gtk.ToolButton
-	popupMenu                             *popupMenu
 	countLabel                            *gtk.Label
-	database                              *data.Database
-	config                                *config.Config
 	menuNoGenreItem                       *gtk.RadioMenuItem
 	menuSortByName, menuSortByRating      *gtk.RadioMenuItem
 	menuSortByMyRating, menuSortByLength  *gtk.RadioMenuItem
@@ -83,9 +85,6 @@ type MainWindow struct {
 	menuSortAscending, menuSortDescending *gtk.RadioMenuItem
 	genresSubMenu                         *gtk.Menu
 	genresMenu                            *gtk.MenuItem
-
-	movieWin    *movieWindow
-	addMovieWin *addMovieWindow
 
 	search search
 	sort   sort
@@ -102,7 +101,7 @@ var (
 // NewMainWindow : Creates a new MainWindow object
 func NewMainWindow() *MainWindow {
 	m := &MainWindow{}
-	m.movies = make(map[int]*data.Movie, 500)
+	m.movies = make(map[int]*data.Movie, 2000)
 
 	b, err := builder.NewBuilder(mainGlade)
 	if err != nil {
@@ -123,7 +122,7 @@ func NewMainWindow() *MainWindow {
 	}
 	m.config = cnf
 
-	// Open database, after we have the config
+	// Open the database after we have the config
 	m.database = data.DatabaseNew(false, cnf)
 
 	m.setupToolBar()
@@ -163,6 +162,7 @@ func (m *MainWindow) Open(app *gtk.Application) {
 	m.window.ShowAll()
 	m.view.manager.changeView(viewToWatch)
 	m.storyLineScrolledWindow.Hide()
+
 	var err error
 	movieTitles, err = m.database.GetAllMovieTitles()
 	if err != nil {
@@ -188,7 +188,7 @@ func (m *MainWindow) setupMenu(window *gtk.ApplicationWindow) {
 				m.sort.by = sortByName
 				m.sort.order = sortAscending
 				m.menuSortAscending.SetActive(true)
-				m.refresh(m.search.forWhat, m.search.genreId, getSortBy(m.sort.by, m.sort.order))
+				m.refresh(m.search.forWhat, m.search.genreId, getSortBy(m.sort))
 			}
 		},
 	)
@@ -199,7 +199,7 @@ func (m *MainWindow) setupMenu(window *gtk.ApplicationWindow) {
 				m.sort.by = sortByRating
 				m.sort.order = sortDescending
 				m.menuSortDescending.SetActive(true)
-				m.refresh(m.search.forWhat, m.search.genreId, getSortBy(m.sort.by, m.sort.order))
+				m.refresh(m.search.forWhat, m.search.genreId, getSortBy(m.sort))
 			}
 		},
 	)
@@ -210,7 +210,7 @@ func (m *MainWindow) setupMenu(window *gtk.ApplicationWindow) {
 				m.sort.by = sortByMyRating
 				m.sort.order = sortDescending
 				m.menuSortDescending.SetActive(true)
-				m.refresh(m.search.forWhat, m.search.genreId, getSortBy(m.sort.by, m.sort.order))
+				m.refresh(m.search.forWhat, m.search.genreId, getSortBy(m.sort))
 			}
 		},
 	)
@@ -221,7 +221,7 @@ func (m *MainWindow) setupMenu(window *gtk.ApplicationWindow) {
 				m.sort.by = sortByLength
 				m.sort.order = sortDescending
 				m.menuSortDescending.SetActive(true)
-				m.refresh(m.search.forWhat, m.search.genreId, getSortBy(m.sort.by, m.sort.order))
+				m.refresh(m.search.forWhat, m.search.genreId, getSortBy(m.sort))
 			}
 		},
 	)
@@ -232,7 +232,7 @@ func (m *MainWindow) setupMenu(window *gtk.ApplicationWindow) {
 				m.sort.by = sortByYear
 				m.sort.order = sortDescending
 				m.menuSortDescending.SetActive(true)
-				m.refresh(m.search.forWhat, m.search.genreId, getSortBy(m.sort.by, m.sort.order))
+				m.refresh(m.search.forWhat, m.search.genreId, getSortBy(m.sort))
 			}
 		},
 	)
@@ -243,7 +243,7 @@ func (m *MainWindow) setupMenu(window *gtk.ApplicationWindow) {
 				m.sort.by = sortById
 				m.sort.order = sortAscending
 				m.menuSortAscending.SetActive(true)
-				m.refresh(m.search.forWhat, m.search.genreId, getSortBy(m.sort.by, m.sort.order))
+				m.refresh(m.search.forWhat, m.search.genreId, getSortBy(m.sort))
 			}
 		},
 	)
@@ -253,7 +253,7 @@ func (m *MainWindow) setupMenu(window *gtk.ApplicationWindow) {
 		"activate", func() {
 			if m.menuSortAscending.GetActive() {
 				m.sort.order = sortAscending
-				m.refresh(m.search.forWhat, m.search.genreId, getSortBy(m.sort.by, m.sort.order))
+				m.refresh(m.search.forWhat, m.search.genreId, getSortBy(m.sort))
 			}
 		},
 	)
@@ -262,7 +262,7 @@ func (m *MainWindow) setupMenu(window *gtk.ApplicationWindow) {
 		"activate", func() {
 			if m.menuSortDescending.GetActive() {
 				m.sort.order = sortDescending
-				m.refresh(m.search.forWhat, m.search.genreId, getSortBy(m.sort.by, m.sort.order))
+				m.refresh(m.search.forWhat, m.search.genreId, getSortBy(m.sort))
 			}
 		},
 	)
@@ -423,7 +423,7 @@ func (m *MainWindow) searchGenre(item *gtk.RadioMenuItem) {
 	name, _ := item.GetName()
 	i, _ := strconv.Atoi(name)
 	m.search.genreId = i
-	m.refresh(m.search.forWhat, m.search.genreId, getSortBy(m.sort.by, m.sort.order))
+	m.refresh(m.search.forWhat, m.search.genreId, getSortBy(m.sort))
 }
 
 func (m *MainWindow) saveMovieInfo(movieInfo *movieInfo, movie *data.Movie) {
@@ -562,7 +562,7 @@ func (m *MainWindow) onRefreshButtonClicked() {
 	m.menuNoGenreItem.SetActive(true)
 	m.menuSortByName.SetActive(true)
 	m.menuSortAscending.SetActive(true)
-	m.refresh(m.search.forWhat, m.search.genreId, getSortBy(m.sort.by, m.sort.order))
+	m.refresh(m.search.forWhat, m.search.genreId, getSortBy(m.sort))
 }
 
 func (m *MainWindow) onSearchButtonClicked() {
@@ -573,13 +573,13 @@ func (m *MainWindow) onSearchButtonClicked() {
 	}
 	search = strings.Trim(search, " ")
 	m.search.forWhat = search
-	m.refresh(m.search.forWhat, m.search.genreId, getSortBy(m.sort.by, m.sort.order))
+	m.refresh(m.search.forWhat, m.search.genreId, getSortBy(m.sort))
 }
 
 func (m *MainWindow) onClearSearchButtonClicked() {
 	m.search.forWhat = ""
 	m.searchEntry.SetText("")
-	m.refresh(m.search.forWhat, m.search.genreId, getSortBy(m.sort.by, m.sort.order))
+	m.refresh(m.search.forWhat, m.search.genreId, getSortBy(m.sort))
 }
 
 func (m *MainWindow) onKeyPressEvent(_ *gtk.ApplicationWindow, event *gdk.Event) {
@@ -680,7 +680,7 @@ func (m *MainWindow) onOpenPackClicked() {
 	m.menuNoGenreItem.SetActive(true)
 	m.menuSortByName.SetActive(true)
 	m.menuSortAscending.SetActive(true)
-	m.refresh(m.search.forWhat, m.search.genreId, getSortBy(m.sort.by, m.sort.order))
+	m.refresh(m.search.forWhat, m.search.genreId, getSortBy(m.sort))
 }
 
 func (m *MainWindow) onOpenFolderClicked() {
@@ -709,7 +709,7 @@ func (m *MainWindow) onWindowClosed(r gtk.ResponseType, info *movieInfo, movie *
 
 func (m *MainWindow) onShowHidePrivateClicked() {
 	showPrivateGenres = !showPrivateGenres
-	m.refresh(m.search.forWhat, m.search.genreId, getSortBy(m.sort.by, m.sort.order))
+	m.refresh(m.search.forWhat, m.search.genreId, getSortBy(m.sort))
 
 	m.genresSubMenu.Destroy()
 	m.genresSubMenu = nil
