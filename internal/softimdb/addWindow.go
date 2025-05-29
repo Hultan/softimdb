@@ -170,7 +170,7 @@ func (a *addMovieWindow) onIgnorePathButtonClicked() {
 
 	response, _ := dialog.Title(applicationTitle).
 		Text("Ignore folder?").
-		ExtraExpand("Are you sure you want to ignore the folder '%s'?", path).
+		ExtraExpandf("Are you sure you want to ignore the folder '%s'?", path).
 		ExtraHeight(70).
 		QuestionIcon().YesNoButtons().Show()
 	if response == gtk.RESPONSE_NO {

@@ -22,9 +22,7 @@ type popupMenu struct {
 }
 
 func newPopupMenu(window *MainWindow) *popupMenu {
-	menu := new(popupMenu)
-	menu.mainWindow = window
-	return menu
+	return &popupMenu{mainWindow: window}
 }
 
 func (p *popupMenu) setup() {
@@ -53,10 +51,7 @@ func (p *popupMenu) setupEvents() {
 				return
 			}
 
-			p.popupOpenPack.SetSensitive(false)
-			if movie.Pack != "" {
-				p.popupOpenPack.SetSensitive(true)
-			}
+			p.popupOpenPack.SetSensitive(movie.Pack != "")
 
 			menu, err := gtk.MenuNew()
 			if err != nil {
@@ -127,7 +122,6 @@ func (p *popupMenu) createGenreMenu(genres []data.Genre, movie *data.Movie, menu
 			}
 
 			menu.Add(item)
-
 			p.addGenreActivateEvent(item, movie, &genre)
 		}
 	}

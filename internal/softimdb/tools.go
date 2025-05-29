@@ -101,7 +101,7 @@ func findMovieFile(path string) (string, error) {
 
 	f, err := os.Open(path)
 	if err != nil {
-		_, _ = dialog.Title("Failed to open path!").Text("Is the NAS unlocked? Check path '%s'.", path).WarningIcon().OkButton().Show()
+		_, _ = dialog.Title("Failed to open path!").Textf("Is the NAS unlocked? Check path '%s'.", path).WarningIcon().OkButton().Show()
 		return "", err
 	}
 	files, err := f.Readdirnames(0)
