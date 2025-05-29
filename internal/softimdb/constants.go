@@ -23,3 +23,15 @@ const (
 	sortAscending  = "asc"
 	sortDescending = "desc"
 )
+
+type View string
+
+const (
+	viewAll            View = "all"
+	viewPacks               = "packs"
+	viewToWatch             = "toWatch"
+	viewNoRating            = "noRating"
+	viewNeedsSubtitles      = "needsSubtitles"
+)
+
+const configFile = "~/.config/softteam/softimdb/config.json"

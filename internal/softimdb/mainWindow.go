@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	"github.com/gotk3/gotk3/gdk"
+	"github.com/gotk3/gotk3/glib"
 	"github.com/gotk3/gotk3/gtk"
 	"github.com/hultan/dialog"
 
@@ -34,18 +35,6 @@ var needsSubtitleIcon []byte
 
 //go:embed assets/softimdb.css
 var mainCss string
-
-type View string
-
-const (
-	viewAll            View = "all"
-	viewPacks               = "packs"
-	viewToWatch             = "toWatch"
-	viewNoRating            = "noRating"
-	viewNeedsSubtitles      = "needsSubtitles"
-)
-
-const configFile = "~/.config/softteam/softimdb/config.json"
 
 type sort struct {
 	by, order string
@@ -188,7 +177,7 @@ func (m *MainWindow) setupMenu(window *gtk.ApplicationWindow) {
 				m.sort.by = sortByName
 				m.sort.order = sortAscending
 				m.menuSortAscending.SetActive(true)
-				m.refresh(m.search, getSortBy(m.sort))
+				m.refresh(m.search, m.sort)
 			}
 		},
 	)
@@ -199,7 +188,7 @@ func (m *MainWindow) setupMenu(window *gtk.ApplicationWindow) {
 				m.sort.by = sortByRating
 				m.sort.order = sortDescending
 				m.menuSortDescending.SetActive(true)
-				m.refresh(m.search, getSortBy(m.sort))
+				m.refresh(m.search, m.sort)
 			}
 		},
 	)
@@ -210,7 +199,7 @@ func (m *MainWindow) setupMenu(window *gtk.ApplicationWindow) {
 				m.sort.by = sortByMyRating
 				m.sort.order = sortDescending
 				m.menuSortDescending.SetActive(true)
-				m.refresh(m.search, getSortBy(m.sort))
+				m.refresh(m.search, m.sort)
 			}
 		},
 	)
@@ -221,7 +210,7 @@ func (m *MainWindow) setupMenu(window *gtk.ApplicationWindow) {
 				m.sort.by = sortByLength
 				m.sort.order = sortDescending
 				m.menuSortDescending.SetActive(true)
-				m.refresh(m.search, getSortBy(m.sort))
+				m.refresh(m.search, m.sort)
 			}
 		},
 	)
@@ -232,7 +221,7 @@ func (m *MainWindow) setupMenu(window *gtk.ApplicationWindow) {
 				m.sort.by = sortByYear
 				m.sort.order = sortDescending
 				m.menuSortDescending.SetActive(true)
-				m.refresh(m.search, getSortBy(m.sort))
+				m.refresh(m.search, m.sort)
 			}
 		},
 	)
@@ -243,7 +232,7 @@ func (m *MainWindow) setupMenu(window *gtk.ApplicationWindow) {
 				m.sort.by = sortById
 				m.sort.order = sortAscending
 				m.menuSortAscending.SetActive(true)
-				m.refresh(m.search, getSortBy(m.sort))
+				m.refresh(m.search, m.sort)
 			}
 		},
 	)
@@ -253,7 +242,7 @@ func (m *MainWindow) setupMenu(window *gtk.ApplicationWindow) {
 		"activate", func() {
 			if m.menuSortAscending.GetActive() {
 				m.sort.order = sortAscending
-				m.refresh(m.search, getSortBy(m.sort))
+				m.refresh(m.search, m.sort)
 			}
 		},
 	)
@@ -262,7 +251,7 @@ func (m *MainWindow) setupMenu(window *gtk.ApplicationWindow) {
 		"activate", func() {
 			if m.menuSortDescending.GetActive() {
 				m.sort.order = sortDescending
-				m.refresh(m.search, getSortBy(m.sort))
+				m.refresh(m.search, m.sort)
 			}
 		},
 	)
@@ -305,8 +294,8 @@ func (m *MainWindow) setupToolBar() {
 	_ = m.searchEntry.Connect("activate", m.onSearchButtonClicked)
 }
 
-func (m *MainWindow) fillMovieList(search search, sortBy string) {
-	movies, err := m.database.SearchMovies(string(m.view.current), search.forWhat, search.genreId, sortBy)
+func (m *MainWindow) fillMovieList(search search, sort sort) {
+	movies, err := m.database.SearchMovies(string(m.view.current), search.forWhat, search.genreId, getSortBy(sort))
 	if err != nil {
 		reportError(err)
 		log.Fatal(err)
@@ -336,8 +325,8 @@ func (m *MainWindow) fillMovieList(search search, sortBy string) {
 		card.SetName("movie_" + strconv.Itoa(movie.Id))
 		m.movieList.Add(card)
 	}
-	m.updateCountLabel(len(movies))
 
+	m.updateCountLabel(len(movies))
 }
 
 func (m *MainWindow) getSelectedMovie() *data.Movie {
@@ -361,15 +350,15 @@ func (m *MainWindow) getSelectedMovie() *data.Movie {
 	if err != nil {
 		return nil
 	}
-	id, err := strconv.Atoi(name[6:])
+	id, err := strconv.Atoi(name[6:]) // Name is movie_<id>
 	if err != nil {
 		return nil
 	}
 	return m.movies[id]
 }
 
-func (m *MainWindow) refresh(search search, sortBy string) {
-	m.fillMovieList(search, sortBy)
+func (m *MainWindow) refresh(search search, sort sort) {
+	m.fillMovieList(search, sort)
 	m.movieList.ShowAll()
 	if m.search.forWhat == "" {
 		m.searchEntry.SetText("")
@@ -379,24 +368,16 @@ func (m *MainWindow) refresh(search search, sortBy string) {
 func (m *MainWindow) fillGenresMenu() {
 	genres, _ := m.database.GetGenres()
 
-	// Create and add genres menu
+	// Create and add the genre menu
 	sub, _ := gtk.MenuNew()
 	m.genresSubMenu = sub
 	m.genresMenu.SetSubmenu(sub)
 
-	// No genre item
-	m.menuNoGenreItem, _ = gtk.RadioMenuItemNewWithLabel(nil, "None")
-	group, _ := m.menuNoGenreItem.GetGroup()
+	// No genre item (create a fake no genre item)
+	genre := data.Genre{Id: -1, Name: "None"}
+	m.menuNoGenreItem = m.addGenreMenu(sub, nil, genre)
 	m.menuNoGenreItem.SetActive(true)
-	m.menuNoGenreItem.SetName("-1")
-	sub.Add(m.menuNoGenreItem)
-	m.menuNoGenreItem.Connect(
-		"activate", func() {
-			if m.menuNoGenreItem.GetActive() {
-				m.searchGenre(m.menuNoGenreItem)
-			}
-		},
-	)
+	group, _ := m.menuNoGenreItem.GetGroup()
 
 	// Separator
 	sep, _ := gtk.SeparatorMenuItemNew()
@@ -405,25 +386,30 @@ func (m *MainWindow) fillGenresMenu() {
 	// Genre items
 	for _, genre := range genres {
 		if showPrivateGenres || !genre.IsPrivate {
-			item, _ := gtk.RadioMenuItemNewWithLabel(group, genre.Name)
-			item.SetName(strconv.Itoa(genre.Id))
-			item.Connect(
-				"activate", func() {
-					if item.GetActive() {
-						m.searchGenre(item)
-					}
-				},
-			)
-			sub.Add(item)
+			m.addGenreMenu(sub, group, genre)
 		}
 	}
+}
+
+func (m *MainWindow) addGenreMenu(sub *gtk.Menu, group *glib.SList, genre data.Genre) *gtk.RadioMenuItem {
+	item, _ := gtk.RadioMenuItemNewWithLabel(group, genre.Name)
+	item.SetName(strconv.Itoa(genre.Id))
+	item.Connect(
+		"activate", func() {
+			if item.GetActive() {
+				m.searchGenre(item)
+			}
+		},
+	)
+	sub.Add(item)
+	return item
 }
 
 func (m *MainWindow) searchGenre(item *gtk.RadioMenuItem) {
 	name, _ := item.GetName()
 	i, _ := strconv.Atoi(name)
 	m.search.genreId = i
-	m.refresh(m.search, getSortBy(m.sort))
+	m.refresh(m.search, m.sort)
 }
 
 func (m *MainWindow) saveMovieInfo(movieInfo *movieInfo, movie *data.Movie) {
@@ -539,7 +525,7 @@ func (m *MainWindow) onEditMovieInfoClicked() {
 		return
 	}
 
-	// Open movie dialog here
+	// Open the movie dialog here
 	if m.movieWin == nil {
 		m.movieWin = newMovieWindow(m.builder, m.window, m.database, m.config)
 	}
@@ -562,7 +548,7 @@ func (m *MainWindow) onRefreshButtonClicked() {
 	m.menuNoGenreItem.SetActive(true)
 	m.menuSortByName.SetActive(true)
 	m.menuSortAscending.SetActive(true)
-	m.refresh(m.search, getSortBy(m.sort))
+	m.refresh(m.search, m.sort)
 }
 
 func (m *MainWindow) onSearchButtonClicked() {
@@ -573,19 +559,19 @@ func (m *MainWindow) onSearchButtonClicked() {
 	}
 	search = strings.Trim(search, " ")
 	m.search.forWhat = search
-	m.refresh(m.search, getSortBy(m.sort))
+	m.refresh(m.search, m.sort)
 }
 
 func (m *MainWindow) onClearSearchButtonClicked() {
 	m.search.forWhat = ""
 	m.searchEntry.SetText("")
-	m.refresh(m.search, getSortBy(m.sort))
+	m.refresh(m.search, m.sort)
 }
 
 func (m *MainWindow) onKeyPressEvent(_ *gtk.ApplicationWindow, event *gdk.Event) {
 	keyEvent := gdk.EventKeyNewFromEvent(event)
 
-	special := (keyEvent.State() & gdk.MOD2_MASK) != 0 // Used for special keys like F5, DELETE, HOME in X11 etc
+	special := (keyEvent.State() & gdk.MOD2_MASK) != 0 // Used for special keys like F5, DELETE, HOME in X11.
 	ctrl := (keyEvent.State() & gdk.CONTROL_MASK) != 0
 
 	if special {
@@ -680,7 +666,7 @@ func (m *MainWindow) onOpenPackClicked() {
 	m.menuNoGenreItem.SetActive(true)
 	m.menuSortByName.SetActive(true)
 	m.menuSortAscending.SetActive(true)
-	m.refresh(m.search, getSortBy(m.sort))
+	m.refresh(m.search, m.sort)
 }
 
 func (m *MainWindow) onOpenFolderClicked() {
@@ -709,7 +695,7 @@ func (m *MainWindow) onWindowClosed(r gtk.ResponseType, info *movieInfo, movie *
 
 func (m *MainWindow) onShowHidePrivateClicked() {
 	showPrivateGenres = !showPrivateGenres
-	m.refresh(m.search, getSortBy(m.sort))
+	m.refresh(m.search, m.sort)
 
 	m.genresSubMenu.Destroy()
 	m.genresSubMenu = nil

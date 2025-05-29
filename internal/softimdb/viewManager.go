@@ -24,7 +24,7 @@ func newViewManager(m *MainWindow) viewManager {
 			w.viewToWatchButton.SetActive(false)
 			w.viewNoRatingButton.SetActive(false)
 			w.viewNeedsSubtitlesButton.SetActive(false)
-			m.refresh(m.search, getSortBy(m.sort))
+			m.refresh(m.search, m.sort)
 		}
 	})
 	_ = w.viewPacksButton.Connect("toggled", func() {
@@ -34,7 +34,7 @@ func newViewManager(m *MainWindow) viewManager {
 			w.viewToWatchButton.SetActive(false)
 			w.viewNoRatingButton.SetActive(false)
 			w.viewNeedsSubtitlesButton.SetActive(false)
-			m.refresh(m.search, getSortBy(m.sort))
+			m.refresh(m.search, m.sort)
 		}
 	})
 	_ = w.viewToWatchButton.Connect("toggled", func() {
@@ -44,7 +44,7 @@ func newViewManager(m *MainWindow) viewManager {
 			w.viewPacksButton.SetActive(false)
 			w.viewNoRatingButton.SetActive(false)
 			w.viewNeedsSubtitlesButton.SetActive(false)
-			m.refresh(m.search, getSortBy(m.sort))
+			m.refresh(m.search, m.sort)
 		}
 	})
 	_ = w.viewNoRatingButton.Connect("toggled", func() {
@@ -54,7 +54,7 @@ func newViewManager(m *MainWindow) viewManager {
 			w.viewPacksButton.SetActive(false)
 			w.viewToWatchButton.SetActive(false)
 			w.viewNeedsSubtitlesButton.SetActive(false)
-			m.refresh(m.search, getSortBy(m.sort))
+			m.refresh(m.search, m.sort)
 		}
 	})
 	_ = w.viewNeedsSubtitlesButton.Connect("toggled", func() {
@@ -64,7 +64,7 @@ func newViewManager(m *MainWindow) viewManager {
 			w.viewPacksButton.SetActive(false)
 			w.viewToWatchButton.SetActive(false)
 			w.viewNoRatingButton.SetActive(false)
-			m.refresh(m.search, getSortBy(m.sort))
+			m.refresh(m.search, m.sort)
 		}
 	})
 
