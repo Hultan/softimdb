@@ -7,10 +7,7 @@ type ImageCache struct {
 
 // imageCacheNew creates a new ImageCache.
 func imageCacheNew() *ImageCache {
-	cache := new(ImageCache)
-	cache.data = make(map[int][]byte, 2000)
-
-	return cache
+	return &ImageCache{data: make(map[int][]byte, 2000)}
 }
 
 // save saves the image to the cache.
@@ -24,8 +21,7 @@ func (i *ImageCache) save(index int, image []byte) {
 
 // load loads the image from the cache.
 func (i *ImageCache) load(index int) []byte {
-	value, ok := i.data[index]
-	if ok {
+	if value, ok := i.data[index]; ok {
 		return value
 	}
 	return nil
