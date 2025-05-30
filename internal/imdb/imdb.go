@@ -404,13 +404,18 @@ func (m *Manager) downloadFile(url string) ([]byte, error) {
 
 func (m *Manager) parseYear(year string) (int, error) {
 	year = strings.TrimSpace(year)
+
 	if len(year) > 4 {
 		year = year[:4]
 	}
+
 	yearInt, err := strconv.Atoi(year)
-	if err != nil || yearInt < 1900 || yearInt > 2100 {
-		// We retrieved an invalid release year, abort
-		return -1, err
+	if err != nil {
+		return -1, fmt.Errorf("invalid year format: %w", err)
+	}
+
+	if yearInt < 1900 || yearInt > 2100 {
+		return -1, fmt.Errorf("year out of range: %d", yearInt)
 	}
 
 	return yearInt, nil

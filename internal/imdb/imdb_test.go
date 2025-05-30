@@ -74,3 +74,41 @@ func TestCalcRuntime(t *testing.T) {
 		})
 	}
 }
+
+func TestParseYear(t *testing.T) {
+	manager := &Manager{}
+
+	tests := []struct {
+		input       string
+		expected    int
+		expectError bool
+	}{
+		{"2024", 2024, false},
+		{" 1999 ", 1999, false},
+		{"2017-06-23", 2017, false},
+		{"abcd", -1, true},
+		{"", -1, true},
+		{"2101", -1, true},
+		{"1899", -1, true},
+		{"0000", -1, true},
+		{"202", -1, true},
+	}
+
+	for _, test := range tests {
+		t.Run(test.input, func(t *testing.T) {
+			result, err := manager.parseYear(test.input)
+			if test.expectError {
+				if err == nil {
+					t.Errorf("expected error for input %q, got none", test.input)
+				}
+			} else {
+				if err != nil {
+					t.Errorf("unexpected error for input %q: %v", test.input, err)
+				}
+				if result != test.expected {
+					t.Errorf("input %q: expected %d, got %d", test.input, test.expected, result)
+				}
+			}
+		})
+	}
+}
