@@ -2,6 +2,7 @@ package data
 
 import (
 	"errors"
+	"fmt"
 	"strings"
 
 	"gorm.io/gorm"
@@ -15,8 +16,6 @@ type Genre struct {
 	Movies    []Movie `gorm:"-"`
 }
 
-var genreCache *GenreCache
-
 // TableName returns the genre table name.
 func (t *Genre) TableName() string {
 	return "genre"
@@ -26,13 +25,13 @@ func (t *Genre) TableName() string {
 func (d *Database) GetGenres() ([]Genre, error) {
 	db, err := d.getDatabase()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get database: %w", err)
 	}
 
 	// Get genre id:s for movie
 	var genres []Genre
-	if result := db.Find(&genres); result.Error != nil {
-		return nil, result.Error
+	if err := db.Find(&genres).Error; err != nil {
+		return nil, fmt.Errorf("failed to query genres: %w", err)
 	}
 
 	// Fill genre cache
@@ -45,24 +44,28 @@ func (d *Database) GetGenres() ([]Genre, error) {
 
 // getGenreByName returns a genre by name.
 func (d *Database) getGenreByName(name string) (*Genre, error) {
-	name = strings.Trim(name, " \t\n")
+	name = strings.TrimSpace(name)
+	if name == "" {
+		return nil, nil // or return an error if an empty name is invalid
+	}
 
-	// Check genre cache
-	t := genreCache.getByName(name)
-	if t != nil {
-		return t, nil
+	// Check genre cache first
+	if genre := genreCache.getByName(name); genre != nil {
+		return genre, nil
 	}
 
 	db, err := d.getDatabase()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get database: %w", err)
 	}
-	genre := Genre{}
-	if result := db.Where("name=?", name).First(&genre); result.Error != nil {
-		if !errors.Is(result.Error, gorm.ErrRecordNotFound) {
-			return nil, result.Error
+
+	var genre Genre
+	result := db.Where("name = ?", name).First(&genre)
+	if result.Error != nil {
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			return nil, nil // Not found is not an error, so return nil, nil
 		}
-		return nil, nil
+		return nil, fmt.Errorf("database query error: %w", result.Error)
 	}
 
 	return &genre, nil
@@ -70,28 +73,30 @@ func (d *Database) getGenreByName(name string) (*Genre, error) {
 
 // getOrInsertGenre either returns an existing genre or inserts a new genre and returns it.
 func (d *Database) getOrInsertGenre(genre *Genre) (*Genre, error) {
-	db, err := d.getDatabase()
-	if err != nil {
-		return nil, err
+	genre.Name = strings.TrimSpace(genre.Name)
+	if genre.Name == "" {
+		return nil, fmt.Errorf("genre name cannot be empty")
 	}
 
-	// Check if genre exists
+	// Check if the genre already exists
 	existingGenre, err := d.getGenreByName(genre.Name)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to query genre: %w", err)
 	}
-
-	// If it does, return it
 	if existingGenre != nil {
 		return existingGenre, nil
 	}
 
-	genre.Name = strings.Trim(genre.Name, " \t\n")
-
-	// If it does not, create it
-	if result := db.Create(genre); result.Error != nil {
-		return nil, result.Error
+	db, err := d.getDatabase()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get database: %w", err)
 	}
+
+	// Insert new genre
+	if result := db.Create(genre); result.Error != nil {
+		return nil, fmt.Errorf("failed to create genre: %w", result.Error)
+	}
+
 	return genre, nil
 }
 
@@ -99,33 +104,30 @@ func (d *Database) getOrInsertGenre(genre *Genre) (*Genre, error) {
 func (d *Database) getGenresForMovie(movie *Movie) ([]Genre, error) {
 	db, err := d.getDatabase()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get database: %w", err)
 	}
 
-	// Get genre id:s for movie
+	// Fetch genre IDs associated with the movie
 	var movieGenres []MovieGenre
-	if result := db.Where("movie_id=?", movie.Id).Find(&movieGenres); result.Error != nil {
-		return nil, result.Error
+	if result := db.Where("movie_id = ?", movie.Id).Find(&movieGenres); result.Error != nil {
+		return nil, fmt.Errorf("failed to query movie genres: %w", result.Error)
 	}
 
 	var genres []Genre
-
-	// Get genres for movieGenres
-outerLoop:
-	for i := range movieGenres {
-		// Check genre cache first
-		t := genreCache.getById(movieGenres[i].GenreId)
-		if t != nil {
-			genres = append(genres, *t)
-			continue outerLoop
+	for _, mg := range movieGenres {
+		// Attempt to get genre from the cache
+		if cachedGenre := genreCache.getById(mg.GenreId); cachedGenre != nil {
+			genres = append(genres, *cachedGenre)
+			continue
 		}
 
-		// Genre did not exist in the genre cache, load it
-		// and add it to genre cache
+		// Not in cache, query the genre from DB
 		var genre Genre
-		if result := db.Where("id=?", movieGenres[i].GenreId).Find(&genre); result.Error != nil {
-			return nil, result.Error
+		if result := db.First(&genre, mg.GenreId); result.Error != nil {
+			return nil, fmt.Errorf("failed to query genre with ID %d: %w", mg.GenreId, result.Error)
 		}
+
+		// Add to the cache and result list
 		genreCache.add(&genre)
 		genres = append(genres, genre)
 	}
@@ -137,16 +139,13 @@ outerLoop:
 func (d *Database) deleteGenresForMovie(movie *Movie) error {
 	db, err := d.getDatabase()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get database: %w", err)
 	}
 
-	// Get genre id:s for movie
-	var movieGenres []MovieGenre
-	if result := db.Where("movie_id=?", movie.Id).Find(&movieGenres); result.Error != nil {
-		return result.Error
+	// Delete all MovieGenre entries with the given movie ID in one step
+	if result := db.Where("movie_id = ?", movie.Id).Delete(&MovieGenre{}); result.Error != nil {
+		return fmt.Errorf("failed to delete genres for movie ID %d: %w", movie.Id, result.Error)
 	}
-
-	db.Delete(&movieGenres)
 
 	return nil
 }

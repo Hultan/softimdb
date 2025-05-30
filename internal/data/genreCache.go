@@ -4,6 +4,8 @@ type GenreCache struct {
 	genres []*Genre
 }
 
+var genreCache *GenreCache
+
 func genreCacheNew() *GenreCache {
 	return &GenreCache{}
 }
