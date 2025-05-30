@@ -27,25 +27,23 @@ func (d *Database) InsertMovieGenre(movie *Movie, Genre *Genre) error {
 		GenreId: Genre.Id,
 	}
 
-	if result := db.Create(movieGenre); result.Error != nil {
-		return result.Error
+	if err := db.Create(movieGenre).Error; err != nil {
+		return err
 	}
+
 	return nil
 }
 
 // RemoveMovieGenre removes a movie genre from the database.
+// RemoveMovieGenre removes a genre association from a movie.
 func (d *Database) RemoveMovieGenre(movie *Movie, genre *Genre) error {
 	db, err := d.getDatabase()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get database: %w", err)
 	}
 
-	sqlString := "delete from movie_genre where movie_id = %v and genre_id = %v"
-	sql := fmt.Sprintf(sqlString, movie.Id, genre.Id)
-	tx := db.Exec(sql)
-
-	if tx.Error != nil {
-		return tx.Error
+	if err := db.Exec("DELETE FROM movie_genre WHERE movie_id = ? AND genre_id = ?", movie.Id, genre.Id).Error; err != nil {
+		return fmt.Errorf("failed to delete movie_genre for movie ID %d and genre ID %d: %w", movie.Id, genre.Id, err)
 	}
 
 	return nil
@@ -63,8 +61,8 @@ func (d *Database) getOrInsertMovieGenre(movie *Movie, genre *Genre) error {
 		GenreId: genre.Id,
 	}
 
-	if result := db.FirstOrCreate(&movieGenre); result.Error != nil {
-		return result.Error
+	if err := db.FirstOrCreate(&movieGenre).Error; err != nil {
+		return err
 	}
 
 	return nil
