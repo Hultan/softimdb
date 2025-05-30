@@ -57,8 +57,6 @@ type GTK struct {
 	storyLineLabel                        *gtk.Label
 	storyLineScrolledWindow               *gtk.ScrolledWindow
 	searchEntry                           *gtk.Entry
-	searchButton                          *gtk.ToolButton
-	clearSearchButton                     *gtk.ToolButton
 	countLabel                            *gtk.Label
 	menuNoGenreItem                       *gtk.RadioMenuItem
 	menuSortByName, menuSortByRating      *gtk.RadioMenuItem
@@ -173,91 +171,16 @@ func (m *MainWindow) setupMenu(window *gtk.ApplicationWindow) {
 	_ = menuHelpAbout.Connect("activate", m.onOpenAboutDialogClicked)
 
 	// Sort menu
-	m.gtk.menuSortByName = m.builder.GetObject("menuSortByName").(*gtk.RadioMenuItem)
-	m.gtk.menuSortByName.Connect(
-		"activate", func() {
-			if m.gtk.menuSortByName.GetActive() {
-				m.sort.by = sortByName
-				m.sort.order = sortAscending
-				m.gtk.menuSortAscending.SetActive(true)
-				m.refresh(m.search, m.sort)
-			}
-		},
-	)
-	m.gtk.menuSortByRating = m.builder.GetObject("menuSortByRating").(*gtk.RadioMenuItem)
-	m.gtk.menuSortByRating.Connect(
-		"activate", func() {
-			if m.gtk.menuSortByRating.GetActive() {
-				m.sort.by = sortByRating
-				m.sort.order = sortDescending
-				m.gtk.menuSortDescending.SetActive(true)
-				m.refresh(m.search, m.sort)
-			}
-		},
-	)
-	m.gtk.menuSortByMyRating = m.builder.GetObject("menuSortByMyRating").(*gtk.RadioMenuItem)
-	m.gtk.menuSortByMyRating.Connect(
-		"activate", func() {
-			if m.gtk.menuSortByMyRating.GetActive() {
-				m.sort.by = sortByMyRating
-				m.sort.order = sortDescending
-				m.gtk.menuSortDescending.SetActive(true)
-				m.refresh(m.search, m.sort)
-			}
-		},
-	)
-	m.gtk.menuSortByLength = m.builder.GetObject("menuSortByLength").(*gtk.RadioMenuItem)
-	m.gtk.menuSortByLength.Connect(
-		"activate", func() {
-			if m.gtk.menuSortByLength.GetActive() {
-				m.sort.by = sortByLength
-				m.sort.order = sortDescending
-				m.gtk.menuSortDescending.SetActive(true)
-				m.refresh(m.search, m.sort)
-			}
-		},
-	)
-	m.gtk.menuSortByYear = m.builder.GetObject("menuSortByYear").(*gtk.RadioMenuItem)
-	m.gtk.menuSortByYear.Connect(
-		"activate", func() {
-			if m.gtk.menuSortByYear.GetActive() {
-				m.sort.by = sortByYear
-				m.sort.order = sortDescending
-				m.gtk.menuSortDescending.SetActive(true)
-				m.refresh(m.search, m.sort)
-			}
-		},
-	)
-	m.gtk.menuSortById = m.builder.GetObject("menuSortById").(*gtk.RadioMenuItem)
-	m.gtk.menuSortById.Connect(
-		"activate", func() {
-			if m.gtk.menuSortById.GetActive() {
-				m.sort.by = sortById
-				m.sort.order = sortAscending
-				m.gtk.menuSortAscending.SetActive(true)
-				m.refresh(m.search, m.sort)
-			}
-		},
-	)
+	m.setupSortMenuItem("menuSortByName", sortByName, sortAscending)
+	m.setupSortMenuItem("menuSortByRating", sortByRating, sortDescending)
+	m.setupSortMenuItem("menuSortByMyRating", sortByMyRating, sortDescending)
+	m.setupSortMenuItem("menuSortByLength", sortByLength, sortDescending)
+	m.setupSortMenuItem("menuSortByYear", sortByYear, sortDescending)
+	m.setupSortMenuItem("menuSortById", sortById, sortAscending)
 
-	m.gtk.menuSortAscending = m.builder.GetObject("menuSortAscending").(*gtk.RadioMenuItem)
-	m.gtk.menuSortAscending.Connect(
-		"activate", func() {
-			if m.gtk.menuSortAscending.GetActive() {
-				m.sort.order = sortAscending
-				m.refresh(m.search, m.sort)
-			}
-		},
-	)
-	m.gtk.menuSortDescending = m.builder.GetObject("menuSortDescending").(*gtk.RadioMenuItem)
-	m.gtk.menuSortDescending.Connect(
-		"activate", func() {
-			if m.gtk.menuSortDescending.GetActive() {
-				m.sort.order = sortDescending
-				m.refresh(m.search, m.sort)
-			}
-		},
-	)
+	// Sorting order radio items
+	m.setupSortOrderMenuItem("menuSortAscending", sortAscending)
+	m.setupSortOrderMenuItem("menuSortDescending", sortDescending)
 
 	m.sort.by = sortByName
 	m.sort.order = sortAscending
@@ -267,34 +190,78 @@ func (m *MainWindow) setupMenu(window *gtk.ApplicationWindow) {
 	m.fillGenresMenu()
 }
 
+// helper function to set up sorting menu items
+func (m *MainWindow) setupSortMenuItem(name string, sortBy string, defaultOrder string) {
+	menuItem := m.builder.GetObject(name).(*gtk.RadioMenuItem)
+
+	menuItem.Connect("activate", func() {
+		if menuItem.GetActive() {
+			m.sort.by = sortBy
+			m.sort.order = defaultOrder
+
+			// Update order menu
+			if defaultOrder == sortAscending {
+				m.gtk.menuSortAscending.SetActive(true)
+			} else {
+				m.gtk.menuSortDescending.SetActive(true)
+			}
+
+			m.refresh(m.search, m.sort)
+		}
+	})
+
+	// Store in m.gtk for future access
+	switch name {
+	case "menuSortByName":
+		m.gtk.menuSortByName = menuItem
+	case "menuSortByRating":
+		m.gtk.menuSortByRating = menuItem
+	case "menuSortByMyRating":
+		m.gtk.menuSortByMyRating = menuItem
+	case "menuSortByLength":
+		m.gtk.menuSortByLength = menuItem
+	case "menuSortByYear":
+		m.gtk.menuSortByYear = menuItem
+	case "menuSortById":
+		m.gtk.menuSortById = menuItem
+	}
+}
+
+func (m *MainWindow) setupSortOrderMenuItem(name string, order string) {
+	menuItem := m.builder.GetObject(name).(*gtk.RadioMenuItem)
+
+	menuItem.Connect("activate", func() {
+		if menuItem.GetActive() {
+			m.sort.order = order
+			m.refresh(m.search, m.sort)
+		}
+	})
+
+	// Store reference in m.gtk
+	switch name {
+	case "menuSortAscending":
+		m.gtk.menuSortAscending = menuItem
+	case "menuSortDescending":
+		m.gtk.menuSortDescending = menuItem
+	}
+}
+
 func (m *MainWindow) setupToolBar() {
-	// Quit button
-	button := m.builder.GetObject("quitButton").(*gtk.ToolButton)
-	_ = button.Connect("clicked", m.gtk.window.Close)
-
-	// Refresh button
-	button = m.builder.GetObject("refreshButton").(*gtk.ToolButton)
-	_ = button.Connect("clicked", m.onRefreshButtonClicked)
-
-	// Play button
-	button = m.builder.GetObject("playMovieButton").(*gtk.ToolButton)
-	_ = button.Connect("clicked", m.onPlayMovieClicked)
-
-	// Add button
-	button = m.builder.GetObject("addButton").(*gtk.ToolButton)
-	_ = button.Connect("clicked", m.onOpenAddWindowClicked)
-
-	// Search button
-	m.gtk.searchButton = m.builder.GetObject("searchButton").(*gtk.ToolButton)
-	_ = m.gtk.searchButton.Connect("clicked", m.onSearchButtonClicked)
-
-	// Clear search button
-	m.gtk.clearSearchButton = m.builder.GetObject("clearSearchButton").(*gtk.ToolButton)
-	_ = m.gtk.clearSearchButton.Connect("clicked", m.onClearSearchButtonClicked)
+	m.connectToolButton("quitButton", m.gtk.window.Close)
+	m.connectToolButton("refreshButton", m.onRefreshButtonClicked)
+	m.connectToolButton("playMovieButton", m.onPlayMovieClicked)
+	m.connectToolButton("addButton", m.onOpenAddWindowClicked)
+	m.connectToolButton("searchButton", m.onSearchButtonClicked)
+	m.connectToolButton("clearSearchButton", m.onClearSearchButtonClicked)
 
 	// Search entry
 	m.gtk.searchEntry = m.builder.GetObject("searchEntry").(*gtk.Entry)
 	_ = m.gtk.searchEntry.Connect("activate", m.onSearchButtonClicked)
+}
+
+func (m *MainWindow) connectToolButton(name string, handler func()) {
+	button := m.builder.GetObject(name).(*gtk.ToolButton)
+	_ = button.Connect("clicked", handler)
 }
 
 func (m *MainWindow) fillMovieList(search Search, sort Sort) {
