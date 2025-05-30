@@ -1,6 +1,7 @@
 package softimdb
 
 import (
+	"errors"
 	"fmt"
 	"log"
 
@@ -65,36 +66,38 @@ func (a *addMovieWindow) open() {
 	a.window.ShowAll()
 	a.window.QueueDraw()
 
-	go func() {
-		// Find new paths on NAS
-		nasManager := nas.ManagerNew(a.database)
-		moviePaths, err := nasManager.GetMovies(a.config)
+	go a.findNewMovies()
+}
+
+func (a *addMovieWindow) findNewMovies() {
+	// Find new paths on NAS
+	nasManager := nas.ManagerNew(a.database)
+	moviePaths, err := nasManager.GetMovies(a.config)
+	if err != nil {
+		_, _ = dialog.Title("Error").
+			ErrorIcon().
+			Text("Failed to access NAS or database...").
+			Show()
+
+		return
+	}
+
+	clearListBox(a.list)
+
+	if len(moviePaths) <= 0 {
+		label, err := gtk.LabelNew("No new movies found...")
 		if err != nil {
-			_, _ = dialog.Title("Error").
-				ErrorIcon().
-				Text("Failed to access NAS or database...").
-				Show()
-
-			return
+			reportError(err)
+			log.Fatal(err)
 		}
+		label.SetHAlign(gtk.ALIGN_START)
+		a.list.Add(label)
+	} else {
+		a.fillList(a.list, moviePaths)
+	}
 
-		clearListBox(a.list)
-
-		if len(moviePaths) <= 0 {
-			label, err := gtk.LabelNew("No new movies found...")
-			if err != nil {
-				reportError(err)
-				log.Fatal(err)
-			}
-			label.SetHAlign(gtk.ALIGN_START)
-			a.list.Add(label)
-		} else {
-			a.fillList(a.list, moviePaths)
-		}
-
-		a.window.ShowAll()
-		a.window.QueueDraw()
-	}()
+	a.window.ShowAll()
+	a.window.QueueDraw()
 }
 
 func (a *addMovieWindow) fillList(list *gtk.ListBox, paths []string) {
@@ -108,7 +111,7 @@ func (a *addMovieWindow) fillList(list *gtk.ListBox, paths []string) {
 		list.Add(label)
 	}
 	// Select the first row, this won't crash if
-	// list is empty, since GetRowAtIndex returns
+	// the list is empty, since GetRowAtIndex returns
 	// nil, and SelectRow can handle nil.
 	row := list.GetRowAtIndex(0)
 	list.SelectRow(row)
@@ -132,16 +135,15 @@ func (a *addMovieWindow) windowClosed(r gtk.ResponseType, info *movieInfo, movie
 func (a *addMovieWindow) insertMovie(info *movieInfo, _ *data.Movie) {
 	newMovie := &data.Movie{}
 	info.toDatabase(newMovie)
-	err := a.database.InsertMovie(newMovie)
-	if err != nil {
-		reportError(err)
+
+	if err := a.database.InsertMovie(newMovie); err != nil {
+		reportError(fmt.Errorf("failed to insert movie: %w", err))
 		return
 	}
 
-	// Get selected row and remove it
 	row := a.list.GetSelectedRow()
 	if row == nil {
-		reportError(err)
+		reportError(errors.New("no row selected in movie list"))
 		return
 	}
 
@@ -156,30 +158,39 @@ func (a *addMovieWindow) onIgnorePathButtonClicked() {
 	}
 	widget, err := row.GetChild()
 	if err != nil {
+		reportError(fmt.Errorf("failed to get child widget from row: %w", err))
 		return
 	}
 
-	var path string
 	label, ok := widget.(*gtk.Label)
-	if ok {
-		path, err = label.GetText()
-		if err != nil {
-			return
-		}
+	if !ok {
+		reportError(errors.New("expected widget to be a *gtk.Label"))
+		return
 	}
 
-	response, _ := dialog.Title(applicationTitle).
+	path, err := label.GetText()
+	if err != nil {
+		reportError(fmt.Errorf("failed to get text from label: %w", err))
+		return
+	}
+
+	response, err := dialog.Title(applicationTitle).
 		Text("Ignore folder?").
 		ExtraExpandf("Are you sure you want to ignore the folder '%s'?", path).
 		ExtraHeight(70).
 		QuestionIcon().YesNoButtons().Show()
+	if err != nil {
+		reportError(fmt.Errorf("failed to show dialog: %w", err))
+		return
+	}
 	if response == gtk.RESPONSE_NO {
 		return
 	}
 
+	// Save to DB
 	ignorePath := data.IgnoredPath{Path: path}
-	err = a.database.InsertIgnorePath(&ignorePath)
-	if err != nil {
+	if err := a.database.InsertIgnorePath(&ignorePath); err != nil {
+		reportError(fmt.Errorf("failed to insert ignore path: %w", err))
 		return
 	}
 
@@ -198,11 +209,9 @@ func (a *addMovieWindow) onAddMovieButtonClicked() {
 		return
 	}
 
-	info := &movieInfo{
-		moviePath: moviePath,
-	}
+	info := &movieInfo{moviePath: moviePath}
 
-	// Open movie dialog here
+	// Open the movie dialog here
 	if a.mainWindow.movieWin == nil {
 		a.mainWindow.movieWin = newMovieWindow(a.mainWindow.builder, a.window, a.database, a.config)
 	}
@@ -214,24 +223,32 @@ func (a *addMovieWindow) onRowActivated() {
 	if row == nil {
 		return
 	}
+
 	labelObj, err := row.GetChild()
 	if err != nil {
+		reportError(errors.New("failed to get child widget from row"))
 		return
 	}
-	label := labelObj.(*gtk.Label)
+
+	label, ok := labelObj.(*gtk.Label)
+	if !ok {
+		reportError(errors.New("expected labelObj to be a *gtk.Label"))
+		return
+	}
+
 	path, err := label.GetText()
 	if err != nil {
+		reportError(fmt.Errorf("failed to get text from label: %w", err))
 		return
 	}
+
 	a.moviePathEntry.SetText(path)
 }
-
 func (a *addMovieWindow) getGenres(genres []string) []data.Genre {
-	var dataGenres []data.Genre
+	dataGenres := make([]data.Genre, len(genres))
 
-	for _, genre := range genres {
-		dataGenre := data.Genre{Name: genre}
-		dataGenres = append(dataGenres, dataGenre)
+	for i, genre := range genres {
+		dataGenres[i] = data.Genre{Name: genre}
 	}
 
 	return dataGenres
