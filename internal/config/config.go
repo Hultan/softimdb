@@ -29,10 +29,14 @@ func LoadConfig(path string) (*Config, error) {
 		return nil, err
 	}
 
+	if _, statErr := os.Stat(p); os.IsNotExist(statErr) {
+		return nil, fmt.Errorf("config file does not exist: %s", p)
+	}
+
 	// Open Loader file
 	configFile, err := os.Open(p)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to open config file %s: %w", p, err)
 	}
 	defer func() {
 		if closeErr := configFile.Close(); closeErr != nil && err == nil {
