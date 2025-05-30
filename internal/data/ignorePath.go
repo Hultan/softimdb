@@ -19,8 +19,8 @@ func (d *Database) GetAllIgnoredPaths() ([]*IgnoredPath, error) {
 		return nil, err
 	}
 	var ignoredPaths []*IgnoredPath
-	if result := db.Find(&ignoredPaths); result.Error != nil {
-		return nil, result.Error
+	if err := db.Find(&ignoredPaths).Error; err != nil {
+		return nil, err
 	}
 
 	return ignoredPaths, nil
@@ -32,8 +32,8 @@ func (d *Database) InsertIgnorePath(ignorePath *IgnoredPath) error {
 	if err != nil {
 		return err
 	}
-	if result := db.Create(ignorePath); result.Error != nil {
-		return result.Error
+	if err := db.Create(ignorePath).Error; err != nil {
+		return err
 	}
 
 	return nil
@@ -45,8 +45,8 @@ func (d *Database) DeleteIgnorePath(ignorePath *IgnoredPath) error {
 	if err != nil {
 		return err
 	}
-	if result := db.Delete(ignorePath, ignorePath.Id); result.Error != nil {
-		return result.Error
+	if err := db.Delete(ignorePath, ignorePath.Id).Error; err != nil {
+		return err
 	}
 
 	return nil
