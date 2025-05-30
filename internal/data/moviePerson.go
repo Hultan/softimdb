@@ -7,7 +7,7 @@ type MoviePerson struct {
 	Type     int `gorm:"column:type;"`
 }
 
-// TableName returns the person table name.
+// TableName returns the person's table name.
 func (m *MoviePerson) TableName() string {
 	return "movie_person"
 }
@@ -25,8 +25,8 @@ func (d *Database) InsertMoviePerson(movie *Movie, person *Person) error {
 		Type:     int(person.Type),
 	}
 
-	if result := db.FirstOrCreate(&moviePerson); result.Error != nil {
-		return result.Error
+	if err := db.FirstOrCreate(&moviePerson).Error; err != nil {
+		return err
 	}
 	return nil
 }
