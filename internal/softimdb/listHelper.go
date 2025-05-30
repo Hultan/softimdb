@@ -22,7 +22,7 @@ func (l *ListHelper) CreateMovieCard(movie *data.Movie) *gtk.Frame {
 		log.Fatal(err)
 	}
 
-	// Create an overlay, to allow us to overlay a toWatch image.
+	// Create an overlay to allow us to overlay a toWatch image.
 	overlay, err := gtk.OverlayNew()
 	if err != nil {
 		reportError(err)
@@ -34,7 +34,7 @@ func (l *ListHelper) CreateMovieCard(movie *data.Movie) *gtk.Frame {
 	box := createMovieBox(movie)
 	overlay.AddOverlay(box)
 
-	// Add to watch flag (if needed)
+	// Add to the watch icon (if needed)
 	if movie.ToWatch {
 		toWatchImage := createToWatchOverlay()
 		overlay.AddOverlay(toWatchImage)
@@ -101,7 +101,7 @@ func createMovieBox(movie *data.Movie) *gtk.Box {
 	return box
 }
 
-// createMovieInfoBox creates a box containing movie title, year and subtitle
+// createMovieInfoBox creates a box containing the movie title, year and subtitle
 func createMovieInfoBox(movie *data.Movie) *gtk.Box {
 	box, err := gtk.BoxNew(gtk.ORIENTATION_HORIZONTAL, 5)
 	if err != nil {
@@ -231,7 +231,7 @@ func createToWatchOverlay() *gtk.Image {
 	return image
 }
 
-// createToWatchOverlay creates a gtk.Image containing the to watch image
+// createNeedsSubtitleOverlay creates a gtk.Image containing the NeedsSubtitle image
 func createNeedsSubtitleOverlay() *gtk.Image {
 	pixBuf, err := gdk.PixbufNewFromBytesOnly(needsSubtitleIcon)
 	if err != nil {
