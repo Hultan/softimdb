@@ -273,46 +273,6 @@ func (m *Manager) getMovieRuntime(doc *goquery.Document) (int, error) {
 	return runtime, nil
 }
 
-func (m *Manager) calcRuntime(runtimeString string) (int, error) {
-	items := strings.Split(runtimeString, " ")
-	if len(items) != 1 && len(items) != 2 {
-		return -1, errors.New(fmt.Sprintf("invalid IMDB runtime: %s", runtimeString))
-	}
-
-	var hours, minutes int
-	var err error
-	switch len(items) {
-	case 1:
-		if strings.HasSuffix(items[0], "m") {
-			minutes, err = strconv.Atoi(items[0][:len(items[0])-1])
-		} else if strings.HasSuffix(items[0], "h") {
-			hours, err = strconv.Atoi(items[0][:len(items[0])-1])
-		} else {
-			return -1, errors.New(fmt.Sprintf("invalid IMDB runtime: %s", runtimeString))
-		}
-		if err != nil {
-			return -1, err
-		}
-	case 2:
-		if !strings.HasSuffix(items[0], "h") {
-			return -1, errors.New(fmt.Sprintf("invalid IMDB runtime: %s", runtimeString))
-		}
-		hours, err = strconv.Atoi(items[0][:len(items[0])-1])
-		if err != nil {
-			return -1, err
-		}
-		if !strings.HasSuffix(items[1], "m") {
-			return -1, errors.New(fmt.Sprintf("invalid IMDB runtime: %s", runtimeString))
-		}
-		minutes, err = strconv.Atoi(items[1][:len(items[1])-1])
-		if err != nil {
-			return -1, err
-		}
-	}
-
-	return hours*60 + minutes, nil
-}
-
 func (m *Manager) getMovieYear(doc *goquery.Document) (yearInt int, err error) {
 	for i := 1; i <= 2; i++ {
 		selector := strings.Replace(constYearSelector, "[CHILD]", strconv.Itoa(i), -1)
@@ -323,20 +283,6 @@ func (m *Manager) getMovieYear(doc *goquery.Document) (yearInt int, err error) {
 	}
 
 	if err != nil {
-		return -1, err
-	}
-
-	return yearInt, nil
-}
-
-func (m *Manager) parseYear(year string) (int, error) {
-	year = strings.TrimSpace(year)
-	if len(year) > 4 {
-		year = year[:4]
-	}
-	yearInt, err := strconv.Atoi(year)
-	if err != nil || yearInt < 1900 || yearInt > 2100 {
-		// We retrieved an invalid release year, abort
 		return -1, err
 	}
 
@@ -354,29 +300,6 @@ func (m *Manager) getMovieTitle(doc *goquery.Document) (string, error) {
 		return "", errors.New("title is empty")
 	}
 	return title, nil
-}
-
-func (m *Manager) downloadFile(url string) ([]byte, error) {
-	// Get the response bytes from the url
-	response, err := http.Get(url)
-	if err != nil {
-		return nil, err
-	}
-	defer func() {
-		err = response.Body.Close()
-	}()
-
-	if response.StatusCode != 200 {
-		return nil, errors.New("received non 200 response code")
-	}
-
-	// ioutil.ReadAll is deprecated
-	fileData, err := io.ReadAll(response.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	return fileData, err
 }
 
 func (m *Manager) getMoviePeople(doc *goquery.Document) ([]PersonImdb, error) {
@@ -415,4 +338,80 @@ func (m *Manager) getMoviePeople(doc *goquery.Document) ([]PersonImdb, error) {
 		})
 
 	return persons, nil
+}
+
+func (m *Manager) calcRuntime(runtimeString string) (int, error) {
+	runtimeString = strings.TrimSpace(runtimeString)
+	if runtimeString == "" {
+		return -1, fmt.Errorf("empty runtime string")
+	}
+
+	parts := strings.Fields(runtimeString)
+	var totalMinutes int
+
+	for _, part := range parts {
+		if len(part) < 2 {
+			return -1, fmt.Errorf("invalid runtime segment: %q", part)
+		}
+
+		numStr := part[:len(part)-1]
+		unit := part[len(part)-1]
+
+		value, err := strconv.Atoi(numStr)
+		if err != nil {
+			return -1, fmt.Errorf("invalid number in runtime: %q", part)
+		}
+
+		switch unit {
+		case 'h':
+			totalMinutes += value * 60
+		case 'm':
+			totalMinutes += value
+		default:
+			return -1, fmt.Errorf("unknown time unit in: %q", part)
+		}
+	}
+
+	if totalMinutes == 0 {
+		return -1, fmt.Errorf("parsed runtime is 0 minutes: %q", runtimeString)
+	}
+
+	return totalMinutes, nil
+}
+
+func (m *Manager) downloadFile(url string) ([]byte, error) {
+	// Get the response bytes from the url
+	response, err := http.Get(url)
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		err = response.Body.Close()
+	}()
+
+	if response.StatusCode != 200 {
+		return nil, errors.New("received non 200 response code")
+	}
+
+	// ioutil.ReadAll is deprecated
+	fileData, err := io.ReadAll(response.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	return fileData, err
+}
+
+func (m *Manager) parseYear(year string) (int, error) {
+	year = strings.TrimSpace(year)
+	if len(year) > 4 {
+		year = year[:4]
+	}
+	yearInt, err := strconv.Atoi(year)
+	if err != nil || yearInt < 1900 || yearInt > 2100 {
+		// We retrieved an invalid release year, abort
+		return -1, err
+	}
+
+	return yearInt, nil
 }

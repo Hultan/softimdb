@@ -36,3 +36,41 @@ func TestManager_GetMovie(t *testing.T) {
 	assert.Equal(t, movie.Persons[4].Name, "Edward Furlong")
 	assert.Equal(t, movie.Persons[4].Type, data.Actor)
 }
+
+func TestCalcRuntime(t *testing.T) {
+	manager := &Manager{}
+
+	tests := []struct {
+		input       string
+		expected    int
+		expectError bool
+	}{
+		{"1h 30m", 90, false},
+		{"2h", 120, false},
+		{"95m", 95, false},
+		{" 1h 0m ", 60, false},
+		{"1h 75m", 135, false},
+		{"0h 0m", -1, true},
+		{"", -1, true},
+		{"abc", -1, true},
+		{"1hr 30min", -1, true}, // unsupported format
+	}
+
+	for _, test := range tests {
+		t.Run(test.input, func(t *testing.T) {
+			result, err := manager.calcRuntime(test.input)
+			if test.expectError {
+				if err == nil {
+					t.Errorf("expected error for input %q, got none", test.input)
+				}
+			} else {
+				if err != nil {
+					t.Errorf("unexpected error for input %q: %v", test.input, err)
+				}
+				if result != test.expected {
+					t.Errorf("input %q: expected %d, got %d", test.input, test.expected, result)
+				}
+			}
+		})
+	}
+}
