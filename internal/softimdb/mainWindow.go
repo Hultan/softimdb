@@ -36,18 +36,18 @@ var needsSubtitleIcon []byte
 //go:embed assets/softimdb.css
 var mainCss string
 
-type sort struct {
+type Sort struct {
 	by, order string
 }
 
-type search struct {
+type Search struct {
 	genreId int
 	forWhat string
 }
 
-type view struct {
+type View struct {
 	manager viewManager
-	current View
+	current ViewType
 }
 
 type MainWindow struct {
@@ -75,9 +75,9 @@ type MainWindow struct {
 	genresSubMenu                         *gtk.Menu
 	genresMenu                            *gtk.MenuItem
 
-	search search
-	sort   sort
-	view   view
+	search Search
+	sort   Sort
+	view   View
 
 	movies map[int]*data.Movie
 }
@@ -294,7 +294,7 @@ func (m *MainWindow) setupToolBar() {
 	_ = m.searchEntry.Connect("activate", m.onSearchButtonClicked)
 }
 
-func (m *MainWindow) fillMovieList(search search, sort sort) {
+func (m *MainWindow) fillMovieList(search Search, sort Sort) {
 	movies, err := m.database.SearchMovies(string(m.view.current), search.forWhat, search.genreId, getSortBy(sort))
 	if err != nil {
 		reportError(err)
@@ -357,7 +357,7 @@ func (m *MainWindow) getSelectedMovie() *data.Movie {
 	return m.movies[id]
 }
 
-func (m *MainWindow) refresh(search search, sort sort) {
+func (m *MainWindow) refresh(search Search, sort Sort) {
 	m.fillMovieList(search, sort)
 	m.movieList.ShowAll()
 	if m.search.forWhat == "" {

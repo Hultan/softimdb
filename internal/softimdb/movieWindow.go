@@ -7,7 +7,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"slices"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -49,6 +49,11 @@ type movieWindow struct {
 	db     *data.Database
 
 	closeCallback func(gtk.ResponseType, *movieInfo, *data.Movie)
+}
+
+type similarMovie struct {
+	distance int
+	title    string
 }
 
 var scrapeImdbOnce bool
@@ -138,11 +143,11 @@ func (m *movieWindow) open(info *movieInfo, movie *data.Movie, closeCallback fun
 	}
 
 	// We show the window here as well, since we are going to the
-	// database to load person below, and that causes a short delay
+	// database to load the person below, and that causes a short delay
 	m.window.ShowAll()
 
 	if movie != nil {
-		// Load persons for movie (they are no longer loaded in the main load)
+		// Load persons for the movie (they are no longer loaded in the main load)
 		persons, err := m.db.GetPersonsForMovie(movie)
 		if err != nil {
 			return
@@ -155,6 +160,13 @@ func (m *movieWindow) open(info *movieInfo, movie *data.Movie, closeCallback fun
 	m.closeCallback = closeCallback
 	m.deleteButton.SetSensitive(movie != nil)
 
+	m.fillForm()
+
+	m.window.ShowAll()
+	m.imdbUrlEntry.GrabFocus()
+}
+
+func (m *movieWindow) fillForm() {
 	// Fill form with data
 	m.imdbUrlEntry.SetText(m.movieInfo.imdbUrl)
 	m.pathEntry.SetText(m.movieInfo.moviePath)
@@ -186,9 +198,6 @@ func (m *movieWindow) open(info *movieInfo, movie *data.Movie, closeCallback fun
 		m.fillCastAndCrewPage()
 	}
 	m.movieStack.SetVisibleChildName("MoviePage")
-
-	m.window.ShowAll()
-	m.imdbUrlEntry.GrabFocus()
 }
 
 func (m *movieWindow) saveMovie() bool {
@@ -292,37 +301,6 @@ func (m *movieWindow) deleteMovie() bool {
 	return false
 }
 
-func (m *movieWindow) onImageClick() {
-	dlg, err := gtk.FileChooserDialogNewWith2Buttons(
-		"Choose an image...", nil, gtk.FILE_CHOOSER_ACTION_OPEN, "Ok", gtk.RESPONSE_OK,
-		"Cancel", gtk.RESPONSE_CANCEL,
-	)
-	if err != nil {
-		reportError(err)
-		return
-	}
-	defer dlg.Destroy()
-
-	home, err := os.UserHomeDir()
-	if err == nil {
-		dir := path.Join(home, "Downloads")
-		_ = dlg.SetCurrentFolder(dir)
-	}
-
-	response := dlg.Run()
-	if response == gtk.RESPONSE_CANCEL {
-		return
-	}
-
-	fileData := getCorrectImageSize(dlg.GetFilename())
-	if fileData == nil || len(fileData) == 0 {
-		return
-	}
-	m.updateImage(fileData)
-	m.movieInfo.image = fileData
-	m.movieInfo.imageHasChanged = true
-}
-
 // updateImage updates the GtkImage
 func (m *movieWindow) updateImage(image []byte) {
 	// Image size: 190x280
@@ -334,86 +312,7 @@ func (m *movieWindow) updateImage(image []byte) {
 	m.posterImage.SetFromPixbuf(pix)
 }
 
-func (m *movieWindow) onTitleEntryFocusOut() {
-	if showSimilarOnce {
-		return
-	}
-	showSimilarOnce = true
-
-	title := getEntryText(m.titleEntry)
-	if title == "" {
-		return
-	}
-
-	similar := findSimilarMovies(title, movieTitles, 5)
-	m.showSimilarMovies(similar)
-}
-
-func (m *movieWindow) onIMDBEntryFocusOut() {
-	if scrapeImdbOnce {
-		return
-	}
-
-	url := getEntryText(m.imdbUrlEntry)
-	if url == "" {
-		return
-	}
-
-	manager := imdb.ManagerNew()
-	movieImdb, err := manager.GetMovie(url)
-
-	if movieImdb != nil {
-		m.titleEntry.SetText(movieImdb.Title)
-		m.yearEntry.SetText(strconv.Itoa(movieImdb.Year))
-		m.ratingEntry.SetText(movieImdb.Rating)
-		m.runtimeEntry.SetText(strconv.Itoa(movieImdb.Runtime))
-		genres := strings.Join(movieImdb.Genres, ", ")
-		m.genresEntry.SetText(genres)
-
-		// Story line
-		buffer, err := gtk.TextBufferNew(nil)
-		if err != nil {
-			reportError(err)
-			log.Fatal(err)
-		}
-		buffer.SetText(movieImdb.StoryLine)
-		m.storyLineEntry.SetBuffer(buffer)
-
-		// Movie poster
-		fileName, err := saveMoviePoster(movieImdb.Title, movieImdb.Poster)
-		if err != nil {
-			reportError(err)
-			return
-		} else {
-			fileData := getCorrectImageSize(fileName)
-			if fileData == nil || len(fileData) == 0 {
-				return
-			}
-			m.updateImage(fileData)
-			m.movieInfo.image = fileData
-			m.movieInfo.imageHasChanged = true
-		}
-
-		var p data.Person
-		for _, person := range movieImdb.Persons {
-			p.Name = person.Name
-			p.Type = data.PersonType(person.Type)
-			m.movieInfo.persons = append(m.movieInfo.persons, p)
-		}
-	}
-
-	if err != nil {
-		txt := ""
-		for _, err := range manager.Errors {
-			txt += err.Error() + "\n"
-		}
-		_, _ = dialog.Title("Errors while retrieving IMDB data...").Text(txt).WarningIcon().OkButton().Show()
-	}
-
-	scrapeImdbOnce = true
-}
-
-func (m *movieWindow) showSimilarMovies(movies []movie) {
+func (m *movieWindow) showSimilarMovies(movies []similarMovie) {
 	titles := ""
 
 	for _, mov := range movies {
@@ -430,11 +329,6 @@ func (m *movieWindow) showSimilarMovies(movies []movie) {
 			OkButton().
 			Show()
 	}
-}
-
-type movie struct {
-	distance int
-	title    string
 }
 
 //
@@ -481,45 +375,30 @@ func (m *movieWindow) hasSubtitles(dir string) bool {
 }
 
 func (m *movieWindow) fillCastAndCrewPage() {
-	// Clear the list before adding new items
+	// Clear the list before refreshing the list
 	m.castAndCrewList.GetChildren().Foreach(func(item interface{}) {
 		m.castAndCrewList.Remove(item.(gtk.IWidget))
 	})
 
-	// Director(s)
-	label := getLabel("Director(s)", true)
-	m.castAndCrewList.Add(label)
+	m.addPeopleSection("Director(s)", data.Director, true)
+	m.addPeopleSection("Writer(s)", data.Writer, true)
+	m.addPeopleSection("Actor(s)", data.Actor, false)
+}
 
+func (m *movieWindow) addPeopleSection(title string, personType data.PersonType, addSpacer bool) {
+	// Section title
+	m.castAndCrewList.Add(getLabel(title, true))
+
+	// People of this type
 	for _, person := range m.movie.Persons {
-		if person.Type == data.Director {
+		if person.Type == personType {
 			m.castAndCrewList.Add(getLabel(person.Name, false))
 		}
 	}
 
-	label = getLabel("", false)
-	m.castAndCrewList.Add(label)
-
-	// Writer(s)
-	label = getLabel("Writer(s)", true)
-	m.castAndCrewList.Add(label)
-
-	for _, person := range m.movie.Persons {
-		if person.Type == data.Writer {
-			m.castAndCrewList.Add(getLabel(person.Name, false))
-		}
-	}
-
-	label = getLabel("", false)
-	m.castAndCrewList.Add(label)
-
-	// Actor(s)
-	label = getLabel("Actor(s)", true)
-	m.castAndCrewList.Add(label)
-
-	for _, person := range m.movie.Persons {
-		if person.Type == data.Actor {
-			m.castAndCrewList.Add(getLabel(person.Name, false))
-		}
+	if addSpacer {
+		// Spacer
+		m.castAndCrewList.Add(getLabel("", false))
 	}
 }
 
@@ -541,30 +420,29 @@ func getLabel(text string, header bool) *gtk.Label {
 	return label
 }
 
-func findSimilarMovies(newTitle string, existingTitles []string, maxReturnedMovies int) []movie {
-	var movies []movie
+func findSimilarMovies(newTitle string, existingTitles []string, maxReturned int) []similarMovie {
+	var similar []similarMovie
 
 	if newTitle == "" {
-		return []movie{}
+		return []similarMovie{}
 	}
 
-	for _, existingTitle := range existingTitles {
-		l := compareTitles(newTitle, existingTitle)
-		movies = append(movies, movie{
-			l,
-			existingTitle,
+	for _, title := range existingTitles {
+		score := compareTitles(newTitle, title)
+		similar = append(similar, similarMovie{
+			score,
+			title,
 		})
 	}
-	slices.SortFunc(movies, func(a, b movie) int {
-		if a.distance > b.distance {
-			return -1
-		} else if a.distance == b.distance {
-			return 0
-		}
-		return 1
+
+	sort.Slice(similar, func(i, j int) bool {
+		return similar[i].distance > similar[j].distance
 	})
-	//fmt.Println(movies)
-	return movies[:maxReturnedMovies]
+
+	if len(similar) > maxReturned {
+		return similar[:maxReturned]
+	}
+	return similar
 }
 
 // Compute similarity between two movie titles
@@ -573,30 +451,27 @@ func compareTitles(title1, title2 string) int {
 	words1 := strings.Fields(strings.ToLower(title1))
 	words2 := strings.Fields(strings.ToLower(title2))
 
-	// Matrix to track best word matches
-	wordMatches := make([]float64, len(words1))
+	if len(words1) == 0 || len(words2) == 0 {
+		return 0
+	}
 
 	// Compare each word in title1 with the most similar word in title2
-	for i, w1 := range words1 {
-		bestScore := 0.0
+	totalWordScore := 0.0
+	for _, w1 := range words1 {
+		best := 0.0
 		for _, w2 := range words2 {
 			// Calculate Levenshtein distance for each word
 			dist := levenshtein.DistanceForStrings([]rune(w1), []rune(w2), levenshtein.DefaultOptions)
 			// Convert distance to similarity score (normalized to 0-1)
 			score := 1 - float64(dist)/float64(len(w1)+len(w2)) // Normalized similarity
-			if score > bestScore {
-				bestScore = score
+			if score > best {
+				best = score
 			}
 		}
-		wordMatches[i] = bestScore // Store best match
+		totalWordScore += best
 	}
 
-	// Average word match similarity
-	wordScore := 0.0
-	for _, s := range wordMatches {
-		wordScore += s
-	}
-	wordScore /= float64(len(words1))
+	wordScore := totalWordScore / float64(len(words1))
 
 	// Levenshtein distance on full titles (normalized to 0-1)
 	fullDist := levenshtein.DistanceForStrings([]rune(title1), []rune(title2), levenshtein.DefaultOptions)
@@ -606,4 +481,125 @@ func compareTitles(title1, title2 string) int {
 	finalScore := (wordScore * 0.3) + (fullTitleScore * 0.7)
 
 	return int(finalScore * 1000)
+}
+
+func (m *movieWindow) onTitleEntryFocusOut() {
+	if showSimilarOnce {
+		return
+	}
+	showSimilarOnce = true
+
+	title := getEntryText(m.titleEntry)
+	if title == "" {
+		return
+	}
+
+	similar := findSimilarMovies(title, movieTitles, 5)
+	m.showSimilarMovies(similar)
+}
+
+func (m *movieWindow) onIMDBEntryFocusOut() {
+	if scrapeImdbOnce {
+		return
+	}
+
+	url := getEntryText(m.imdbUrlEntry)
+	if url == "" {
+		return
+	}
+
+	manager := imdb.ManagerNew()
+	movieImdb, err := manager.GetMovie(url)
+
+	if err != nil {
+		txt := ""
+		for _, err := range manager.Errors {
+			txt += err.Error() + "\n"
+		}
+		_, _ = dialog.Title("Errors while retrieving IMDB data...").
+			Text(txt).WarningIcon().OkButton().Show()
+		return
+	}
+
+	if m.createMovieInfo(movieImdb) {
+		return
+	}
+
+	scrapeImdbOnce = true
+}
+
+func (m *movieWindow) createMovieInfo(movieImdb *imdb.MovieImdb) bool {
+	if movieImdb == nil {
+		return true
+	}
+
+	m.titleEntry.SetText(movieImdb.Title)
+	m.yearEntry.SetText(strconv.Itoa(movieImdb.Year))
+	m.ratingEntry.SetText(movieImdb.Rating)
+	m.runtimeEntry.SetText(strconv.Itoa(movieImdb.Runtime))
+	genres := strings.Join(movieImdb.Genres, ", ")
+	m.genresEntry.SetText(genres)
+
+	// Story line
+	buffer, err := gtk.TextBufferNew(nil)
+	if err != nil {
+		reportError(err)
+		return true
+	}
+	buffer.SetText(movieImdb.StoryLine)
+	m.storyLineEntry.SetBuffer(buffer)
+
+	// Movie poster
+	fileName, err := saveMoviePoster(movieImdb.Title, movieImdb.Poster)
+	if err != nil {
+		reportError(err)
+		return true
+	}
+
+	fileData := getCorrectImageSize(fileName)
+	if fileData == nil || len(fileData) == 0 {
+		return true
+	}
+	m.updateImage(fileData)
+	m.movieInfo.image = fileData
+	m.movieInfo.imageHasChanged = true
+
+	var p data.Person
+	for _, person := range movieImdb.Persons {
+		p.Name = person.Name
+		p.Type = data.PersonType(person.Type)
+		m.movieInfo.persons = append(m.movieInfo.persons, p)
+	}
+	return false
+}
+
+func (m *movieWindow) onImageClick() {
+	dlg, err := gtk.FileChooserDialogNewWith2Buttons(
+		"Choose an image...", nil, gtk.FILE_CHOOSER_ACTION_OPEN, "Ok", gtk.RESPONSE_OK,
+		"Cancel", gtk.RESPONSE_CANCEL,
+	)
+	if err != nil {
+		reportError(err)
+		return
+	}
+	defer dlg.Destroy()
+
+	home, err := os.UserHomeDir()
+	if err == nil {
+		dir := path.Join(home, "Downloads")
+		_ = dlg.SetCurrentFolder(dir)
+	}
+
+	response := dlg.Run()
+	if response == gtk.RESPONSE_CANCEL {
+		return
+	}
+
+	fileData := getCorrectImageSize(dlg.GetFilename())
+	if fileData == nil || len(fileData) == 0 {
+		return
+	}
+	m.updateImage(fileData)
+	m.movieInfo.image = fileData
+	m.movieInfo.imageHasChanged = true
 }

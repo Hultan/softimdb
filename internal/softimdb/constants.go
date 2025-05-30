@@ -24,14 +24,14 @@ const (
 	sortDescending = "desc"
 )
 
-type View string
+type ViewType string
 
 const (
-	viewAll            View = "all"
-	viewPacks               = "packs"
-	viewToWatch             = "toWatch"
-	viewNoRating            = "noRating"
-	viewNeedsSubtitles      = "needsSubtitles"
+	viewAll            ViewType = "all"
+	viewPacks                   = "packs"
+	viewToWatch                 = "toWatch"
+	viewNoRating                = "noRating"
+	viewNeedsSubtitles          = "needsSubtitles"
 )
 
 const configFile = "~/.config/softteam/softimdb/config.json"

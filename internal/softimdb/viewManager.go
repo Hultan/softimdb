@@ -71,7 +71,7 @@ func newViewManager(m *MainWindow) viewManager {
 	return w
 }
 
-func (w viewManager) changeView(view View) {
+func (w viewManager) changeView(view ViewType) {
 	w.viewAllButton.SetActive(false)
 	w.viewToWatchButton.SetActive(false)
 	w.viewPacksButton.SetActive(false)
