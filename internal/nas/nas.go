@@ -51,35 +51,36 @@ func (m *Manager) GetMovies(config *config.Config) ([]string, error) {
 		return nil, fmt.Errorf("failed to read dir entries: %w", err)
 	}
 
-	var current []string
+	var pathsOnNAS []string
 	for _, entry := range entries {
 		if !getIgnorePath(m.ignoredPaths, entry) {
-			current = append(current, entry)
+			pathsOnNAS = append(pathsOnNAS, entry)
 		}
 	}
 
 	// Get movie paths to exclude
-	existing, err := db.GetAllMoviePaths()
+	pathsInDB, err := db.GetAllMoviePaths()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get movie paths: %w", err)
 	}
 
-	result := m.removeExistingPaths(current, existing)
+	result := m.removeExistingPaths(pathsOnNAS, pathsInDB)
 	slices.Sort(result)
 	return result, nil
 }
 
-func (m *Manager) removeExistingPaths(current []string, existing []string) []string {
+func (m *Manager) removeExistingPaths(pathsOnNAS []string, pathsInDB []string) []string {
+	pathsInDBMap := make(map[string]struct{}, len(pathsInDB))
+	for _, path := range pathsInDB {
+		pathsInDBMap[path] = struct{}{}
+	}
+
 	var result []string
-
-	for i := range current {
-		dir := current[i]
-
+	for _, dir := range pathsOnNAS {
 		if dir == "" {
 			continue
 		}
-
-		if !slices.Contains(existing, dir) {
+		if _, exists := pathsInDBMap[dir]; !exists {
 			result = append(result, dir)
 		}
 	}
