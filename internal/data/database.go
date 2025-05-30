@@ -21,71 +21,69 @@ type Database struct {
 
 // DatabaseNew creates a new SoftIMDB Database object.
 func DatabaseNew(useTestDB bool, config *config.Config) *Database {
-	database := &Database{}
-	database.UseTestDatabase = useTestDB
-	database.cache = imageCacheNew()
-	database.config = config
+	database := &Database{
+		UseTestDatabase: useTestDB,
+		config:          config,
+		cache:           imageCacheNew(),
+	}
 
-	genreCache = NewGenreCache()
+	genreCache = genreCacheNew()
 
 	return database
 }
 
-// CloseDatabase closes the database.
+// CloseDatabase closes the underlying SQL database connection.
 func (d *Database) CloseDatabase() {
 	if d.db == nil {
 		return
 	}
 
-	sqlDB, _ := d.db.DB()
-	err := sqlDB.Close()
+	sqlDB, err := d.db.DB()
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("failed to get raw DB from GORM:", err)
+	}
+
+	if err := sqlDB.Close(); err != nil {
+		log.Fatal("failed to close database connection:", err)
 	}
 
 	d.db = nil
-
-	return
 }
 
 func (d *Database) getDatabase() (*gorm.DB, error) {
-	// d.CloseDatabase()
+	if d.db != nil {
+		return d.db, nil
+	}
 
-	if d.db == nil {
-		db, err := d.openDatabase()
-		if err != nil {
-			return nil, err
-		}
-		d.db = db
+	var err error
+	d.db, err = d.openDatabase()
+	if err != nil {
+		return nil, err
 	}
 	return d.db, nil
 }
 
 func (d *Database) openDatabase() (*gorm.DB, error) {
-	passwordDecrypted, err := crypto.Decrypt(d.config.Database.Password)
+	decryptedPassword, err := crypto.Decrypt(d.config.Database.Password)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to decrypt password: %w", err)
 	}
 
-	var connectionString = fmt.Sprintf(
+	var dsn = fmt.Sprintf(
 		"%s:%s@tcp(%s:%v)/%s?parseTime=True",
 		d.config.Database.User,
-		passwordDecrypted,
+		decryptedPassword,
 		d.config.Database.Server,
 		d.config.Database.Port,
 		d.config.Database.Database,
 	)
 
-	db, err := gorm.Open(
-		mysql.New(
-			mysql.Config{
-				DriverName: "mysql",
-				DSN:        connectionString,
-			},
-		), &gorm.Config{},
-	)
+	db, err := gorm.Open(mysql.New(mysql.Config{
+		DriverName: "mysql",
+		DSN:        dsn,
+	}), &gorm.Config{})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to open database: %w", err)
 	}
 	return db, nil
 }

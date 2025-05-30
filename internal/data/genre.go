@@ -48,7 +48,7 @@ func (d *Database) getGenreByName(name string) (*Genre, error) {
 	name = strings.Trim(name, " \t\n")
 
 	// Check genre cache
-	t := genreCache.GetByName(name)
+	t := genreCache.getByName(name)
 	if t != nil {
 		return t, nil
 	}

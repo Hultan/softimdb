@@ -4,11 +4,11 @@ type GenreCache struct {
 	genres []*Genre
 }
 
-func NewGenreCache() *GenreCache {
+func genreCacheNew() *GenreCache {
 	return &GenreCache{}
 }
 
-func (t *GenreCache) GetByName(name string) *Genre {
+func (t *GenreCache) getByName(name string) *Genre {
 	for _, genre := range t.genres {
 		if genre.Name == name {
 			return genre
