@@ -50,14 +50,7 @@ type View struct {
 	current ViewType
 }
 
-type MainWindow struct {
-	builder     *builder.Builder
-	database    *data.Database
-	config      *config.Config
-	popupMenu   *popupMenu
-	movieWin    *movieWindow
-	addMovieWin *addMovieWindow
-
+type GTK struct {
 	application                           *gtk.Application
 	window                                *gtk.ApplicationWindow
 	movieList                             *gtk.FlowBox
@@ -74,7 +67,17 @@ type MainWindow struct {
 	menuSortAscending, menuSortDescending *gtk.RadioMenuItem
 	genresSubMenu                         *gtk.Menu
 	genresMenu                            *gtk.MenuItem
+}
 
+type MainWindow struct {
+	builder     *builder.Builder
+	database    *data.Database
+	config      *config.Config
+	popupMenu   *popupMenu
+	movieWin    *movieWindow
+	addMovieWin *addMovieWindow
+
+	gtk    GTK
 	search Search
 	sort   Sort
 	view   View
@@ -98,11 +101,11 @@ func NewMainWindow() *MainWindow {
 	}
 	m.builder = b
 
-	m.window = m.builder.GetObject("mainWindow").(*gtk.ApplicationWindow)
-	m.window.SetTitle(fmt.Sprintf("%s - %s", applicationTitle, applicationVersion))
-	m.window.Maximize()
-	_ = m.window.Connect("destroy", m.onClose)
-	_ = m.window.Connect("key-press-event", m.onKeyPressEvent)
+	m.gtk.window = m.builder.GetObject("mainWindow").(*gtk.ApplicationWindow)
+	m.gtk.window.SetTitle(fmt.Sprintf("%s - %s", applicationTitle, applicationVersion))
+	m.gtk.window.Maximize()
+	_ = m.gtk.window.Connect("destroy", m.onClose)
+	_ = m.gtk.window.Connect("key-press-event", m.onKeyPressEvent)
 
 	cnf, err := config.LoadConfig(configFile)
 	if err != nil {
@@ -117,26 +120,26 @@ func NewMainWindow() *MainWindow {
 	m.setupToolBar()
 	m.popupMenu = newPopupMenu(m)
 	m.popupMenu.setup()
-	m.setupMenu(m.window)
-	m.storyLineLabel = m.builder.GetObject("storyLineLabel").(*gtk.Label)
-	m.storyLineScrolledWindow = m.builder.GetObject("storyLineScrolledWindow").(*gtk.ScrolledWindow)
+	m.setupMenu(m.gtk.window)
+	m.gtk.storyLineLabel = m.builder.GetObject("storyLineLabel").(*gtk.Label)
+	m.gtk.storyLineScrolledWindow = m.builder.GetObject("storyLineScrolledWindow").(*gtk.ScrolledWindow)
 	versionLabel := m.builder.GetObject("versionLabel").(*gtk.Label)
 	versionLabel.SetText("Version : " + applicationVersion)
-	m.countLabel = m.builder.GetObject("countLabel").(*gtk.Label)
+	m.gtk.countLabel = m.builder.GetObject("countLabel").(*gtk.Label)
 
 	// Movie list
-	m.movieList = m.builder.GetObject("movieList").(*gtk.FlowBox)
-	m.movieList.SetSelectionMode(gtk.SELECTION_SINGLE)
-	m.movieList.SetRowSpacing(listSpacing)
-	m.movieList.SetColumnSpacing(listSpacing)
-	m.movieList.SetMarginTop(listMargin)
-	m.movieList.SetMarginBottom(listMargin)
-	m.movieList.SetMarginStart(listMargin)
-	m.movieList.SetMarginEnd(listMargin)
-	m.movieList.SetActivateOnSingleClick(false)
-	m.movieList.SetFocusOnClick(true)
-	_ = m.movieList.Connect("selected-children-changed", m.onMovieListSelectionChanged)
-	_ = m.movieList.Connect("child-activated", m.onMovieListDoubleClicked)
+	m.gtk.movieList = m.builder.GetObject("movieList").(*gtk.FlowBox)
+	m.gtk.movieList.SetSelectionMode(gtk.SELECTION_SINGLE)
+	m.gtk.movieList.SetRowSpacing(listSpacing)
+	m.gtk.movieList.SetColumnSpacing(listSpacing)
+	m.gtk.movieList.SetMarginTop(listMargin)
+	m.gtk.movieList.SetMarginBottom(listMargin)
+	m.gtk.movieList.SetMarginStart(listMargin)
+	m.gtk.movieList.SetMarginEnd(listMargin)
+	m.gtk.movieList.SetActivateOnSingleClick(false)
+	m.gtk.movieList.SetFocusOnClick(true)
+	_ = m.gtk.movieList.Connect("selected-children-changed", m.onMovieListSelectionChanged)
+	_ = m.gtk.movieList.Connect("child-activated", m.onMovieListDoubleClicked)
 
 	m.view.manager = newViewManager(m)
 
@@ -146,11 +149,11 @@ func NewMainWindow() *MainWindow {
 // Open : Opens the MainWindow window
 func (m *MainWindow) Open(app *gtk.Application) {
 	m.search.genreId = -1
-	m.application = app
-	m.window.SetApplication(app)
-	m.window.ShowAll()
+	m.gtk.application = app
+	m.gtk.window.SetApplication(app)
+	m.gtk.window.ShowAll()
 	m.view.manager.changeView(viewToWatch)
-	m.storyLineScrolledWindow.Hide()
+	m.gtk.storyLineScrolledWindow.Hide()
 
 	var err error
 	movieTitles, err = m.database.GetAllMovieTitles()
@@ -170,86 +173,86 @@ func (m *MainWindow) setupMenu(window *gtk.ApplicationWindow) {
 	_ = menuHelpAbout.Connect("activate", m.onOpenAboutDialogClicked)
 
 	// Sort menu
-	m.menuSortByName = m.builder.GetObject("menuSortByName").(*gtk.RadioMenuItem)
-	m.menuSortByName.Connect(
+	m.gtk.menuSortByName = m.builder.GetObject("menuSortByName").(*gtk.RadioMenuItem)
+	m.gtk.menuSortByName.Connect(
 		"activate", func() {
-			if m.menuSortByName.GetActive() {
+			if m.gtk.menuSortByName.GetActive() {
 				m.sort.by = sortByName
 				m.sort.order = sortAscending
-				m.menuSortAscending.SetActive(true)
+				m.gtk.menuSortAscending.SetActive(true)
 				m.refresh(m.search, m.sort)
 			}
 		},
 	)
-	m.menuSortByRating = m.builder.GetObject("menuSortByRating").(*gtk.RadioMenuItem)
-	m.menuSortByRating.Connect(
+	m.gtk.menuSortByRating = m.builder.GetObject("menuSortByRating").(*gtk.RadioMenuItem)
+	m.gtk.menuSortByRating.Connect(
 		"activate", func() {
-			if m.menuSortByRating.GetActive() {
+			if m.gtk.menuSortByRating.GetActive() {
 				m.sort.by = sortByRating
 				m.sort.order = sortDescending
-				m.menuSortDescending.SetActive(true)
+				m.gtk.menuSortDescending.SetActive(true)
 				m.refresh(m.search, m.sort)
 			}
 		},
 	)
-	m.menuSortByMyRating = m.builder.GetObject("menuSortByMyRating").(*gtk.RadioMenuItem)
-	m.menuSortByMyRating.Connect(
+	m.gtk.menuSortByMyRating = m.builder.GetObject("menuSortByMyRating").(*gtk.RadioMenuItem)
+	m.gtk.menuSortByMyRating.Connect(
 		"activate", func() {
-			if m.menuSortByMyRating.GetActive() {
+			if m.gtk.menuSortByMyRating.GetActive() {
 				m.sort.by = sortByMyRating
 				m.sort.order = sortDescending
-				m.menuSortDescending.SetActive(true)
+				m.gtk.menuSortDescending.SetActive(true)
 				m.refresh(m.search, m.sort)
 			}
 		},
 	)
-	m.menuSortByLength = m.builder.GetObject("menuSortByLength").(*gtk.RadioMenuItem)
-	m.menuSortByLength.Connect(
+	m.gtk.menuSortByLength = m.builder.GetObject("menuSortByLength").(*gtk.RadioMenuItem)
+	m.gtk.menuSortByLength.Connect(
 		"activate", func() {
-			if m.menuSortByLength.GetActive() {
+			if m.gtk.menuSortByLength.GetActive() {
 				m.sort.by = sortByLength
 				m.sort.order = sortDescending
-				m.menuSortDescending.SetActive(true)
+				m.gtk.menuSortDescending.SetActive(true)
 				m.refresh(m.search, m.sort)
 			}
 		},
 	)
-	m.menuSortByYear = m.builder.GetObject("menuSortByYear").(*gtk.RadioMenuItem)
-	m.menuSortByYear.Connect(
+	m.gtk.menuSortByYear = m.builder.GetObject("menuSortByYear").(*gtk.RadioMenuItem)
+	m.gtk.menuSortByYear.Connect(
 		"activate", func() {
-			if m.menuSortByYear.GetActive() {
+			if m.gtk.menuSortByYear.GetActive() {
 				m.sort.by = sortByYear
 				m.sort.order = sortDescending
-				m.menuSortDescending.SetActive(true)
+				m.gtk.menuSortDescending.SetActive(true)
 				m.refresh(m.search, m.sort)
 			}
 		},
 	)
-	m.menuSortById = m.builder.GetObject("menuSortById").(*gtk.RadioMenuItem)
-	m.menuSortById.Connect(
+	m.gtk.menuSortById = m.builder.GetObject("menuSortById").(*gtk.RadioMenuItem)
+	m.gtk.menuSortById.Connect(
 		"activate", func() {
-			if m.menuSortById.GetActive() {
+			if m.gtk.menuSortById.GetActive() {
 				m.sort.by = sortById
 				m.sort.order = sortAscending
-				m.menuSortAscending.SetActive(true)
+				m.gtk.menuSortAscending.SetActive(true)
 				m.refresh(m.search, m.sort)
 			}
 		},
 	)
 
-	m.menuSortAscending = m.builder.GetObject("menuSortAscending").(*gtk.RadioMenuItem)
-	m.menuSortAscending.Connect(
+	m.gtk.menuSortAscending = m.builder.GetObject("menuSortAscending").(*gtk.RadioMenuItem)
+	m.gtk.menuSortAscending.Connect(
 		"activate", func() {
-			if m.menuSortAscending.GetActive() {
+			if m.gtk.menuSortAscending.GetActive() {
 				m.sort.order = sortAscending
 				m.refresh(m.search, m.sort)
 			}
 		},
 	)
-	m.menuSortDescending = m.builder.GetObject("menuSortDescending").(*gtk.RadioMenuItem)
-	m.menuSortDescending.Connect(
+	m.gtk.menuSortDescending = m.builder.GetObject("menuSortDescending").(*gtk.RadioMenuItem)
+	m.gtk.menuSortDescending.Connect(
 		"activate", func() {
-			if m.menuSortDescending.GetActive() {
+			if m.gtk.menuSortDescending.GetActive() {
 				m.sort.order = sortDescending
 				m.refresh(m.search, m.sort)
 			}
@@ -260,14 +263,14 @@ func (m *MainWindow) setupMenu(window *gtk.ApplicationWindow) {
 	m.sort.order = sortAscending
 
 	// Genres menu
-	m.genresMenu = m.builder.GetObject("menuGenres").(*gtk.MenuItem)
+	m.gtk.genresMenu = m.builder.GetObject("menuGenres").(*gtk.MenuItem)
 	m.fillGenresMenu()
 }
 
 func (m *MainWindow) setupToolBar() {
 	// Quit button
 	button := m.builder.GetObject("quitButton").(*gtk.ToolButton)
-	_ = button.Connect("clicked", m.window.Close)
+	_ = button.Connect("clicked", m.gtk.window.Close)
 
 	// Refresh button
 	button = m.builder.GetObject("refreshButton").(*gtk.ToolButton)
@@ -282,16 +285,16 @@ func (m *MainWindow) setupToolBar() {
 	_ = button.Connect("clicked", m.onOpenAddWindowClicked)
 
 	// Search button
-	m.searchButton = m.builder.GetObject("searchButton").(*gtk.ToolButton)
-	_ = m.searchButton.Connect("clicked", m.onSearchButtonClicked)
+	m.gtk.searchButton = m.builder.GetObject("searchButton").(*gtk.ToolButton)
+	_ = m.gtk.searchButton.Connect("clicked", m.onSearchButtonClicked)
 
 	// Clear search button
-	m.clearSearchButton = m.builder.GetObject("clearSearchButton").(*gtk.ToolButton)
-	_ = m.clearSearchButton.Connect("clicked", m.onClearSearchButtonClicked)
+	m.gtk.clearSearchButton = m.builder.GetObject("clearSearchButton").(*gtk.ToolButton)
+	_ = m.gtk.clearSearchButton.Connect("clicked", m.onClearSearchButtonClicked)
 
 	// Search entry
-	m.searchEntry = m.builder.GetObject("searchEntry").(*gtk.Entry)
-	_ = m.searchEntry.Connect("activate", m.onSearchButtonClicked)
+	m.gtk.searchEntry = m.builder.GetObject("searchEntry").(*gtk.Entry)
+	_ = m.gtk.searchEntry.Connect("activate", m.onSearchButtonClicked)
 }
 
 func (m *MainWindow) fillMovieList(search Search, sort Sort) {
@@ -302,7 +305,7 @@ func (m *MainWindow) fillMovieList(search Search, sort Sort) {
 	}
 
 	listHelper := &ListHelper{}
-	clearFlowBox(m.movieList)
+	clearFlowBox(m.gtk.movieList)
 	runtime.GC()
 
 	cssProvider, _ := gtk.CssProviderNew()
@@ -323,14 +326,14 @@ func (m *MainWindow) fillMovieList(search Search, sort Sort) {
 		m.movies[movie.Id] = movie
 		card := listHelper.CreateMovieCard(movie)
 		card.SetName("movie_" + strconv.Itoa(movie.Id))
-		m.movieList.Add(card)
+		m.gtk.movieList.Add(card)
 	}
 
 	m.updateCountLabel(len(movies))
 }
 
 func (m *MainWindow) getSelectedMovie() *data.Movie {
-	children := m.movieList.GetSelectedChildren()
+	children := m.gtk.movieList.GetSelectedChildren()
 	if children == nil {
 		return nil
 	}
@@ -359,9 +362,9 @@ func (m *MainWindow) getSelectedMovie() *data.Movie {
 
 func (m *MainWindow) refresh(search Search, sort Sort) {
 	m.fillMovieList(search, sort)
-	m.movieList.ShowAll()
+	m.gtk.movieList.ShowAll()
 	if m.search.forWhat == "" {
-		m.searchEntry.SetText("")
+		m.gtk.searchEntry.SetText("")
 	}
 }
 
@@ -370,14 +373,14 @@ func (m *MainWindow) fillGenresMenu() {
 
 	// Create and add the genre menu
 	sub, _ := gtk.MenuNew()
-	m.genresSubMenu = sub
-	m.genresMenu.SetSubmenu(sub)
+	m.gtk.genresSubMenu = sub
+	m.gtk.genresMenu.SetSubmenu(sub)
 
 	// No genre item (create a fake no genre item)
 	genre := data.Genre{Id: -1, Name: "None"}
-	m.menuNoGenreItem = m.addGenreMenu(sub, nil, genre)
-	m.menuNoGenreItem.SetActive(true)
-	group, _ := m.menuNoGenreItem.GetGroup()
+	m.gtk.menuNoGenreItem = m.addGenreMenu(sub, nil, genre)
+	m.gtk.menuNoGenreItem.SetActive(true)
+	group, _ := m.gtk.menuNoGenreItem.GetGroup()
 
 	// Separator
 	sep, _ := gtk.SeparatorMenuItemNew()
@@ -457,7 +460,7 @@ func (m *MainWindow) deleteMovie(movie *data.Movie) {
 }
 
 func (m *MainWindow) updateCountLabel(i int) {
-	m.countLabel.SetText(fmt.Sprintf("Number of videos : %d", i))
+	m.gtk.countLabel.SetText(fmt.Sprintf("Number of videos : %d", i))
 }
 
 //
@@ -466,14 +469,14 @@ func (m *MainWindow) updateCountLabel(i int) {
 
 func (m *MainWindow) onClose() {
 	m.database.CloseDatabase()
-	m.window.Close()
-	m.movieList = nil
-	m.storyLineLabel = nil
-	m.window = nil
+	m.gtk.window.Close()
+	m.gtk.movieList = nil
+	m.gtk.storyLineLabel = nil
+	m.gtk.window = nil
 	m.builder = nil
 	m.movieWin = nil
 	m.addMovieWin = nil
-	m.application.Quit()
+	m.gtk.application.Quit()
 }
 
 func (m *MainWindow) onOpenIMDBClicked() {
@@ -518,7 +521,7 @@ func (m *MainWindow) onEditMovieInfoClicked() {
 
 	// Open the movie dialog here
 	if m.movieWin == nil {
-		m.movieWin = newMovieWindow(m.builder, m.window, m.database, m.config)
+		m.movieWin = newMovieWindow(m.builder, m.gtk.window, m.database, m.config)
 	}
 
 	m.movieWin.open(info, selectedMovie, m.onWindowClosed)
@@ -536,21 +539,21 @@ func (m *MainWindow) onRefreshButtonClicked() {
 	m.search.genreId = -1
 	m.sort.by = sortByName
 	m.sort.order = sortAscending
-	m.menuNoGenreItem.SetActive(true)
-	m.menuSortByName.SetActive(true)
-	m.menuSortAscending.SetActive(true)
+	m.gtk.menuNoGenreItem.SetActive(true)
+	m.gtk.menuSortByName.SetActive(true)
+	m.gtk.menuSortAscending.SetActive(true)
 	m.refresh(m.search, m.sort)
 }
 
 func (m *MainWindow) onSearchButtonClicked() {
-	search := getEntryText(m.searchEntry)
+	search := getEntryText(m.gtk.searchEntry)
 	m.search.forWhat = strings.Trim(search, " ")
 	m.refresh(m.search, m.sort)
 }
 
 func (m *MainWindow) onClearSearchButtonClicked() {
 	m.search.forWhat = ""
-	m.searchEntry.SetText("")
+	m.gtk.searchEntry.SetText("")
 	m.refresh(m.search, m.sort)
 }
 
@@ -567,7 +570,7 @@ func (m *MainWindow) onKeyPressEvent(_ *gtk.ApplicationWindow, event *gdk.Event)
 		case keyEvent.KeyVal() == gdk.KEY_F6:
 			m.onPlayMovieClicked()
 		case keyEvent.KeyVal() == gdk.KEY_Escape:
-			m.movieList.UnselectAll()
+			m.gtk.movieList.UnselectAll()
 		}
 	}
 	if ctrl {
@@ -579,7 +582,7 @@ func (m *MainWindow) onKeyPressEvent(_ *gtk.ApplicationWindow, event *gdk.Event)
 		case keyEvent.KeyVal() == gdk.KEY_h:
 			m.onShowHidePrivateClicked()
 		case keyEvent.KeyVal() == gdk.KEY_f:
-			m.searchEntry.GrabFocus()
+			m.gtk.searchEntry.GrabFocus()
 		case keyEvent.KeyVal() == gdk.KEY_a:
 			m.onOpenAddWindowClicked()
 		case keyEvent.KeyVal() == gdk.KEY_q:
@@ -594,7 +597,7 @@ func (m *MainWindow) onOpenAboutDialogClicked() {
 	about := m.builder.GetObject("aboutDialog").(*gtk.AboutDialog)
 
 	about.SetDestroyWithParent(true)
-	about.SetTransientFor(m.window)
+	about.SetTransientFor(m.gtk.window)
 	about.SetProgramName(applicationTitle)
 	about.SetComments("A movie library application...")
 	about.SetVersion(applicationVersion)
@@ -621,12 +624,12 @@ func (m *MainWindow) onOpenAboutDialogClicked() {
 func (m *MainWindow) onMovieListSelectionChanged(_ *gtk.FlowBox) {
 	movie := m.getSelectedMovie()
 	if movie == nil {
-		m.storyLineScrolledWindow.SetVisible(false)
+		m.gtk.storyLineScrolledWindow.SetVisible(false)
 		return
 	}
 	story := `<span font="Sans Regular 10" foreground="#d49c6b">` + cleanString(movie.StoryLine) + `</span>`
-	m.storyLineLabel.SetMarkup(story)
-	m.storyLineScrolledWindow.SetVisible(true)
+	m.gtk.storyLineLabel.SetMarkup(story)
+	m.gtk.storyLineScrolledWindow.SetVisible(true)
 }
 
 func (m *MainWindow) onMovieListDoubleClicked(_ *gtk.FlowBox) {
@@ -648,10 +651,10 @@ func (m *MainWindow) onOpenPackClicked() {
 	m.sort.by = sortByName
 	m.sort.order = sortAscending
 	m.view.manager.changeView(viewPacks)
-	m.searchEntry.SetText(m.search.forWhat)
-	m.menuNoGenreItem.SetActive(true)
-	m.menuSortByName.SetActive(true)
-	m.menuSortAscending.SetActive(true)
+	m.gtk.searchEntry.SetText(m.search.forWhat)
+	m.gtk.menuNoGenreItem.SetActive(true)
+	m.gtk.menuSortByName.SetActive(true)
+	m.gtk.menuSortAscending.SetActive(true)
 	m.refresh(m.search, m.sort)
 }
 
@@ -683,8 +686,8 @@ func (m *MainWindow) onShowHidePrivateClicked() {
 	showPrivateGenres = !showPrivateGenres
 	m.refresh(m.search, m.sort)
 
-	m.genresSubMenu.Destroy()
-	m.genresSubMenu = nil
+	m.gtk.genresSubMenu.Destroy()
+	m.gtk.genresSubMenu = nil
 	m.fillGenresMenu()
-	m.genresSubMenu.ShowAll()
+	m.gtk.genresSubMenu.ShowAll()
 }

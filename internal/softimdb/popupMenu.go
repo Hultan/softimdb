@@ -39,7 +39,7 @@ func (p *popupMenu) setup() {
 }
 
 func (p *popupMenu) setupEvents() {
-	_ = p.mainWindow.window.Connect(
+	_ = p.mainWindow.gtk.window.Connect(
 		"button-release-event", func(window *gtk.ApplicationWindow, event *gdk.Event) {
 			buttonEvent := gdk.EventButtonNewFromEvent(event)
 			if buttonEvent.Button() != gdk.BUTTON_SECONDARY {
