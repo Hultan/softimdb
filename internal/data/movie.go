@@ -104,8 +104,8 @@ func (d *Database) SearchMoviesEx(currentView string, searchFor string, genreId 
 
 	// query.Debug().Find(&movies)
 
-	if result := query.Distinct().Find(&movies); result.Error != nil {
-		return nil, result.Error
+	if err := query.Distinct().Find(&movies).Error; err != nil {
+		return nil, err
 	}
 
 	movies, err = d.getGenresForMovies(movies)
@@ -134,8 +134,8 @@ func (d *Database) GetAllMoviePaths() ([]string, error) {
 	}
 
 	var movies []*Movie
-	if result := db.Find(&movies); result.Error != nil {
-		return nil, result.Error
+	if err := db.Find(&movies).Error; err != nil {
+		return nil, err
 	}
 
 	var paths []string
@@ -153,8 +153,8 @@ func (d *Database) GetAllMovieTitles() ([]string, error) {
 	}
 
 	var movies []*Movie
-	if result := db.Find(&movies); result.Error != nil {
-		return nil, result.Error
+	if err := db.Find(&movies).Error; err != nil {
+		return nil, err
 	}
 
 	var titles []string
@@ -187,8 +187,8 @@ func (d *Database) InsertMovie(movie *Movie) error {
 				movie.ImageId = image.Id
 			}
 
-			if result := db.Create(movie); result.Error != nil {
-				return result.Error
+			if err := db.Create(movie).Error; err != nil {
+				return err
 			}
 
 			// Handle genres
@@ -266,8 +266,8 @@ func (d *Database) UpdateMovie(movie *Movie) error {
 			updates["needsSubtitle"] = movie.NeedsSubtitle
 			updates["length"] = movie.Runtime
 
-			if result := db.Model(&movie).Updates(updates); result.Error != nil {
-				return result.Error
+			if err := db.Model(&movie).Updates(updates).Error; err != nil {
+				return err
 			}
 
 			// Handle genres
@@ -379,99 +379,109 @@ func (d *Database) DeleteMovie(rootDir string, movie *Movie) error {
 	return nil
 }
 
-func addViewSQL(view string, where string) string {
-	var sql string
-	switch view {
-	case "packs":
-		sql = "pack != '' AND pack is not null"
-	case "toWatch":
-		sql = "to_watch = true AND needsSubtitle = false"
-	case "noRating":
-		sql = "my_rating = 0 AND needsSubtitle = false"
-	case "needsSubtitles":
-		sql = "needsSubtitle = true"
+// addViewSQL returns a combined SQL WHERE clause based on the given view and optional base clause.
+func addViewSQL(view, baseWhere string) string {
+	viewConditions := map[string]string{
+		"packs":          "pack != '' AND pack IS NOT NULL",
+		"toWatch":        "to_watch = true AND needsSubtitle = false",
+		"noRating":       "my_rating = 0 AND needsSubtitle = false",
+		"needsSubtitles": "needsSubtitle = true",
 	}
-	if where != "" && sql != "" {
-		sql = " AND " + sql
+
+	viewWhere, ok := viewConditions[view]
+	if !ok {
+		viewWhere = ""
 	}
-	if where != "" {
-		where = "(" + where + ")"
+
+	var clauses []string
+
+	if baseWhere != "" {
+		clauses = append(clauses, "("+baseWhere+")")
 	}
-	return where + sql
+	if viewWhere != "" {
+		clauses = append(clauses, viewWhere)
+	}
+
+	return strings.Join(clauses, " AND ")
 }
 
-func getGenreSearch(searchFor string, genreId int) (string, string, map[string]interface{}) {
-	var sqlWhere, sqlJoin string
-	var sqlArgs map[string]interface{}
-	sqlArgs = make(map[string]interface{})
+func getGenreSearch(searchFor string, genreId int) (join string, where string, args map[string]interface{}) {
+	join = "JOIN movie_genre ON movies.id = movie_genre.movie_id"
+	args = map[string]interface{}{
+		"genre": genreId,
+	}
 
 	if searchFor == "" {
-		sqlJoin = "JOIN movie_genre on movies.id = movie_genre.movie_id"
-		sqlWhere = "movie_genre.genre_id = @genre"
-		sqlArgs["genre"] = genreId
+		where = "movie_genre.genre_id = @genre"
 	} else {
-		sqlJoin = "JOIN movie_genre on movies.id = movie_genre.movie_id"
-		sqlWhere = "(title like @search OR sub_title like @search OR year like @search OR story_line like @search" +
-			") AND movie_genre.genre_id = @genre"
-		sqlArgs["search"] = "%" + searchFor + "%"
-		sqlArgs["genre"] = genreId
+		where = `(title LIKE @search OR sub_title LIKE @search OR year LIKE @search OR story_line LIKE @search)
+		         AND movie_genre.genre_id = @genre`
+		args["search"] = "%" + searchFor + "%"
 	}
-	return sqlJoin, sqlWhere, sqlArgs
+
+	return
 }
 
-func getPersonSearch(searchFor string, typ int) (string, string, map[string]interface{}) {
-	var sqlWhere, sqlJoin string
-	var sqlArgs = make(map[string]interface{})
+func getPersonSearch(searchFor string, typ int) (join string, where string, args map[string]interface{}) {
+	join = `
+		JOIN movie_person ON movies.id = movie_person.movie_id
+		JOIN person ON person.id = movie_person.person_id
+	`
 
-	sqlJoin = "JOIN movie_person on movies.id = movie_person.movie_id "
-	sqlJoin += "JOIN person on person.id = movie_person.person_id"
-	sqlWhere = "person.name like @search"
-	sqlArgs["search"] = "%" + searchFor + "%"
-
-	if typ >= 0 && typ <= 2 {
-		sqlWhere += " AND movie_person.type = @type"
-		sqlArgs["type"] = typ
+	where = "person.name LIKE @search"
+	args = map[string]interface{}{
+		"search": "%" + searchFor + "%",
 	}
 
-	return sqlJoin, sqlWhere, sqlArgs
+	if typ >= 0 && typ <= 2 {
+		where += " AND movie_person.type = @type"
+		args["type"] = typ
+	}
+
+	return
 }
 
 func getStandardSearch(searchFor string, onlyNotProcessed bool) (string, map[string]interface{}) {
-	var sqlWhere string
-	var sqlArgs map[string]interface{}
-	sqlArgs = make(map[string]interface{})
+	sqlArgs := make(map[string]interface{})
+	var conditions []string
+
 	if searchFor != "" {
 		prefix, search := getSearchPrefix(searchFor)
+		var condition string
+
 		switch prefix {
 		case "title":
-			sqlWhere = "title like @search OR sub_title like @search"
+			condition = "title LIKE @search OR sub_title LIKE @search"
 		case "year":
-			sqlWhere = "year like @search"
+			condition = "year LIKE @search"
 		case "pack":
-			sqlWhere = "pack like @search"
+			condition = "pack LIKE @search"
 		case "imdb":
-			sqlWhere = "imdb_rating >= @search"
+			condition = "imdb_rating >= @search"
 		case "myrating":
-			sqlWhere = "my_rating >= @search"
+			condition = "my_rating >= @search"
 		default:
-			sqlWhere = "title like @search OR sub_title like @search OR year like @search OR story_line like @search"
+			condition = "title LIKE @search OR sub_title LIKE @search OR year LIKE @search OR story_line LIKE @search"
 		}
+
+		conditions = append(conditions, "("+condition+")")
 		sqlArgs["search"] = search
 	}
 
 	if onlyNotProcessed {
-		if sqlWhere != "" {
-			sqlWhere = "processed=false AND (" + sqlWhere + ")"
-		} else {
-			sqlWhere = "processed=false"
-		}
+		conditions = append([]string{"processed = false"}, conditions...)
 	}
+
+	sqlWhere := strings.Join(conditions, " AND ")
 
 	return sqlWhere, sqlArgs
 }
 
 func getSearchPrefix(searchFor string) (string, string) {
 	before, after, _ := strings.Cut(searchFor, ":")
+	before = strings.TrimSpace(before)
+	after = strings.TrimSpace(after)
+
 	switch before {
 	case "title", "pack":
 		return before, "%" + after + "%"
@@ -494,8 +504,8 @@ func (d *Database) getImagesForMovies(movies []*Movie) ([]*Movie, error) {
 			continue
 		}
 
-		// Image is not in cache, so load it from database
-		// and store it in cache
+		// Image is not in the cache, so load it from the database
+		// and store it in the cache
 		d.getImageForMovie(movie)
 		d.cache.save(movie.Id, movie.Image)
 	}
@@ -556,8 +566,8 @@ func (d *Database) SetProcessed(movie *Movie) error {
 
 	updates["processed"] = true
 
-	if result := db.Model(&movie).Updates(updates); result.Error != nil {
-		return result.Error
+	if err := db.Model(&movie).Updates(updates).Error; err != nil {
+		return err
 	}
 
 	return nil
