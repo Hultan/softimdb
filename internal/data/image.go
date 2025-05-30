@@ -28,8 +28,8 @@ func (d *Database) createImage(image *image) error {
 	if err != nil {
 		return err
 	}
-	if result := db.Create(image); result.Error != nil {
-		return result.Error
+	if err := db.Create(image).Error; err != nil {
+		return err
 	}
 
 	return nil
@@ -42,7 +42,6 @@ func (d *Database) readImage(id int) (*image, error) {
 	// Load from cache
 	cachePath := path.Join(imageCachePath, "softimdb", fmt.Sprintf("%d.jpg", id))
 	if d.existCachedImage(cachePath) {
-		//fmt.Println("Loading cached image : ", fmt.Sprintf("%d.jpg", id))
 		image.Id = id
 		err := d.getCachedImage(&image, cachePath)
 		if err == nil {
@@ -50,13 +49,13 @@ func (d *Database) readImage(id int) (*image, error) {
 		}
 	}
 
-	//fmt.Println("Loading image from database : ", fmt.Sprintf("%d.png", id))
 	db, err := d.getDatabase()
 	if err != nil {
 		return nil, err
 	}
-	if result := db.Where("Id=?", id).First(&image); result.Error != nil {
-		return nil, result.Error
+
+	if err := db.Where("Id=?", id).First(&image).Error; err != nil {
+		return nil, err
 	}
 
 	// Store in cache
@@ -76,16 +75,19 @@ func (d *Database) UpdateImage(movie *Movie, imageData []byte) error {
 
 	err = db.Transaction(
 		func(tx *gorm.DB) error {
-			if result := db.Delete(&image{}, movie.ImageId); result.Error != nil {
-				return result.Error
+			if err := db.Delete(&image{}, movie.ImageId).Error; err != nil {
+				return err
 			}
+
 			image := &image{Data: imageData}
-			if result := db.Create(image); result.Error != nil {
-				return result.Error
+			if err := db.Create(image).Error; err != nil {
+				return err
 			}
-			if result := db.Model(&movie).Update("image_id", image.Id); result.Error != nil {
-				return result.Error
+
+			if err := db.Model(&movie).Update("image_id", image.Id).Error; err != nil {
+				return err
 			}
+
 			// TODO : Update cache
 
 			return nil
@@ -107,8 +109,8 @@ func (d *Database) deleteImage(movie *Movie) error {
 		return err
 	}
 
-	if result := db.Delete(&image{}, movie.ImageId); result.Error != nil {
-		return result.Error
+	if err := db.Delete(&image{}, movie.ImageId).Error; err != nil {
+		return err
 	}
 
 	return nil
