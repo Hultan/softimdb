@@ -1,7 +1,7 @@
 package nas
 
 import (
-	"log"
+	"fmt"
 	"os"
 	"slices"
 	"strings"
@@ -12,11 +12,10 @@ import (
 
 // Manager represents a NAS manager.
 type Manager struct {
-	database *data.Database
+	database     *data.Database
+	dirs         []string
+	ignoredPaths []*data.IgnoredPath
 }
-
-var dirs []string
-var ignoredPaths []*data.IgnoredPath
 
 // ManagerNew creates a new Manager.
 func ManagerNew(database *data.Database) *Manager {
@@ -26,61 +25,61 @@ func ManagerNew(database *data.Database) *Manager {
 }
 
 // GetMovies returns a list of movie paths on the NAS.
-func (m Manager) GetMovies(config *config.Config) ([]string, error) {
-	var err error
-	dirs = make([]string, 3000)
-
+func (m *Manager) GetMovies(config *config.Config) ([]string, error) {
 	// Get ignored paths
 	db := data.DatabaseNew(false, config)
-	ignoredPaths, err = db.GetAllIgnoredPaths()
+	defer db.CloseDatabase()
+
+	ignoredPaths, err := db.GetAllIgnoredPaths()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get ignored paths: %w", err)
 	}
+	m.ignoredPaths = ignoredPaths
 
 	dir, err := os.Open(config.RootDir)
 	if err != nil {
-		log.Fatal(err)
+		return nil, fmt.Errorf("failed to open root dir: %w", err)
 	}
-	defer dir.Close()
+	defer func() {
+		if cerr := dir.Close(); cerr != nil && err == nil {
+			err = fmt.Errorf("close failed: %w", cerr)
+		}
+	}()
 
-	// Read all the file and directory names
-	dirs, err = dir.Readdirnames(0) // 0 means read all entries
+	entries, err := dir.Readdirnames(0)
 	if err != nil {
-		log.Fatal(err)
+		return nil, fmt.Errorf("failed to read dir entries: %w", err)
 	}
 
-	for i, dir := range dirs {
-		if getIgnorePath(ignoredPaths, dir) {
-			dirs[i] = ""
+	var current []string
+	for _, entry := range entries {
+		if !getIgnorePath(m.ignoredPaths, entry) {
+			current = append(current, entry)
 		}
 	}
 
-	// Get movie paths
-	moviePaths, err := db.GetAllMoviePaths()
+	// Get movie paths to exclude
+	existing, err := db.GetAllMoviePaths()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get movie paths: %w", err)
 	}
 
-	result := m.removeMoviePaths(dirs, moviePaths)
-
-	db.CloseDatabase()
-
+	result := m.removeExistingPaths(current, existing)
 	slices.Sort(result)
-
 	return result, nil
 }
 
-func (m Manager) removeMoviePaths(dirs []string, moviePaths []string) []string {
+func (m *Manager) removeExistingPaths(current []string, existing []string) []string {
 	var result []string
 
-	for i := range dirs {
-		dir := dirs[i]
+	for i := range current {
+		dir := current[i]
 
 		if dir == "" {
 			continue
 		}
 
-		if !slices.Contains(moviePaths, dir) {
+		if !slices.Contains(existing, dir) {
 			result = append(result, dir)
 		}
 	}
