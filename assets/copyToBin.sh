@@ -7,7 +7,7 @@ program=$(basename $(builtin cd $dir; pwd))
 # The folders we are working with
 
 codeFolder="/home/per/code"
-binFolder="/home/per/bin/softteam"
+binFolder="/home/per/bin"
 softtubeFolder="/softtube/bin"
 configFolder="/home/per/.config/softteam"
 # cacheFolder="/home/per/.cache/"
