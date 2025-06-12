@@ -30,7 +30,10 @@ func cleanString(text string) string {
 
 func reportError(err error) {
 	_, _ = fmt.Fprintln(os.Stderr, err)
-	_, _ = dialog.Title(applicationTitle).Text(err.Error()).
+	_, _ = dialog.Title(applicationTitle).
+		Text("An unkown error occured!").
+		ExtraExpand(err.Error()).
+		ExtraHeight(80).
 		ErrorIcon().OkButton().Show()
 }
 
@@ -101,12 +104,11 @@ func findMovieFile(path string) (string, error) {
 
 	f, err := os.Open(path)
 	if err != nil {
-		_, _ = dialog.Title("Failed to open path!").Textf("Is the NAS unlocked? Check path '%s'.", path).WarningIcon().OkButton().Show()
-		return "", err
+		return "", fmt.Errorf("failed to open path: %s", path)
 	}
 	files, err := f.Readdirnames(0)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to read dir names: %s", path)
 	}
 	for _, file := range files {
 		lower := strings.ToLower(file)

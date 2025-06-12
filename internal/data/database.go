@@ -52,6 +52,10 @@ func (d *Database) CloseDatabase() {
 
 func (d *Database) getDatabase() (*gorm.DB, error) {
 	if d.db != nil {
+		if err := d.isOpen(); err != nil {
+			return nil, err
+		}
+
 		return d.db, nil
 	}
 
@@ -88,4 +92,17 @@ func (d *Database) openDatabase() (*gorm.DB, error) {
 		return nil, fmt.Errorf("failed to open database: %w", err)
 	}
 	return db, nil
+}
+
+func (d *Database) isOpen() error {
+	sqlDB, err := d.db.DB() // Get the underlying *sql.DB
+	if err != nil {
+		return fmt.Errorf("failed to get underlying sql.DB: %w", err)
+	}
+
+	if err := sqlDB.Ping(); err != nil {
+		return fmt.Errorf("database ping failed: %w", err)
+	}
+
+	return nil
 }

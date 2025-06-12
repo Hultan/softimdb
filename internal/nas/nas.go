@@ -26,11 +26,7 @@ func ManagerNew(database *data.Database) *Manager {
 
 // GetMovies returns a list of movie paths on the NAS.
 func (m *Manager) GetMovies(config *config.Config) ([]string, error) {
-	// Get ignored paths
-	db := data.DatabaseNew(false, config)
-	defer db.CloseDatabase()
-
-	ignoredPaths, err := db.GetAllIgnoredPaths()
+	ignoredPaths, err := m.database.GetAllIgnoredPaths()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get ignored paths: %w", err)
 	}
@@ -59,7 +55,7 @@ func (m *Manager) GetMovies(config *config.Config) ([]string, error) {
 	}
 
 	// Get movie paths to exclude
-	pathsInDB, err := db.GetAllMoviePaths()
+	pathsInDB, err := m.database.GetAllMoviePaths()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get movie paths: %w", err)
 	}

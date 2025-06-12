@@ -150,7 +150,6 @@ func (m *MainWindow) Open(app *gtk.Application) {
 	m.gtk.application = app
 	m.gtk.window.SetApplication(app)
 	m.gtk.window.ShowAll()
-	m.view.manager.changeView(viewToWatch)
 	m.gtk.storyLineScrolledWindow.Hide()
 
 	var err error
@@ -159,6 +158,8 @@ func (m *MainWindow) Open(app *gtk.Application) {
 		reportError(err)
 		log.Fatal(err)
 	}
+
+	m.view.manager.changeView(viewToWatch)
 }
 
 func (m *MainWindow) setupMenu(window *gtk.ApplicationWindow) {
@@ -465,7 +466,7 @@ func (m *MainWindow) onPlayMovieClicked() {
 		moviePath := path.Join(m.config.RootDir, movie.MoviePath)
 		movieName, err := findMovieFile(moviePath)
 		if err != nil {
-			reportError(err)
+			reportError(fmt.Errorf("make sure the NAS is unlocked: %w", err))
 			return
 		}
 		if movieName == "" {

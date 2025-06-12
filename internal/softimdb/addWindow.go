@@ -77,6 +77,8 @@ func (a *addMovieWindow) findNewMovies() {
 		_, _ = dialog.Title("Error").
 			ErrorIcon().
 			Text("Failed to access NAS or database...").
+			ExtraExpand(err.Error()).
+			OkButton().
 			Show()
 
 		return
