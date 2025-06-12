@@ -17,6 +17,7 @@ import (
 	"syscall"
 
 	"github.com/gotk3/gotk3/gdk"
+	"github.com/gotk3/gotk3/glib"
 	"github.com/gotk3/gotk3/gtk"
 	"github.com/nfnt/resize"
 
@@ -29,12 +30,20 @@ func cleanString(text string) string {
 }
 
 func reportError(err error) {
+	if err == nil {
+		return
+	}
+
 	_, _ = fmt.Fprintln(os.Stderr, err)
-	_, _ = dialog.Title(applicationTitle).
-		Text("An unkown error occured!").
-		ExtraExpand(err.Error()).
-		ExtraHeight(80).
-		ErrorIcon().OkButton().Show()
+
+	// Always make sure that the dialog is called from the main thread
+	glib.IdleAdd(func() {
+		_, _ = dialog.Title(applicationTitle).
+			Text("An unkown error occured!").
+			ExtraExpand(err.Error()).
+			ExtraHeight(80).
+			ErrorIcon().OkButton().Show()
+	})
 }
 
 // openInNemo opens a new nemo instance with the specified folder opened
