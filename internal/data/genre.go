@@ -36,7 +36,7 @@ func (d *Database) GetGenres() ([]Genre, error) {
 
 	// Fill genre cache
 	for i := range genres {
-		genreCache.add(&genres[i])
+		d.genreCache.add(&genres[i])
 	}
 
 	return genres, nil
@@ -50,7 +50,7 @@ func (d *Database) getGenreByName(name string) (*Genre, error) {
 	}
 
 	// Check genre cache first
-	if genre := genreCache.getByName(name); genre != nil {
+	if genre := d.genreCache.getByName(name); genre != nil {
 		return genre, nil
 	}
 
@@ -116,7 +116,7 @@ func (d *Database) getGenresForMovie(movie *Movie) ([]Genre, error) {
 	var genres []Genre
 	for _, mg := range movieGenres {
 		// Attempt to get genre from the cache
-		if cachedGenre := genreCache.getById(mg.GenreId); cachedGenre != nil {
+		if cachedGenre := d.genreCache.getById(mg.GenreId); cachedGenre != nil {
 			genres = append(genres, *cachedGenre)
 			continue
 		}
@@ -128,7 +128,7 @@ func (d *Database) getGenresForMovie(movie *Movie) ([]Genre, error) {
 		}
 
 		// Add to the cache and result list
-		genreCache.add(&genre)
+		d.genreCache.add(&genre)
 		genres = append(genres, genre)
 	}
 

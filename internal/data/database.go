@@ -14,9 +14,10 @@ import (
 // Database represents a connection to the SoftIMDB database.
 type Database struct {
 	db              *gorm.DB
-	cache           *ImageCache
+	imageCache      *ImageCache
 	UseTestDatabase bool
 	config          *config.Config
+	genreCache      *GenreCache
 }
 
 // DatabaseNew creates a new SoftIMDB Database object.
@@ -24,10 +25,9 @@ func DatabaseNew(useTestDB bool, config *config.Config) *Database {
 	database := &Database{
 		UseTestDatabase: useTestDB,
 		config:          config,
-		cache:           imageCacheNew(),
+		imageCache:      imageCacheNew(),
+		genreCache:      genreCacheNew(),
 	}
-
-	genreCache = genreCacheNew()
 
 	return database
 }

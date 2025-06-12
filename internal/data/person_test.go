@@ -100,7 +100,7 @@ func TestDatabase_getPersonsForMovie(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			d := &Database{
 				db:              tt.fields.db,
-				cache:           tt.fields.cache,
+				imageCache:      tt.fields.cache,
 				UseTestDatabase: tt.fields.UseTestDatabase,
 				config:          tt.fields.config,
 			}
