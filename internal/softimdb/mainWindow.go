@@ -377,7 +377,7 @@ func (m *MainWindow) addGenreMenu(sub *gtk.Menu, group *glib.SList, genre data.G
 	return item
 }
 
-func (m *MainWindow) saveMovieInfo(movieInfo *movieInfo, movie *data.Movie) {
+func (m *MainWindow) saveMovieInfo(movieInfo *Movie, movie *data.Movie) {
 	movieInfo.toDatabase(movie)
 
 	err := m.database.UpdateMovie(movie)
@@ -484,7 +484,7 @@ func (m *MainWindow) onEditMovieInfoClicked() {
 		return
 	}
 
-	info := &movieInfo{}
+	info := &Movie{}
 	info.fromDatabase(selectedMovie)
 
 	// Open the movie dialog here
@@ -634,7 +634,7 @@ func (m *MainWindow) onOpenFolderClicked() {
 	openInNemo(path.Join(m.config.RootDir, movie.MoviePath))
 }
 
-func (m *MainWindow) onWindowClosed(r gtk.ResponseType, info *movieInfo, movie *data.Movie) {
+func (m *MainWindow) onWindowClosed(r gtk.ResponseType, info *Movie, movie *data.Movie) {
 	switch r {
 	case gtk.RESPONSE_ACCEPT:
 		// Save movie

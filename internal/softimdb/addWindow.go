@@ -120,7 +120,7 @@ func (a *addMovieWindow) fillList(list *gtk.ListBox, paths []string) {
 	a.onRowActivated()
 }
 
-func (a *addMovieWindow) windowClosed(r gtk.ResponseType, info *movieInfo, movie *data.Movie) {
+func (a *addMovieWindow) windowClosed(r gtk.ResponseType, info *Movie, movie *data.Movie) {
 	switch r {
 	case gtk.RESPONSE_ACCEPT:
 		// Save movie
@@ -134,7 +134,7 @@ func (a *addMovieWindow) windowClosed(r gtk.ResponseType, info *movieInfo, movie
 	}
 }
 
-func (a *addMovieWindow) insertMovie(info *movieInfo, _ *data.Movie) {
+func (a *addMovieWindow) insertMovie(info *Movie, _ *data.Movie) {
 	newMovie := &data.Movie{}
 	info.toDatabase(newMovie)
 
@@ -211,7 +211,7 @@ func (a *addMovieWindow) onAddMovieButtonClicked() {
 		return
 	}
 
-	info := &movieInfo{moviePath: moviePath}
+	info := &Movie{moviePath: moviePath}
 
 	// Open the movie dialog here
 	if a.mainWindow.movieWin == nil {

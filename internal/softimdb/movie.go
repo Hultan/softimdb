@@ -8,7 +8,7 @@ import (
 	"github.com/hultan/softimdb/internal/data"
 )
 
-type movieInfo struct {
+type Movie struct {
 	title     string
 	subTitle  string
 	storyLine string
@@ -31,7 +31,7 @@ type movieInfo struct {
 	needsSubtitle bool
 }
 
-func (m *movieInfo) fromDatabase(movie *data.Movie) {
+func (m *Movie) fromDatabase(movie *data.Movie) {
 	m.title = movie.Title
 	m.subTitle = movie.SubTitle
 	m.storyLine = movie.StoryLine
@@ -50,7 +50,7 @@ func (m *movieInfo) fromDatabase(movie *data.Movie) {
 	m.imageHasChanged = false
 }
 
-func (m *movieInfo) toDatabase(movie *data.Movie) {
+func (m *Movie) toDatabase(movie *data.Movie) {
 	movie.Title = m.title
 	movie.SubTitle = m.subTitle
 	movie.StoryLine = m.storyLine
@@ -74,7 +74,7 @@ func (m *movieInfo) toDatabase(movie *data.Movie) {
 	}
 }
 
-func (m *movieInfo) getImdbRating() float32 {
+func (m *Movie) getImdbRating() float32 {
 	rating, err := strconv.ParseFloat(m.imdbRating, 64)
 	if err != nil {
 		return 0.0
@@ -82,7 +82,7 @@ func (m *movieInfo) getImdbRating() float32 {
 	return float32(rating)
 }
 
-func (m *movieInfo) getYear() int {
+func (m *Movie) getYear() int {
 	year, err := strconv.Atoi(m.year)
 	if err != nil {
 		return 0
@@ -90,7 +90,7 @@ func (m *movieInfo) getYear() int {
 	return year
 }
 
-func (m *movieInfo) getGenres(genres string) []data.Genre {
+func (m *Movie) getGenres(genres string) []data.Genre {
 	var result []data.Genre
 
 	for _, item := range strings.Split(genres, ",") {

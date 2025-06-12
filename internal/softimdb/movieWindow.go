@@ -42,13 +42,13 @@ type movieWindow struct {
 	castAndCrewList          *gtk.ListBox
 	movieStack               *gtk.Stack
 
-	movieInfo *movieInfo
-	movie     *data.Movie
+	guiMovie  *Movie
+	dataMovie *data.Movie
 
 	config *config.Config
 	db     *data.Database
 
-	closeCallback func(gtk.ResponseType, *movieInfo, *data.Movie)
+	closeCallback func(gtk.ResponseType, *Movie, *data.Movie)
 }
 
 type similarMovie struct {
@@ -79,7 +79,7 @@ func newMovieWindow(builder *builder.Builder, parent gtk.IWindow, db *data.Datab
 			return
 		}
 		m.window.Hide()
-		m.closeCallback(gtk.RESPONSE_ACCEPT, m.movieInfo, m.movie)
+		m.closeCallback(gtk.RESPONSE_ACCEPT, m.guiMovie, m.dataMovie)
 	})
 
 	button = builder.GetObject("cancelButton").(*gtk.Button)
@@ -92,7 +92,7 @@ func newMovieWindow(builder *builder.Builder, parent gtk.IWindow, db *data.Datab
 	_ = button.Connect("clicked", func() {
 		if m.deleteMovie() {
 			m.window.Hide()
-			m.closeCallback(gtk.RESPONSE_REJECT, nil, m.movie)
+			m.closeCallback(gtk.RESPONSE_REJECT, nil, m.dataMovie)
 		}
 	})
 	m.deleteButton = button
@@ -122,20 +122,20 @@ func newMovieWindow(builder *builder.Builder, parent gtk.IWindow, db *data.Datab
 	return m
 }
 
-func (m *movieWindow) open(info *movieInfo, movie *data.Movie, closeCallback func(gtk.ResponseType, *movieInfo,
+func (m *movieWindow) open(guiMovie *Movie, dataMovie *data.Movie, closeCallback func(gtk.ResponseType, *Movie,
 	*data.Movie)) {
 
-	if info == nil {
-		info = &movieInfo{}
+	if guiMovie == nil {
+		guiMovie = &Movie{}
 		// TODO : Disable cast and crew tab here
 	}
 
 	scrapeImdbOnce = false
 	showSimilarOnce = false
-	if info.title == "" {
+	if guiMovie.title == "" {
 		//  New movie
-		info.toWatch = true
-		info.needsSubtitle = !m.hasSubtitles(info.moviePath)
+		guiMovie.toWatch = true
+		guiMovie.needsSubtitle = !m.hasSubtitles(guiMovie.moviePath)
 	} else {
 		// Edit movie
 		scrapeImdbOnce = true
@@ -146,19 +146,19 @@ func (m *movieWindow) open(info *movieInfo, movie *data.Movie, closeCallback fun
 	// database to load the person below, and that causes a short delay
 	m.window.ShowAll()
 
-	if movie != nil {
+	if dataMovie != nil {
 		// Load persons for the movie (they are no longer loaded in the main load)
-		persons, err := m.db.GetPersonsForMovie(movie)
+		persons, err := m.db.GetPersonsForMovie(dataMovie)
 		if err != nil {
 			return
 		}
-		movie.Persons = persons
+		dataMovie.Persons = persons
 	}
 
-	m.movie = movie
-	m.movieInfo = info
+	m.dataMovie = dataMovie
+	m.guiMovie = guiMovie
 	m.closeCallback = closeCallback
-	m.deleteButton.SetSensitive(movie != nil)
+	m.deleteButton.SetSensitive(dataMovie != nil)
 
 	m.fillForm()
 
@@ -168,33 +168,33 @@ func (m *movieWindow) open(info *movieInfo, movie *data.Movie, closeCallback fun
 
 func (m *movieWindow) fillForm() {
 	// Fill form with data
-	m.imdbUrlEntry.SetText(m.movieInfo.imdbUrl)
-	m.pathEntry.SetText(m.movieInfo.moviePath)
-	m.titleEntry.SetText(m.movieInfo.title)
-	m.subTitleEntry.SetText(m.movieInfo.subTitle)
-	m.yearEntry.SetText(fmt.Sprintf("%d", m.movieInfo.getYear()))
-	m.myRatingEntry.SetText(fmt.Sprintf("%d", m.movieInfo.myRating))
-	m.toWatchCheckButton.SetActive(m.movieInfo.toWatch)
-	m.needsSubtitleCheckButton.SetActive(m.movieInfo.needsSubtitle)
+	m.imdbUrlEntry.SetText(m.guiMovie.imdbUrl)
+	m.pathEntry.SetText(m.guiMovie.moviePath)
+	m.titleEntry.SetText(m.guiMovie.title)
+	m.subTitleEntry.SetText(m.guiMovie.subTitle)
+	m.yearEntry.SetText(fmt.Sprintf("%d", m.guiMovie.getYear()))
+	m.myRatingEntry.SetText(fmt.Sprintf("%d", m.guiMovie.myRating))
+	m.toWatchCheckButton.SetActive(m.guiMovie.toWatch)
+	m.needsSubtitleCheckButton.SetActive(m.guiMovie.needsSubtitle)
 	buffer, err := gtk.TextBufferNew(nil)
 	if err != nil {
 		reportError(err)
 		log.Fatal(err)
 	}
-	buffer.SetText(m.movieInfo.storyLine)
+	buffer.SetText(m.guiMovie.storyLine)
 	m.storyLineEntry.SetBuffer(buffer)
-	m.ratingEntry.SetText(m.movieInfo.imdbRating)
-	m.genresEntry.SetText(m.movieInfo.genres)
-	m.packEntry.SetText(m.movieInfo.pack)
-	m.runtimeEntry.SetText(strconv.Itoa(m.movieInfo.runtime))
+	m.ratingEntry.SetText(m.guiMovie.imdbRating)
+	m.genresEntry.SetText(m.guiMovie.genres)
+	m.packEntry.SetText(m.guiMovie.pack)
+	m.runtimeEntry.SetText(strconv.Itoa(m.guiMovie.runtime))
 
-	if m.movieInfo.image == nil {
+	if m.guiMovie.image == nil {
 		m.posterImage.Clear()
 	} else {
-		m.updateImage(m.movieInfo.image)
+		m.updateImage(m.guiMovie.image)
 	}
 
-	if m.movie != nil {
+	if m.dataMovie != nil {
 		m.fillCastAndCrewPage()
 	}
 	m.movieStack.SetVisibleChildName("MoviePage")
@@ -202,9 +202,9 @@ func (m *movieWindow) fillForm() {
 
 func (m *movieWindow) saveMovie() bool {
 	// Fill fields
-	m.movieInfo.moviePath = getEntryText(m.pathEntry)
-	m.movieInfo.imdbUrl = getEntryText(m.imdbUrlEntry)
-	id, err := getIdFromUrl(m.movieInfo.imdbUrl)
+	m.guiMovie.moviePath = getEntryText(m.pathEntry)
+	m.guiMovie.imdbUrl = getEntryText(m.imdbUrlEntry)
+	id, err := getIdFromUrl(m.guiMovie.imdbUrl)
 	if err != nil {
 		msg := fmt.Sprintf("Failed to retrieve IMDB id from url : %s", err)
 		_, err = dialog.Title("Invalid IMDB url...").Text(msg).ErrorIcon().OkButton().Show()
@@ -215,11 +215,11 @@ func (m *movieWindow) saveMovie() bool {
 
 		return false
 	}
-	m.movieInfo.imdbId = id
-	m.movieInfo.title = getEntryText(m.titleEntry)
-	m.movieInfo.subTitle = getEntryText(m.subTitleEntry)
-	m.movieInfo.pack = getEntryText(m.packEntry)
-	m.movieInfo.year = getEntryText(m.yearEntry)
+	m.guiMovie.imdbId = id
+	m.guiMovie.title = getEntryText(m.titleEntry)
+	m.guiMovie.subTitle = getEntryText(m.subTitleEntry)
+	m.guiMovie.pack = getEntryText(m.packEntry)
+	m.guiMovie.year = getEntryText(m.yearEntry)
 
 	ratingText := getEntryText(m.myRatingEntry)
 	rating, err := strconv.Atoi(ratingText)
@@ -234,7 +234,7 @@ func (m *movieWindow) saveMovie() bool {
 
 		return false
 	}
-	m.movieInfo.myRating = rating
+	m.guiMovie.myRating = rating
 
 	runtimeText := getEntryText(m.runtimeEntry)
 	runtime, err := strconv.Atoi(runtimeText)
@@ -249,11 +249,11 @@ func (m *movieWindow) saveMovie() bool {
 
 		return false
 	}
-	m.movieInfo.runtime = runtime
+	m.guiMovie.runtime = runtime
 
-	m.movieInfo.toWatch = m.toWatchCheckButton.GetActive()
-	m.movieInfo.needsSubtitle = m.needsSubtitleCheckButton.GetActive()
-	m.movieInfo.imdbRating = getEntryText(m.ratingEntry)
+	m.guiMovie.toWatch = m.toWatchCheckButton.GetActive()
+	m.guiMovie.needsSubtitle = m.needsSubtitleCheckButton.GetActive()
+	m.guiMovie.imdbRating = getEntryText(m.ratingEntry)
 	buffer, err := m.storyLineEntry.GetBuffer()
 	if err != nil {
 		reportError(err)
@@ -264,8 +264,8 @@ func (m *movieWindow) saveMovie() bool {
 		reportError(err)
 		return false
 	}
-	m.movieInfo.storyLine = storyLine
-	m.movieInfo.genres = getEntryText(m.genresEntry)
+	m.guiMovie.storyLine = storyLine
+	m.guiMovie.genres = getEntryText(m.genresEntry)
 	// Poster is set when clicking on the image
 
 	//for _, person := range m.movie.Persons {
@@ -273,7 +273,7 @@ func (m *movieWindow) saveMovie() bool {
 	//		Name: person.Name,
 	//		Type: person.Type,
 	//	}
-	//	m.movieInfo.persons = append(m.movieInfo.persons, p)
+	//	m.movie.persons = append(m.movie.persons, p)
 	//}
 
 	return true
@@ -281,10 +281,10 @@ func (m *movieWindow) saveMovie() bool {
 
 func (m *movieWindow) deleteMovie() bool {
 	var title string
-	if len(m.movieInfo.title) <= 30 {
-		title = m.movieInfo.title
+	if len(m.guiMovie.title) <= 30 {
+		title = m.guiMovie.title
 	} else {
-		title = m.movieInfo.title[:27] + "..."
+		title = m.guiMovie.title[:27] + "..."
 	}
 	msg := fmt.Sprintf("Do you want to delete the movie '%s'?", title)
 	response, err := dialog.Title("Delete movie...").Text(msg).YesNoButtons().Width(450).
@@ -390,7 +390,7 @@ func (m *movieWindow) addPeopleSection(title string, personType data.PersonType,
 	m.castAndCrewList.Add(getLabel(title, true))
 
 	// People of this type
-	for _, person := range m.movie.Persons {
+	for _, person := range m.dataMovie.Persons {
 		if person.Type == personType {
 			m.castAndCrewList.Add(getLabel(person.Name, false))
 		}
@@ -561,14 +561,14 @@ func (m *movieWindow) createMovieInfo(movieImdb *imdb.MovieImdb) bool {
 		return true
 	}
 	m.updateImage(fileData)
-	m.movieInfo.image = fileData
-	m.movieInfo.imageHasChanged = true
+	m.guiMovie.image = fileData
+	m.guiMovie.imageHasChanged = true
 
 	var p data.Person
 	for _, person := range movieImdb.Persons {
 		p.Name = person.Name
 		p.Type = data.PersonType(person.Type)
-		m.movieInfo.persons = append(m.movieInfo.persons, p)
+		m.guiMovie.persons = append(m.guiMovie.persons, p)
 	}
 	return false
 }
@@ -600,6 +600,6 @@ func (m *movieWindow) onImageClick() {
 		return
 	}
 	m.updateImage(fileData)
-	m.movieInfo.image = fileData
-	m.movieInfo.imageHasChanged = true
+	m.guiMovie.image = fileData
+	m.guiMovie.imageHasChanged = true
 }
