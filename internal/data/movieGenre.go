@@ -19,7 +19,7 @@ func (m *MovieGenre) TableName() string {
 func (d *Database) InsertMovieGenre(movie *Movie, Genre *Genre) error {
 	db, err := d.getDatabase()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get database: %w", err)
 	}
 
 	movieGenre := MovieGenre{
@@ -28,7 +28,7 @@ func (d *Database) InsertMovieGenre(movie *Movie, Genre *Genre) error {
 	}
 
 	if err := db.Create(movieGenre).Error; err != nil {
-		return err
+		return fmt.Errorf("failed to insert movie genre: %w", err)
 	}
 
 	return nil
@@ -53,7 +53,7 @@ func (d *Database) RemoveMovieGenre(movie *Movie, genre *Genre) error {
 func (d *Database) getOrInsertMovieGenre(movie *Movie, genre *Genre) error {
 	db, err := d.getDatabase()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get database: %w", err)
 	}
 
 	movieGenre := MovieGenre{
@@ -62,7 +62,7 @@ func (d *Database) getOrInsertMovieGenre(movie *Movie, genre *Genre) error {
 	}
 
 	if err := db.FirstOrCreate(&movieGenre).Error; err != nil {
-		return err
+		return fmt.Errorf("failed to get or insert movie genre: %w", err)
 	}
 
 	return nil

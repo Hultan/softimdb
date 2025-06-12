@@ -1,5 +1,7 @@
 package data
 
+import "fmt"
+
 // IgnoredPath represents the table IgnoredPath.
 type IgnoredPath struct {
 	Id               int    `gorm:"column:id;primary_key"`
@@ -16,11 +18,11 @@ func (i *IgnoredPath) TableName() string {
 func (d *Database) GetAllIgnoredPaths() ([]*IgnoredPath, error) {
 	db, err := d.getDatabase()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get database: %w", err)
 	}
 	var ignoredPaths []*IgnoredPath
 	if err := db.Find(&ignoredPaths).Error; err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get ignored pahts: %w", err)
 	}
 
 	return ignoredPaths, nil
@@ -30,10 +32,10 @@ func (d *Database) GetAllIgnoredPaths() ([]*IgnoredPath, error) {
 func (d *Database) InsertIgnorePath(ignorePath *IgnoredPath) error {
 	db, err := d.getDatabase()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get database: %w", err)
 	}
 	if err := db.Create(ignorePath).Error; err != nil {
-		return err
+		return fmt.Errorf("failed to insert ignored pahts: %w", err)
 	}
 
 	return nil
@@ -43,10 +45,10 @@ func (d *Database) InsertIgnorePath(ignorePath *IgnoredPath) error {
 func (d *Database) DeleteIgnorePath(ignorePath *IgnoredPath) error {
 	db, err := d.getDatabase()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get database: %w", err)
 	}
 	if err := db.Delete(ignorePath, ignorePath.Id).Error; err != nil {
-		return err
+		return fmt.Errorf("failed to delete ignored pahts: %w", err)
 	}
 
 	return nil

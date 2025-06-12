@@ -37,7 +37,7 @@ func (d *Database) GetPerson(name string) (*Person, error) {
 
 	db, err := d.getDatabase()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get database: %w", err)
 	}
 
 	person := Person{}
@@ -45,7 +45,7 @@ func (d *Database) GetPerson(name string) (*Person, error) {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, nil
 		}
-		return nil, err
+		return nil, fmt.Errorf("failed to get person: %w", err)
 	}
 
 	return &person, nil
@@ -55,13 +55,13 @@ func (d *Database) GetPerson(name string) (*Person, error) {
 func (d *Database) InsertPerson(person *Person) (*Person, error) {
 	db, err := d.getDatabase()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get database: %w", err)
 	}
 
 	person.Name = strings.TrimSpace(person.Name)
 
 	if err := db.Create(person).Error; err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to insert person: %w", err)
 
 	}
 
@@ -72,13 +72,13 @@ func (d *Database) InsertPerson(person *Person) (*Person, error) {
 func (d *Database) GetPersonsForMovie(movie *Movie) ([]Person, error) {
 	db, err := d.getDatabase()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get database: %w", err)
 	}
 
 	// Get person id:s for the movie
 	var moviePersons []MoviePerson
 	if err := db.Where("movie_id=?", movie.Id).Find(&moviePersons).Error; err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get person ids for movie: %w", err)
 	}
 
 	var persons []Person
@@ -86,7 +86,7 @@ func (d *Database) GetPersonsForMovie(movie *Movie) ([]Person, error) {
 	for i := range moviePersons {
 		var person Person
 		if err := db.Where("id=?", moviePersons[i].PersonId).Find(&person).Error; err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to get person for movie: %w", err)
 		}
 		person.Type = PersonType(moviePersons[i].Type)
 		persons = append(persons, person)

@@ -63,7 +63,7 @@ func (d *Database) getGenreByName(name string) (*Genre, error) {
 	result := db.Where("name = ?", name).First(&genre)
 	if result.Error != nil {
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-			return nil, nil // Not found is not an error, so return nil, nil
+			return nil, nil // Not found is not an error, so return nil, nil in this case
 		}
 		return nil, fmt.Errorf("database query error: %w", result.Error)
 	}

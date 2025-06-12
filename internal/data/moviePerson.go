@@ -1,5 +1,7 @@
 package data
 
+import "fmt"
+
 // MoviePerson represents a person (director, writer or actor) and a movie.
 type MoviePerson struct {
 	MovieId  int `gorm:"column:movie_id;primary_key;"`
@@ -16,7 +18,7 @@ func (m *MoviePerson) TableName() string {
 func (d *Database) InsertMoviePerson(movie *Movie, person *Person) error {
 	db, err := d.getDatabase()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get database: %w", err)
 	}
 
 	moviePerson := MoviePerson{
@@ -26,7 +28,7 @@ func (d *Database) InsertMoviePerson(movie *Movie, person *Person) error {
 	}
 
 	if err := db.FirstOrCreate(&moviePerson).Error; err != nil {
-		return err
+		return fmt.Errorf("failed to get or insert movie person: %w", err)
 	}
 	return nil
 }

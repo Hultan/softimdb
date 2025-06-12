@@ -26,10 +26,10 @@ func (i *image) TableName() string {
 func (d *Database) createImage(image *image) error {
 	db, err := d.getDatabase()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get database: %w", err)
 	}
 	if err := db.Create(image).Error; err != nil {
-		return err
+		return fmt.Errorf("failed to insert image: %w", err)
 	}
 
 	return nil
@@ -51,11 +51,11 @@ func (d *Database) readImage(id int) (*image, error) {
 
 	db, err := d.getDatabase()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get database: %w", err)
 	}
 
 	if err := db.Where("Id=?", id).First(&image).Error; err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get image: %w", err)
 	}
 
 	// Store in cache
@@ -70,22 +70,22 @@ func (d *Database) readImage(id int) (*image, error) {
 func (d *Database) UpdateImage(movie *Movie, imageData []byte) error {
 	db, err := d.getDatabase()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get database: %w", err)
 	}
 
 	err = db.Transaction(
 		func(tx *gorm.DB) error {
 			if err := db.Delete(&image{}, movie.ImageId).Error; err != nil {
-				return err
+				return fmt.Errorf("failed to delete old image: %w", err)
 			}
 
 			image := &image{Data: imageData}
 			if err := db.Create(image).Error; err != nil {
-				return err
+				return fmt.Errorf("failed to insert new image: %w", err)
 			}
 
 			if err := db.Model(&movie).Update("image_id", image.Id).Error; err != nil {
-				return err
+				return fmt.Errorf("failed to update image_id on movie: %w", err)
 			}
 
 			// TODO : Update cache
@@ -106,11 +106,11 @@ func (d *Database) UpdateImage(movie *Movie, imageData []byte) error {
 func (d *Database) deleteImage(movie *Movie) error {
 	db, err := d.getDatabase()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get database: %w", err)
 	}
 
 	if err := db.Delete(&image{}, movie.ImageId).Error; err != nil {
-		return err
+		return fmt.Errorf("failed to delete image: %w", err)
 	}
 
 	return nil
@@ -132,7 +132,7 @@ func (d *Database) existCachedImage(cachePath string) bool {
 func (d *Database) getCachedImage(image *image, cachePath string) error {
 	file, err := os.Open(cachePath)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to open cached image: %w", err)
 	}
 	defer func() {
 		if closeErr := file.Close(); closeErr != nil && err == nil {
@@ -142,7 +142,7 @@ func (d *Database) getCachedImage(image *image, cachePath string) error {
 
 	data, err := io.ReadAll(file)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get cached image: %w", err)
 	}
 	image.Data = data
 	return nil

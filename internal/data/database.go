@@ -55,11 +55,12 @@ func (d *Database) getDatabase() (*gorm.DB, error) {
 		return d.db, nil
 	}
 
-	var err error
-	d.db, err = d.openDatabase()
+	db, err := d.openDatabase()
 	if err != nil {
 		return nil, err
 	}
+	d.db = db
+
 	return d.db, nil
 }
 
@@ -69,6 +70,7 @@ func (d *Database) openDatabase() (*gorm.DB, error) {
 		return nil, fmt.Errorf("failed to decrypt password: %w", err)
 	}
 
+	// Create connection string
 	var dsn = fmt.Sprintf(
 		"%s:%s@tcp(%s:%v)/%s?parseTime=True",
 		d.config.Database.User,

@@ -53,7 +53,7 @@ func (d *Database) SearchMoviesEx(currentView string, searchFor string, genreId 
 	onlyNotProcessed bool) ([]*Movie, error) {
 	db, err := d.getDatabase()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get database: %w", err)
 	}
 
 	var (
@@ -69,7 +69,7 @@ func (d *Database) SearchMoviesEx(currentView string, searchFor string, genreId 
 	}
 
 	if genreId != -1 && onlyNotProcessed {
-		panic("onlyNotProcessed does not work with genre search")
+		return nil, fmt.Errorf("onlyNotProcessed does not work with genre search")
 	}
 
 	parts := strings.Split(searchFor, ":")
@@ -105,17 +105,17 @@ func (d *Database) SearchMoviesEx(currentView string, searchFor string, genreId 
 	// query.Debug().Find(&movies)
 
 	if err := query.Distinct().Find(&movies).Error; err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to find movies: %w", err)
 	}
 
 	movies, err = d.getGenresForMovies(movies)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get genres for movies: %w", err)
 	}
 
 	movies, err = d.getImagesForMovies(movies)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get images for movies: %w", err)
 	}
 
 	return movies, nil
@@ -130,12 +130,12 @@ func (d *Database) SearchMovies(currentView string, searchFor string, genreId in
 func (d *Database) GetAllMoviePaths() ([]string, error) {
 	db, err := d.getDatabase()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get database: %w", err)
 	}
 
 	var movies []*Movie
 	if err := db.Find(&movies).Error; err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get paths for movies: %w", err)
 	}
 
 	var paths []string
@@ -149,12 +149,12 @@ func (d *Database) GetAllMoviePaths() ([]string, error) {
 func (d *Database) GetAllMovieTitles() ([]string, error) {
 	db, err := d.getDatabase()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get database: %w", err)
 	}
 
 	var movies []*Movie
 	if err := db.Find(&movies).Error; err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get movie titles: %w", err)
 	}
 
 	var titles []string
@@ -172,7 +172,7 @@ func (d *Database) GetAllMovieTitles() ([]string, error) {
 func (d *Database) InsertMovie(movie *Movie) error {
 	db, err := d.getDatabase()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get database: %w", err)
 	}
 
 	err = db.Transaction(
@@ -182,25 +182,25 @@ func (d *Database) InsertMovie(movie *Movie) error {
 				image := image{Data: movie.Image}
 				err = d.createImage(&image)
 				if err != nil {
-					return err
+					return fmt.Errorf("failed to create image: %w", err)
 				}
 				movie.ImageId = image.Id
 			}
 
 			if err := db.Create(movie).Error; err != nil {
-				return err
+				return fmt.Errorf("failed to create movie: %w", err)
 			}
 
 			// Handle genres
 			for i := range movie.Genres {
 				genre, err := d.getOrInsertGenre(&movie.Genres[i])
 				if err != nil {
-					return err
+					return fmt.Errorf("failed to get or create movie genre: %w", err)
 				}
 
 				err = d.InsertMovieGenre(movie, genre)
 				if err != nil {
-					return err
+					return fmt.Errorf("failed to insert movie genre id: %w", err)
 				}
 			}
 
@@ -212,13 +212,13 @@ func (d *Database) InsertMovie(movie *Movie) error {
 
 				p, err := d.GetPerson(person.Name)
 				if err != nil {
-					return err
+					return fmt.Errorf("failed to get person: %w", err)
 				}
 
 				if p == nil {
 					p, err = d.InsertPerson(&person)
 					if err != nil {
-						return err
+						return fmt.Errorf("failed to insert person: %w", err)
 					}
 				}
 
@@ -226,7 +226,7 @@ func (d *Database) InsertMovie(movie *Movie) error {
 
 				err = d.InsertMoviePerson(movie, p)
 				if err != nil {
-					return err
+					return fmt.Errorf("failed to update movie person id: %w", err)
 				}
 			}
 
@@ -246,7 +246,7 @@ func (d *Database) InsertMovie(movie *Movie) error {
 func (d *Database) UpdateMovie(movie *Movie) error {
 	db, err := d.getDatabase()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get database: %w", err)
 	}
 
 	err = db.Transaction(
@@ -267,19 +267,19 @@ func (d *Database) UpdateMovie(movie *Movie) error {
 			updates["length"] = movie.Runtime
 
 			if err := db.Model(&movie).Updates(updates).Error; err != nil {
-				return err
+				return fmt.Errorf("failed to update movie: %w", err)
 			}
 
 			// Handle genres
 			for i := range movie.Genres {
 				genre, err := d.getOrInsertGenre(&movie.Genres[i])
 				if err != nil {
-					return err
+					return fmt.Errorf("failed to get or insert movie genre: %w", err)
 				}
 
 				err = d.getOrInsertMovieGenre(movie, genre)
 				if err != nil {
-					return err
+					return fmt.Errorf("failed to update movie genre id: %w", err)
 				}
 			}
 
@@ -299,7 +299,7 @@ func (d *Database) UpdateMovie(movie *Movie) error {
 func (d *Database) UpdateMoviePersons(movie *Movie) error {
 	db, err := d.getDatabase()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get database: %w", err)
 	}
 
 	err = db.Transaction(
@@ -308,12 +308,12 @@ func (d *Database) UpdateMoviePersons(movie *Movie) error {
 			for i := range movie.Persons {
 				person, err := d.GetPerson(movie.Persons[i].Name)
 				if err != nil {
-					return err
+					return fmt.Errorf("failed to get person: %w", err)
 				}
 				if person == nil {
 					person, err = d.InsertPerson(&movie.Persons[i])
 					if err != nil {
-						return err
+						return fmt.Errorf("failed to insert person: %w", err)
 					}
 				}
 
@@ -321,7 +321,7 @@ func (d *Database) UpdateMoviePersons(movie *Movie) error {
 
 				err = d.InsertMoviePerson(movie, person)
 				if err != nil {
-					return err
+					return fmt.Errorf("failed to update movie person id: %w", err)
 				}
 			}
 
@@ -341,25 +341,25 @@ func (d *Database) UpdateMoviePersons(movie *Movie) error {
 func (d *Database) DeleteMovie(rootDir string, movie *Movie) error {
 	db, err := d.getDatabase()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get database: %w", err)
 	}
 
 	err = db.Transaction(
 		func(tx *gorm.DB) error {
 			if err = d.deleteImage(movie); err != nil {
-				return err
+				return fmt.Errorf("failed to delete movie image: %w", err)
 			}
 
 			if err = d.deleteGenresForMovie(movie); err != nil {
-				return err
+				return fmt.Errorf("failed to delete movie genres: %w", err)
 			}
 
 			if err = d.deletePersonsForMovie(movie); err != nil {
-				return err
+				return fmt.Errorf("failed to delete movie persons: %w", err)
 			}
 
 			if result := db.Delete(movie, movie.Id); result.Error != nil {
-				return result.Error
+				return fmt.Errorf("failed to delete movie: %w", result.Error)
 			}
 
 			return nil
@@ -504,7 +504,7 @@ func (d *Database) getImagesForMovies(movies []*Movie) ([]*Movie, error) {
 			continue
 		}
 
-		// Image is not in the cache, so load it from the database
+		// The image is not in the cache, so load it from the database
 		// and store it in the cache
 		d.getImageForMovie(movie)
 		d.imageCache.save(movie.Id, movie.Image)
@@ -520,7 +520,7 @@ func (d *Database) getGenresForMovies(movies []*Movie) ([]*Movie, error) {
 		// Load genres
 		genres, err := d.getGenresForMovie(movie)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to get genres for movie (%d: %s): %w", movie.Id, movie.Title, err)
 		}
 		movie.Genres = genres
 	}
@@ -535,7 +535,7 @@ func (d *Database) GetPersonsForMovies(movies []*Movie) ([]*Movie, error) {
 		// Load persons
 		persons, err := d.GetPersonsForMovie(movie)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to get person for movie (%d: %s): %w", movie.Id, movie.Title, err)
 		}
 		movie.Persons = persons
 	}
@@ -559,7 +559,7 @@ func (d *Database) getImageForMovie(movie *Movie) {
 func (d *Database) SetProcessed(movie *Movie) error {
 	db, err := d.getDatabase()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get database: %w", err)
 	}
 
 	updates := make(map[string]interface{}, 1)
@@ -567,7 +567,7 @@ func (d *Database) SetProcessed(movie *Movie) error {
 	updates["processed"] = true
 
 	if err := db.Model(&movie).Updates(updates).Error; err != nil {
-		return err
+		return fmt.Errorf("failed to movie as processed: %w", err)
 	}
 
 	return nil
