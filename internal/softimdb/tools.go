@@ -16,10 +16,10 @@ import (
 	"strings"
 	"syscall"
 
+	"github.com/disintegration/imaging"
 	"github.com/gotk3/gotk3/gdk"
 	"github.com/gotk3/gotk3/glib"
 	"github.com/gotk3/gotk3/gtk"
-	"github.com/nfnt/resize"
 
 	"github.com/hultan/dialog"
 )
@@ -115,10 +115,12 @@ func findMovieFile(path string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("failed to open path: %s", path)
 	}
+
 	files, err := f.Readdirnames(0)
 	if err != nil {
 		return "", fmt.Errorf("failed to read dir names: %s", path)
 	}
+
 	for _, file := range files {
 		lower := strings.ToLower(file)
 		for _, extension := range ext {
@@ -127,6 +129,7 @@ func findMovieFile(path string) (string, error) {
 			}
 		}
 	}
+
 	return "", nil
 }
 
@@ -148,12 +151,15 @@ func clearListBox(list *gtk.ListBox) {
 	if children == nil {
 		return
 	}
-	var i uint = 0
-	for i < children.Length() {
-		widget, _ := children.NthData(i).(*gtk.Widget)
-		list.Remove(widget)
-		i++
-	}
+
+	children.Foreach(func(item interface{}) {
+		if widget, ok := item.(gtk.IWidget); ok {
+			list.Remove(widget)
+			if w, ok := widget.(*gtk.Widget); ok {
+				w.Destroy()
+			}
+		}
+	})
 }
 
 // ClearFlowBox clears a gtk.FlowBox
@@ -162,12 +168,15 @@ func clearFlowBox(list *gtk.FlowBox) {
 	if children == nil {
 		return
 	}
-	var i uint = 0
-	for i < children.Length() {
-		widget, _ := children.NthData(i).(*gtk.Widget)
-		list.Remove(widget)
-		i++
-	}
+
+	children.Foreach(func(item interface{}) {
+		if widget, ok := item.(gtk.IWidget); ok {
+			list.Remove(widget)
+			if w, ok := widget.(*gtk.Widget); ok {
+				w.Destroy()
+			}
+		}
+	})
 }
 
 // getCorrectImageSize makes sure that the size of the image is 190x280 and returns it
@@ -198,7 +207,8 @@ func resizeImage(imgData []byte) []byte {
 		reportError(err)
 		return nil
 	}
-	imgResized := resize.Resize(imageWidth, imageHeight, img, resize.Lanczos2)
+
+	imgResized := imaging.Resize(img, imageWidth, imageHeight, imaging.Lanczos)
 	buf := new(bytes.Buffer)
 	err = jpeg.Encode(buf, imgResized, &jpeg.Options{Quality: 85})
 	if err != nil {
@@ -224,15 +234,14 @@ func doesExist(filename string) bool {
 }
 
 func cleanTitle(title string) string {
-	t := strings.Replace(title, " ", "_", -1)
-	t = strings.Replace(t, "/", "-", -1)
-	return t
+	replacer := strings.NewReplacer(" ", "_", "/", "-")
+	return replacer.Replace(title)
 }
 
 func saveMoviePoster(title string, poster []byte) (string, error) {
 	filePath, err := getPosterFilePath(title)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to get poster file path: %w", err)
 	}
 
 	img, _, err := image.Decode(bytes.NewReader(poster))
@@ -241,7 +250,7 @@ func saveMoviePoster(title string, poster []byte) (string, error) {
 	}
 
 	if err := saveJPEGImage(filePath, img, 100); err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to save image: %w", err)
 	}
 
 	return filePath, nil
@@ -259,6 +268,7 @@ func getPosterFilePath(title string) (string, error) {
 	}
 
 	filename := fmt.Sprintf("%s.jpg", cleanTitle(title))
+
 	return filepath.Join(dir, filename), nil
 }
 
@@ -267,6 +277,7 @@ func saveJPEGImage(filePath string, img image.Image, quality int) (err error) {
 	if err != nil {
 		return fmt.Errorf("failed to create file %s: %w", filePath, err)
 	}
+
 	defer func() {
 		if cerr := file.Close(); cerr != nil && err == nil {
 			err = fmt.Errorf("failed to close file %s: %w", filePath, cerr)
