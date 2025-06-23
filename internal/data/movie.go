@@ -51,10 +51,6 @@ func (m *Movie) TableName() string {
 // SearchMoviesEx returns all movies in the database that matches the search criteria.
 func (d *Database) SearchMoviesEx(currentView string, searchFor string, genreId int, orderBy string,
 	onlyNotProcessed bool) ([]*Movie, error) {
-	db, err := d.getDatabase()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get database: %w", err)
-	}
 
 	var (
 		movies                        []*Movie
@@ -66,10 +62,6 @@ func (d *Database) SearchMoviesEx(currentView string, searchFor string, genreId 
 		sqlOrderBy = "pack asc, " + orderBy
 	} else {
 		sqlOrderBy = orderBy
-	}
-
-	if genreId != -1 && onlyNotProcessed {
-		return nil, fmt.Errorf("onlyNotProcessed does not work with genre search")
 	}
 
 	parts := strings.Split(searchFor, ":")
@@ -85,24 +77,10 @@ func (d *Database) SearchMoviesEx(currentView string, searchFor string, genreId 
 
 	sqlWhere = addViewSQL(currentView, sqlWhere)
 
-	query := db
-	if sqlJoin != "" {
-		query = query.Joins(sqlJoin)
+	query, err := d.getQuery(sqlJoin, sqlWhere, sqlArgs, sqlOrderBy)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get query : %w", err)
 	}
-	if sqlWhere != "" {
-		if len(sqlArgs) == 0 {
-			query = query.Where(sqlWhere)
-		} else {
-			query = query.Where(sqlWhere, sqlArgs)
-		}
-	}
-
-	query = query.Order(sqlOrderBy)
-	if onlyNotProcessed {
-		query = query.Limit(1)
-	}
-
-	// query.Debug().Find(&movies)
 
 	if err := query.Distinct().Find(&movies).Error; err != nil {
 		return nil, fmt.Errorf("failed to find movies: %w", err)
@@ -119,6 +97,28 @@ func (d *Database) SearchMoviesEx(currentView string, searchFor string, genreId 
 	}
 
 	return movies, nil
+}
+
+func (d *Database) getQuery(sqlJoin string, sqlWhere string, sqlArgs map[string]interface{}, sqlOrderBy string) (*gorm.DB, error) {
+	db, err := d.getDatabase()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get database: %w", err)
+	}
+
+	if sqlJoin != "" {
+		db = db.Joins(sqlJoin)
+	}
+	if sqlWhere != "" {
+		if len(sqlArgs) == 0 {
+			db = db.Where(sqlWhere)
+		} else {
+			db = db.Where(sqlWhere, sqlArgs)
+		}
+	}
+
+	db = db.Order(sqlOrderBy)
+
+	return db, nil
 }
 
 // SearchMovies returns all movies in the database that matches the search criteria.
