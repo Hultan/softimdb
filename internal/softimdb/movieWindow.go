@@ -201,59 +201,61 @@ func (m *movieWindow) fillForm() {
 }
 
 func (m *movieWindow) saveMovie() bool {
-	// Fill fields
+	if !m.fillAndValidateBasicFields() {
+		return false
+	}
+	if !m.fillAndValidateRatings() {
+		return false
+	}
+	if !m.fillStorylineAndGenres() {
+		return false
+	}
+	return true
+}
+
+func (m *movieWindow) fillAndValidateBasicFields() bool {
 	m.guiMovie.moviePath = getEntryText(m.pathEntry)
 	m.guiMovie.imdbUrl = getEntryText(m.imdbUrlEntry)
+
 	id, err := getIdFromUrl(m.guiMovie.imdbUrl)
 	if err != nil {
-		msg := fmt.Sprintf("Failed to retrieve IMDB id from url : %s", err)
-		_, err = dialog.Title("Invalid IMDB url...").Text(msg).ErrorIcon().OkButton().Show()
-
-		if err != nil {
-			fmt.Printf("Error : %s", err)
-		}
-
+		m.showValidationError("Invalid IMDB url", fmt.Sprintf("Failed to retrieve IMDB id from url: %s", err))
 		return false
 	}
 	m.guiMovie.imdbId = id
+
 	m.guiMovie.title = getEntryText(m.titleEntry)
 	m.guiMovie.subTitle = getEntryText(m.subTitleEntry)
 	m.guiMovie.pack = getEntryText(m.packEntry)
 	m.guiMovie.year = getEntryText(m.yearEntry)
 
+	m.guiMovie.toWatch = m.toWatchCheckButton.GetActive()
+	m.guiMovie.needsSubtitle = m.needsSubtitleCheckButton.GetActive()
+	m.guiMovie.imdbRating = getEntryText(m.ratingEntry)
+	return true
+}
+
+func (m *movieWindow) fillAndValidateRatings() bool {
 	ratingText := getEntryText(m.myRatingEntry)
 	rating, err := strconv.Atoi(ratingText)
-	legalRating := rating >= 0 && rating <= 5
-	if err != nil || !legalRating {
-		msg := fmt.Sprintf("Invalid my rating : %s (error : %s)", ratingText, err)
-		_, err = dialog.Title("Invalid my rating...").Text(msg).ErrorIcon().OkButton().Show()
-
-		if err != nil {
-			fmt.Printf("Error : %s", err)
-		}
-
+	if err != nil || rating < 0 || rating > 5 {
+		m.showValidationError("Invalid my rating", fmt.Sprintf("Invalid rating: %s (error: %s)", ratingText, err))
 		return false
 	}
 	m.guiMovie.myRating = rating
 
 	runtimeText := getEntryText(m.runtimeEntry)
 	runtime, err := strconv.Atoi(runtimeText)
-	legalRuntime := runtime == -1 || runtime > 0
-	if err != nil || !legalRuntime {
-		msg := fmt.Sprintf("Invalid runtime : %s (error : %s)", runtimeText, err)
-		_, err = dialog.Title("Invalid runtime...").Text(msg).ErrorIcon().OkButton().Show()
-
-		if err != nil {
-			fmt.Printf("Error : %s", err)
-		}
-
+	if err != nil || (runtime != -1 && runtime <= 0) {
+		m.showValidationError("Invalid runtime", fmt.Sprintf("Invalid runtime: %s (error: %s)", runtimeText, err))
 		return false
 	}
 	m.guiMovie.runtime = runtime
 
-	m.guiMovie.toWatch = m.toWatchCheckButton.GetActive()
-	m.guiMovie.needsSubtitle = m.needsSubtitleCheckButton.GetActive()
-	m.guiMovie.imdbRating = getEntryText(m.ratingEntry)
+	return true
+}
+
+func (m *movieWindow) fillStorylineAndGenres() bool {
 	buffer, err := m.storyLineEntry.GetBuffer()
 	if err != nil {
 		reportError(err)
@@ -266,18 +268,85 @@ func (m *movieWindow) saveMovie() bool {
 	}
 	m.guiMovie.storyLine = storyLine
 	m.guiMovie.genres = getEntryText(m.genresEntry)
-	// The poster is set when clicking on the image
-
-	//for _, person := range m.movie.Persons {
-	//	p := data.Person{
-	//		Name: person.Name,
-	//		Type: person.Type,
-	//	}
-	//	m.movie.persons = append(m.movie.persons, p)
-	//}
-
 	return true
 }
+
+func (m *movieWindow) showValidationError(title, message string) {
+	_, err := dialog.Title(title).Text(message).ErrorIcon().OkButton().Show()
+	if err != nil {
+		fmt.Printf("Dialog error: %s\n", err)
+	}
+}
+
+//func (m *movieWindow) saveMovie() bool {
+//	// Fill fields
+//	m.guiMovie.moviePath = getEntryText(m.pathEntry)
+//	m.guiMovie.imdbUrl = getEntryText(m.imdbUrlEntry)
+//	id, err := getIdFromUrl(m.guiMovie.imdbUrl)
+//	if err != nil {
+//		msg := fmt.Sprintf("Failed to retrieve IMDB id from url : %s", err)
+//		_, err = dialog.Title("Invalid IMDB url...").Text(msg).ErrorIcon().OkButton().Show()
+//
+//		if err != nil {
+//			fmt.Printf("Error : %s", err)
+//		}
+//
+//		return false
+//	}
+//	m.guiMovie.imdbId = id
+//	m.guiMovie.title = getEntryText(m.titleEntry)
+//	m.guiMovie.subTitle = getEntryText(m.subTitleEntry)
+//	m.guiMovie.pack = getEntryText(m.packEntry)
+//	m.guiMovie.year = getEntryText(m.yearEntry)
+//
+//	ratingText := getEntryText(m.myRatingEntry)
+//	rating, err := strconv.Atoi(ratingText)
+//	legalRating := rating >= 0 && rating <= 5
+//	if err != nil || !legalRating {
+//		msg := fmt.Sprintf("Invalid my rating : %s (error : %s)", ratingText, err)
+//		_, err = dialog.Title("Invalid my rating...").Text(msg).ErrorIcon().OkButton().Show()
+//
+//		if err != nil {
+//			fmt.Printf("Error : %s", err)
+//		}
+//
+//		return false
+//	}
+//	m.guiMovie.myRating = rating
+//
+//	runtimeText := getEntryText(m.runtimeEntry)
+//	runtime, err := strconv.Atoi(runtimeText)
+//	legalRuntime := runtime == -1 || runtime > 0
+//	if err != nil || !legalRuntime {
+//		msg := fmt.Sprintf("Invalid runtime : %s (error : %s)", runtimeText, err)
+//		_, err = dialog.Title("Invalid runtime...").Text(msg).ErrorIcon().OkButton().Show()
+//
+//		if err != nil {
+//			fmt.Printf("Error : %s", err)
+//		}
+//
+//		return false
+//	}
+//	m.guiMovie.runtime = runtime
+//
+//	m.guiMovie.toWatch = m.toWatchCheckButton.GetActive()
+//	m.guiMovie.needsSubtitle = m.needsSubtitleCheckButton.GetActive()
+//	m.guiMovie.imdbRating = getEntryText(m.ratingEntry)
+//	buffer, err := m.storyLineEntry.GetBuffer()
+//	if err != nil {
+//		reportError(err)
+//		return false
+//	}
+//	storyLine, err := buffer.GetText(buffer.GetStartIter(), buffer.GetEndIter(), false)
+//	if err != nil {
+//		reportError(err)
+//		return false
+//	}
+//	m.guiMovie.storyLine = storyLine
+//	m.guiMovie.genres = getEntryText(m.genresEntry)
+//
+//	return true
+//}
 
 func (m *movieWindow) deleteMovie() bool {
 	var title string
