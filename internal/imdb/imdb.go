@@ -23,7 +23,7 @@ const (
 	Actor
 )
 
-// Manager represents a IMDB screen scraper.
+// Manager represents an IMDB screen scraper.
 type Manager struct {
 	Errors []error
 }
@@ -90,7 +90,7 @@ func (m *Manager) getGoQueryDocument(url string) (*goquery.Document, error) {
 	ctx, cancel = context.WithTimeout(ctx, 45*time.Second)
 	defer cancel()
 
-	// Get the Html from the Url
+	// Get the HTML from the Url
 	pageHTML, err := m.scrapeUrl(url, ctx)
 	if err != nil {
 		return nil, err

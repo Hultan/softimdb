@@ -1,12 +1,9 @@
 package data
 
 import (
-	"reflect"
 	"testing"
 
-	"github.com/hultan/softimdb/internal/config"
 	"github.com/stretchr/testify/assert"
-	"gorm.io/gorm"
 )
 
 func TestDatabase_Person(t *testing.T) {
@@ -75,43 +72,4 @@ func getMovie(db *Database) (*Movie, error) {
 	}
 
 	return movies[0], nil
-}
-
-func TestDatabase_getPersonsForMovie(t *testing.T) {
-	type fields struct {
-		db              *gorm.DB
-		cache           *ImageCache
-		UseTestDatabase bool
-		config          *config.Config
-	}
-	type args struct {
-		movie *Movie
-	}
-	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		want    []Person
-		wantErr bool
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			d := &Database{
-				db:              tt.fields.db,
-				imageCache:      tt.fields.cache,
-				UseTestDatabase: tt.fields.UseTestDatabase,
-				config:          tt.fields.config,
-			}
-			got, err := d.GetPersonsForMovie(tt.args.movie)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("GetPersonsForMovie() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("GetPersonsForMovie() got = %v, want %v", got, tt.want)
-			}
-		})
-	}
 }

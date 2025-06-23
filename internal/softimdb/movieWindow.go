@@ -266,7 +266,7 @@ func (m *movieWindow) saveMovie() bool {
 	}
 	m.guiMovie.storyLine = storyLine
 	m.guiMovie.genres = getEntryText(m.genresEntry)
-	// Poster is set when clicking on the image
+	// The poster is set when clicking on the image
 
 	//for _, person := range m.movie.Persons {
 	//	p := data.Person{
