@@ -50,12 +50,6 @@ func (m *Movie) TableName() string {
 
 // SearchMovies returns all movies in the database that matches the search criteria.
 func (d *Database) SearchMovies(currentView string, searchFor string, genreId int, orderBy string) ([]*Movie, error) {
-	return d.SearchMoviesEx(currentView, searchFor, genreId, orderBy)
-}
-
-// SearchMoviesEx returns all movies in the database that matches the search criteria.
-func (d *Database) SearchMoviesEx(currentView string, searchFor string, genreId int, orderBy string) ([]*Movie, error) {
-
 	var (
 		movies                        []*Movie
 		sqlJoin, sqlWhere, sqlOrderBy string
