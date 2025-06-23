@@ -48,6 +48,11 @@ func (m *Movie) TableName() string {
 	return "movies"
 }
 
+// SearchMovies returns all movies in the database that matches the search criteria.
+func (d *Database) SearchMovies(currentView string, searchFor string, genreId int, orderBy string) ([]*Movie, error) {
+	return d.SearchMoviesEx(currentView, searchFor, genreId, orderBy, false)
+}
+
 // SearchMoviesEx returns all movies in the database that matches the search criteria.
 func (d *Database) SearchMoviesEx(currentView string, searchFor string, genreId int, orderBy string,
 	onlyNotProcessed bool) ([]*Movie, error) {
@@ -119,11 +124,6 @@ func (d *Database) getQuery(sqlJoin string, sqlWhere string, sqlArgs map[string]
 	db = db.Order(sqlOrderBy)
 
 	return db, nil
-}
-
-// SearchMovies returns all movies in the database that matches the search criteria.
-func (d *Database) SearchMovies(currentView string, searchFor string, genreId int, orderBy string) ([]*Movie, error) {
-	return d.SearchMoviesEx(currentView, searchFor, genreId, orderBy, false)
 }
 
 // GetAllMoviePaths returns a list of all the movie paths in the database. Used when adding new movies.
