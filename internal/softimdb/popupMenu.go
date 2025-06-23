@@ -41,34 +41,7 @@ func (p *popupMenu) setup() {
 func (p *popupMenu) setupEvents() {
 	_ = p.mainWindow.gtk.window.Connect(
 		"button-release-event", func(window *gtk.ApplicationWindow, event *gdk.Event) {
-			buttonEvent := gdk.EventButtonNewFromEvent(event)
-			if buttonEvent.Button() != gdk.BUTTON_SECONDARY {
-				return
-			}
-
-			movie := p.mainWindow.getSelectedMovie()
-			if movie == nil {
-				return
-			}
-
-			p.popupOpenPack.SetSensitive(movie.Pack != "")
-
-			menu, err := gtk.MenuNew()
-			if err != nil {
-				reportError(err)
-				log.Fatal(err)
-			}
-
-			genres, err := p.mainWindow.database.GetGenres()
-			if err != nil {
-				reportError(err)
-				return
-			}
-
-			p.createGenreMenu(genres, movie, menu)
-			p.popupGenres.SetSubmenu(menu)
-			p.popupGenres.ShowAll()
-			p.popupMenu.PopupAtPointer(event)
+			p.showPopup(event)
 		},
 	)
 
@@ -103,6 +76,38 @@ func (p *popupMenu) setupEvents() {
 	)
 }
 
+func (p *popupMenu) showPopup(event *gdk.Event) {
+	buttonEvent := gdk.EventButtonNewFromEvent(event)
+	if buttonEvent.Button() != gdk.BUTTON_SECONDARY {
+		return
+	}
+
+	movie := p.mainWindow.getSelectedMovie()
+	if movie == nil {
+		return
+	}
+
+	// Only enable Open Pack if the movie is in a pack
+	p.popupOpenPack.SetSensitive(movie.Pack != "")
+
+	menu, err := gtk.MenuNew()
+	if err != nil {
+		reportError(err)
+		log.Fatal(err)
+	}
+
+	genres, err := p.mainWindow.database.GetGenres()
+	if err != nil {
+		reportError(err)
+		return
+	}
+
+	p.createGenreMenu(genres, movie, menu)
+	p.popupGenres.SetSubmenu(menu)
+	p.popupGenres.ShowAll()
+	p.popupMenu.PopupAtPointer(event)
+}
+
 func (p *popupMenu) createGenreMenu(genres []data.Genre, movie *data.Movie, menu *gtk.Menu) {
 	for i := 0; i < len(genres); i++ {
 		genre := genres[i]
@@ -127,6 +132,22 @@ func (p *popupMenu) createGenreMenu(genres []data.Genre, movie *data.Movie, menu
 	}
 }
 
+func (p *popupMenu) addGenreActivateEvent(item *gtk.CheckMenuItem, movie *data.Movie, genre *data.Genre) {
+	item.Connect("activate", func() {
+		if item.GetActive() {
+			err := p.mainWindow.database.InsertMovieGenre(movie, genre)
+			if err == nil {
+				p.addGenre(movie, genre)
+			}
+		} else {
+			err := p.mainWindow.database.RemoveMovieGenre(movie, genre)
+			if err == nil {
+				p.removeGenre(movie, genre)
+			}
+		}
+	})
+}
+
 func (p *popupMenu) addGenre(movie *data.Movie, genre *data.Genre) {
 	movie.Genres = append(movie.Genres, *genre)
 }
@@ -137,22 +158,4 @@ func (p *popupMenu) removeGenre(movie *data.Movie, genre *data.Genre) {
 			movie.Genres = append(movie.Genres[:i], movie.Genres[i+1:]...)
 		}
 	}
-}
-
-func (p *popupMenu) addGenreActivateEvent(item *gtk.CheckMenuItem, movie *data.Movie, genre *data.Genre) {
-	item.Connect(
-		"activate", func() {
-			if item.GetActive() {
-				err := p.mainWindow.database.InsertMovieGenre(movie, genre)
-				if err == nil {
-					p.addGenre(movie, genre)
-				}
-			} else {
-				err := p.mainWindow.database.RemoveMovieGenre(movie, genre)
-				if err == nil {
-					p.removeGenre(movie, genre)
-				}
-			}
-		},
-	)
 }
