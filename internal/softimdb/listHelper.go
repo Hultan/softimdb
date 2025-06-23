@@ -3,6 +3,7 @@ package softimdb
 import (
 	"fmt"
 	"log"
+	"strings"
 
 	"github.com/gotk3/gotk3/gdk"
 	"github.com/gotk3/gotk3/gtk"
@@ -124,19 +125,19 @@ func createMovieInfoBox(movie *data.Movie) *gtk.Box {
 
 // getMovieInfoMarkup returns the markup for the movie title, year and subtitle.
 func getMovieInfoMarkup(movie *data.Movie) string {
-	s := ""
+	var s strings.Builder
 
 	// Title & Year
-	s += fmt.Sprintf(`<span font="Sans Regular 13" foreground="#f1e3ae"><b>%s</b></span>`, cleanString(movie.Title))
-	s += fmt.Sprintf(`<span font="Sans Regular 13" foreground="#f1e3ae"> (%d)</span>`, movie.Year)
+	s.WriteString(fmt.Sprintf(`<span font="Sans Regular 13" foreground="#f1e3ae"><b>%s</b></span>`, cleanString(movie.Title)))
+	s.WriteString(fmt.Sprintf(`<span font="Sans Regular 13" foreground="#f1e3ae"> (%d)</span>`, movie.Year))
 
 	// Subtitle
 	if movie.SubTitle != "" {
-		s += "\n"
-		s += fmt.Sprintf(`<span font="Sans Regular 12" foreground="#908868"><b>%s</b></span>`, cleanString(movie.SubTitle))
+		s.WriteString("\n")
+		s.WriteString(fmt.Sprintf(`<span font="Sans Regular 12" foreground="#908868"><b>%s</b></span>`, cleanString(movie.SubTitle)))
 	}
 
-	return s
+	return s.String()
 }
 
 // createMovieImage creates a gtk.Image for the movie
@@ -166,6 +167,7 @@ func createMovieImage(movie *data.Movie) *gtk.Image {
 // createRuntimeLabel creates a gtk.Label containing the runtime in hours and minutes
 func createRuntimeLabel(movie *data.Movie) *gtk.Label {
 	var s string
+	var b strings.Builder
 
 	if movie.Runtime == -1 {
 		s = "Runtime : unknown"
@@ -180,8 +182,11 @@ func createRuntimeLabel(movie *data.Movie) *gtk.Label {
 		log.Fatal(err)
 	}
 
-	s = `<span font="Sans Regular 10" foreground="#AAAAAA">` + s + `</span>`
-	label.SetMarkup(s)
+	b.WriteString(`<span font="Sans Regular 10" foreground="#AAAAAA">`)
+	b.WriteString(s)
+	b.WriteString(`</span>`)
+
+	label.SetMarkup(b.String())
 
 	return label
 }
@@ -189,6 +194,7 @@ func createRuntimeLabel(movie *data.Movie) *gtk.Label {
 // createMovieGenresLabel creates a gtk.Label containing the movie release year and all genres comma separated
 func createMovieGenresLabel(movie *data.Movie) *gtk.Label {
 	var s string
+	var b strings.Builder
 
 	for i := range movie.Genres {
 		genre := movie.Genres[i]
@@ -205,8 +211,11 @@ func createMovieGenresLabel(movie *data.Movie) *gtk.Label {
 		log.Fatal(err)
 	}
 
-	s = `<span font="Sans Regular 10" foreground="#AAAAAA">` + s + `</span>`
-	label.SetMarkup(s)
+	b.WriteString(`<span font="Sans Regular 10" foreground="#AAAAAA">`)
+	b.WriteString(s)
+	b.WriteString(`</span>`)
+
+	label.SetMarkup(b.String())
 
 	return label
 }
@@ -272,11 +281,13 @@ func createIMDBRatingOverlay(movie *data.Movie) *gtk.Label {
 
 // getIMDBRatingMarkup returns the markup for the IMDB rating
 func getIMDBRatingMarkup(movie *data.Movie) string {
-	s := `<span font="Sans Regular 12" foreground="#f1e3ae">IMDB : `
-	s += fmt.Sprintf("%v", movie.ImdbRating)
-	s += `</span>   `
+	var b strings.Builder
 
-	return s
+	b.WriteString(`<span font="Sans Regular 12" foreground="#f1e3ae">IMDB : `)
+	b.WriteString(fmt.Sprintf("%v", movie.ImdbRating))
+	b.WriteString(`</span>`)
+
+	return b.String()
 }
 
 // createMyRatingOverlay creates a gtk.Label containing my rating
@@ -301,18 +312,19 @@ func createMyRatingOverlay(movie *data.Movie) *gtk.Label {
 
 // getMyRatingMarkup returns the markup for my rating
 func getMyRatingMarkup(movie *data.Movie) string {
-	var s string
+	var b strings.Builder
+
 	if movie.MyRating == 0 {
-		s = `<span font="Sans Regular 12" foreground="#666666">`
-		s += fmt.Sprintf("My rating:    ")
-		s += `</span>`
+		b.WriteString(`<span font="Sans Regular 12" foreground="#666666">`)
+		b.WriteString(fmt.Sprintf("My rating:    "))
+		b.WriteString(`</span>`)
 	} else {
-		s = `<span font="Sans Regular 12" foreground="#f1e3ae">`
-		s += fmt.Sprintf("My rating: %v/5", movie.MyRating)
-		s += `</span>`
+		b.WriteString(`<span font="Sans Regular 12" foreground="#f1e3ae">`)
+		b.WriteString(fmt.Sprintf("My rating: %v/5", movie.MyRating))
+		b.WriteString(`</span>`)
 	}
 
-	return s
+	return b.String()
 }
 
 // createPackOverlay creates a gtk.Label containing the pack name
@@ -349,9 +361,11 @@ func createPackOverlay(movie *data.Movie) *gtk.Label {
 
 // getPackMarkup returns the markup for my rating
 func getPackMarkup(movie *data.Movie) string {
-	s := `<span font="Sans Regular 12" foreground="#141103">`
-	s += fmt.Sprintf("Pack: %s", movie.Pack)
-	s += `</span>`
+	var b strings.Builder
 
-	return s
+	b.WriteString(`<span font="Sans Regular 12" foreground="#141103">`)
+	b.WriteString(fmt.Sprintf("Pack: %s", movie.Pack))
+	b.WriteString(`</span>`)
+
+	return b.String()
 }
