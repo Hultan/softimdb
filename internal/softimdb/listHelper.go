@@ -161,6 +161,7 @@ func createMovieImage(movie *data.Movie) *gtk.Image {
 		reportError(err)
 		log.Fatal(err)
 	}
+
 	return image
 }
 
