@@ -50,12 +50,11 @@ func (m *Movie) TableName() string {
 
 // SearchMovies returns all movies in the database that matches the search criteria.
 func (d *Database) SearchMovies(currentView string, searchFor string, genreId int, orderBy string) ([]*Movie, error) {
-	return d.SearchMoviesEx(currentView, searchFor, genreId, orderBy, false)
+	return d.SearchMoviesEx(currentView, searchFor, genreId, orderBy)
 }
 
 // SearchMoviesEx returns all movies in the database that matches the search criteria.
-func (d *Database) SearchMoviesEx(currentView string, searchFor string, genreId int, orderBy string,
-	onlyNotProcessed bool) ([]*Movie, error) {
+func (d *Database) SearchMoviesEx(currentView string, searchFor string, genreId int, orderBy string) ([]*Movie, error) {
 
 	var (
 		movies                        []*Movie
@@ -75,7 +74,7 @@ func (d *Database) SearchMoviesEx(currentView string, searchFor string, genreId 
 		searchFor = searchFor[len(parts[0])+1:]
 		sqlJoin, sqlWhere, sqlArgs = getPersonSearch(searchFor, typ)
 	} else if genreId == -1 {
-		sqlWhere, sqlArgs = getStandardSearch(searchFor, onlyNotProcessed)
+		sqlWhere, sqlArgs = getStandardSearch(searchFor)
 	} else {
 		sqlJoin, sqlWhere, sqlArgs = getGenreSearch(searchFor, genreId)
 	}
@@ -441,7 +440,7 @@ func getPersonSearch(searchFor string, typ int) (join string, where string, args
 	return
 }
 
-func getStandardSearch(searchFor string, onlyNotProcessed bool) (string, map[string]interface{}) {
+func getStandardSearch(searchFor string) (string, map[string]interface{}) {
 	sqlArgs := make(map[string]interface{})
 	var conditions []string
 
@@ -466,10 +465,6 @@ func getStandardSearch(searchFor string, onlyNotProcessed bool) (string, map[str
 
 		conditions = append(conditions, "("+condition+")")
 		sqlArgs["search"] = search
-	}
-
-	if onlyNotProcessed {
-		conditions = append([]string{"processed = false"}, conditions...)
 	}
 
 	sqlWhere := strings.Join(conditions, " AND ")
