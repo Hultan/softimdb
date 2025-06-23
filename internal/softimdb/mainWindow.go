@@ -265,6 +265,13 @@ func (m *MainWindow) connectToolButton(name string, handler func()) {
 	_ = button.Connect("clicked", handler)
 }
 
+func (m *MainWindow) refresh(search Search, sort Sort) {
+	m.fillMovieList(search, sort)
+	if m.search.forWhat == "" {
+		m.gtk.searchEntry.SetText("")
+	}
+}
+
 func (m *MainWindow) fillMovieList(search Search, sort Sort) {
 	movies, err := m.database.SearchMovies(string(m.view.current), search.forWhat, search.genreId, getSortBy(sort))
 	if err != nil {
@@ -289,13 +296,33 @@ func (m *MainWindow) fillMovieList(search Search, sort Sort) {
 	}
 	gtk.AddProviderForScreen(screen, cssProvider, gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
 
-	for i := range movies {
-		movie := movies[i]
-		m.movies[movie.Id] = movie
-		card := listHelper.CreateMovieCard(movie)
-		card.SetName("movie_" + strconv.Itoa(movie.Id))
-		m.gtk.movieList.Add(card)
+	// Load movies in batches of 100
+	var batchSize = 100
+	var loadBatch func(start int)
+
+	loadBatch = func(start int) {
+		end := start + batchSize
+		if end > len(movies) {
+			end = len(movies)
+		}
+
+		batch := movies[start:end]
+		for _, movie := range batch {
+			m.movies[movie.Id] = movie
+			card := listHelper.CreateMovieCard(movie)
+			card.SetName("movie_" + strconv.Itoa(movie.Id))
+			m.gtk.movieList.Add(card)
+			card.ShowAll()
+		}
+
+		glib.IdleAdd(func() {
+			loadBatch(end)
+		})
 	}
+
+	glib.IdleAdd(func() {
+		loadBatch(0)
+	})
 
 	m.updateCountLabel(len(movies))
 }
@@ -326,14 +353,6 @@ func (m *MainWindow) getSelectedMovie() *data.Movie {
 		return nil
 	}
 	return m.movies[id]
-}
-
-func (m *MainWindow) refresh(search Search, sort Sort) {
-	m.fillMovieList(search, sort)
-	m.gtk.movieList.ShowAll()
-	if m.search.forWhat == "" {
-		m.gtk.searchEntry.SetText("")
-	}
 }
 
 func (m *MainWindow) fillGenresMenu() {
@@ -618,12 +637,11 @@ func (m *MainWindow) onOpenPackClicked() {
 	m.search.genreId = -1
 	m.sort.by = sortByName
 	m.sort.order = sortAscending
-	m.view.manager.changeView(viewPacks)
 	m.gtk.searchEntry.SetText(m.search.forWhat)
 	m.gtk.menuNoGenreItem.SetActive(true)
 	m.gtk.menuSortByName.SetActive(true)
 	m.gtk.menuSortAscending.SetActive(true)
-	m.refresh(m.search, m.sort)
+	m.view.manager.changeView(viewPacks)
 }
 
 func (m *MainWindow) onOpenFolderClicked() {
