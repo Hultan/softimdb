@@ -36,6 +36,8 @@ var needsSubtitleIcon []byte
 //go:embed assets/softimdb.css
 var mainCss string
 
+const batchSize = 100
+
 type Sort struct {
 	by, order string
 }
@@ -80,12 +82,14 @@ type MainWindow struct {
 	sort   Sort
 	view   View
 
-	movies map[int]*data.Movie
+	movies     map[int]*data.Movie
+	refreshing bool
 }
 
 var (
 	movieTitles       []string
 	showPrivateGenres = true
+	listHelper        = &ListHelper{}
 )
 
 // NewMainWindow : Creates a new MainWindow object
@@ -278,6 +282,12 @@ func (m *MainWindow) connectToolButton(name string, handler func()) {
 }
 
 func (m *MainWindow) refresh(search Search, sort Sort) {
+	// Let's not refresh while we're already refreshing
+	if m.refreshing {
+		return
+	}
+
+	m.refreshing = true
 	runtime.GC()
 
 	movies, err := m.database.SearchMovies(string(m.view.current), search.forWhat, search.genreId, getSortBy(sort))
@@ -286,7 +296,10 @@ func (m *MainWindow) refresh(search Search, sort Sort) {
 		log.Fatal(err)
 	}
 
-	m.fillMovieList(movies)
+	clearFlowBox(m.gtk.movieList)
+	glib.IdleAdd(func() {
+		m.loadBatch(movies, 0)
+	})
 
 	if m.search.forWhat == "" {
 		m.gtk.searchEntry.SetText("")
@@ -295,58 +308,50 @@ func (m *MainWindow) refresh(search Search, sort Sort) {
 	m.updateCountLabel(len(movies))
 }
 
-func (m *MainWindow) fillMovieList(movies []*data.Movie) {
-	clearFlowBox(m.gtk.movieList)
+func (m *MainWindow) loadBatch(movies []*data.Movie, start int) {
+	var done bool
+	end := start + batchSize
+	if end > len(movies) {
+		end = len(movies)
+		done = true
+	}
 
-	// Load movies in batches of 100
-	var batchSize = 100
-	var loadBatch func(start int)
-	listHelper := &ListHelper{}
-
-	loadBatch = func(start int) {
-		end := start + batchSize
-		if end > len(movies) {
-			end = len(movies)
-		}
-
-		batch := movies[start:end]
-		for _, movie := range batch {
+	batch := movies[start:end]
+	for _, movie := range batch {
+		if _, ok := m.movies[movie.Id]; !ok {
 			m.movies[movie.Id] = movie
-			card := listHelper.CreateMovieCard(movie)
-			card.SetName("movie_" + strconv.Itoa(movie.Id))
-			m.gtk.movieList.Add(card)
-			card.ShowAll()
 		}
+		card := listHelper.CreateMovieCard(movie)
+		card.SetName("movie_" + strconv.Itoa(movie.Id))
+		m.gtk.movieList.Add(card)
+		card.ShowAll()
+	}
 
-		glib.IdleAdd(func() {
-			loadBatch(end)
-		})
+	if done {
+		m.refreshing = false
+		return
 	}
 
 	glib.IdleAdd(func() {
-		loadBatch(0)
+		m.loadBatch(movies, end)
 	})
 }
 
 func (m *MainWindow) getSelectedMovie() *data.Movie {
 	children := m.gtk.movieList.GetSelectedChildren()
-	if children == nil {
+	if len(children) == 0 {
 		return nil
 	}
-	selected := children[0]
-	frameObj, err := selected.GetChild()
-	if err != nil {
+	widget, err := children[0].GetChild()
+	if err != nil || widget == nil {
 		return nil
 	}
-	if frameObj == nil {
-		return nil
-	}
-	frame, ok := frameObj.(*gtk.Frame)
+	frame, ok := widget.(*gtk.Frame)
 	if !ok {
 		return nil
 	}
 	name, err := frame.GetName()
-	if err != nil {
+	if err != nil || len(name) <= 6 {
 		return nil
 	}
 	id, err := strconv.Atoi(name[6:]) // Name is movie_<id>
