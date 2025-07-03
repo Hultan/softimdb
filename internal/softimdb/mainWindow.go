@@ -152,7 +152,19 @@ func (m *MainWindow) Open(app *gtk.Application) {
 	m.gtk.window.ShowAll()
 	m.gtk.storyLineScrolledWindow.Hide()
 
-	var err error
+	cssProvider, _ := gtk.CssProviderNew()
+	if err := cssProvider.LoadFromData(mainCss); err != nil {
+		reportError(err)
+		log.Fatal(err)
+	}
+
+	screen, err := gdk.ScreenGetDefault()
+	if err != nil {
+		reportError(err)
+		log.Fatal(err)
+	}
+	gtk.AddProviderForScreen(screen, cssProvider, gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
+
 	movieTitles, err = m.database.GetAllMovieTitles()
 	if err != nil {
 		reportError(err)
@@ -266,39 +278,30 @@ func (m *MainWindow) connectToolButton(name string, handler func()) {
 }
 
 func (m *MainWindow) refresh(search Search, sort Sort) {
-	m.fillMovieList(search, sort)
-	if m.search.forWhat == "" {
-		m.gtk.searchEntry.SetText("")
-	}
-}
+	runtime.GC()
 
-func (m *MainWindow) fillMovieList(search Search, sort Sort) {
 	movies, err := m.database.SearchMovies(string(m.view.current), search.forWhat, search.genreId, getSortBy(sort))
 	if err != nil {
 		reportError(err)
 		log.Fatal(err)
 	}
 
-	listHelper := &ListHelper{}
+	m.fillMovieList(movies)
+
+	if m.search.forWhat == "" {
+		m.gtk.searchEntry.SetText("")
+	}
+
+	m.updateCountLabel(len(movies))
+}
+
+func (m *MainWindow) fillMovieList(movies []*data.Movie) {
 	clearFlowBox(m.gtk.movieList)
-	runtime.GC()
-
-	cssProvider, _ := gtk.CssProviderNew()
-	if err = cssProvider.LoadFromData(mainCss); err != nil {
-		reportError(err)
-		log.Fatal(err)
-	}
-
-	screen, err := gdk.ScreenGetDefault()
-	if err != nil {
-		reportError(err)
-		log.Fatal(err)
-	}
-	gtk.AddProviderForScreen(screen, cssProvider, gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
 
 	// Load movies in batches of 100
 	var batchSize = 100
 	var loadBatch func(start int)
+	listHelper := &ListHelper{}
 
 	loadBatch = func(start int) {
 		end := start + batchSize
@@ -323,8 +326,6 @@ func (m *MainWindow) fillMovieList(search Search, sort Sort) {
 	glib.IdleAdd(func() {
 		loadBatch(0)
 	})
-
-	m.updateCountLabel(len(movies))
 }
 
 func (m *MainWindow) getSelectedMovie() *data.Movie {
