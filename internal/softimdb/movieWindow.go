@@ -587,7 +587,6 @@ func (m *movieWindow) onIMDBEntryFocusOut() {
 		}
 		_, _ = dialog.Title("Errors while retrieving IMDB data...").
 			Text(txt).WarningIcon().OkButton().Show()
-		return
 	}
 
 	if m.createMovieInfo(movieImdb) {
