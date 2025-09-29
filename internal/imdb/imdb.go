@@ -305,39 +305,67 @@ func (m *Manager) getMovieTitle(doc *goquery.Document) (string, error) {
 func (m *Manager) getMoviePeople(doc *goquery.Document) ([]PersonImdb, error) {
 	var persons []PersonImdb
 
-	// Directors
-	doc.Find(".sc-70a366cc-3 li.ipc-metadata-list__item:contains('Director') ." +
-		"ipc-metadata-list-item__list-content-item--link").Each(
-		func(i int, s *goquery.Selection) {
-			name := s.Text()
-			persons = append(persons, PersonImdb{
-				Name: name,
-				Type: Director,
-			})
-		})
+	// Scope to the “hero” credit block under title (to avoid duplicate blocks)
+	creditLis := doc.Find(`ul[data-testid="hero-title-block__metadata"] li[data-testid="title-pc-principal-credit"]`)
+	if creditLis.Length() == 0 {
+		// fallback: try global
+		creditLis = doc.Find(`li[data-testid="title-pc-principal-credit"]`)
+	}
 
-	// Writers
-	doc.Find(".sc-70a366cc-3 li.ipc-metadata-list__item:contains('Writer') ." +
-		"ipc-metadata-list-item__list-content-item--link").Each(
-		func(i int, s *goquery.Selection) {
-			name := s.Text()
-			persons = append(persons, PersonImdb{
-				Name: name,
-				Type: Writer,
-			})
-		})
+	creditLis.Each(func(_ int, li *goquery.Selection) {
+		label := strings.TrimSpace(li.Find("span").First().Text())
 
-	// Actors
-	doc.Find(".sc-cd7dc4b7-5 .sc-cd7dc4b7-1").Each(
-		func(i int, s *goquery.Selection) {
-			name := s.Text()
+		switch label {
+		case "Director", "Directors":
+			li.Find("a").Each(func(_ int, a *goquery.Selection) {
+				name := strings.TrimSpace(a.Text())
+				persons = append(persons, PersonImdb{
+					Name: name,
+					Type: Director,
+				})
+			})
+
+		case "Writer", "Writers":
+			li.Find("a").Each(func(_ int, a *goquery.Selection) {
+				name := strings.TrimSpace(a.Text())
+				persons = append(persons, PersonImdb{
+					Name: name,
+					Type: Writer,
+				})
+			})
+
+		default:
+			// ignore other credit types
+		}
+	})
+
+	// Now actors
+	doc.Find(`div[data-testid="title-cast-item"] a[data-testid="title-cast-item__actor"]`).
+		Each(func(_ int, a *goquery.Selection) {
+			name := strings.TrimSpace(a.Text())
 			persons = append(persons, PersonImdb{
 				Name: name,
 				Type: Actor,
 			})
 		})
 
+	// Optionally dedupe (if the site has repeated names)
+	persons = dedupePersons(persons)
+
 	return persons, nil
+}
+
+// dedupePersons removes subsequent duplicates (same name + type) while preserving order
+func dedupePersons(input []PersonImdb) []PersonImdb {
+	seen := make(map[PersonImdb]bool)
+	var out []PersonImdb
+	for _, p := range input {
+		if !seen[p] {
+			seen[p] = true
+			out = append(out, p)
+		}
+	}
+	return out
 }
 
 func (m *Manager) calcRuntime(runtimeString string) (int, error) {
