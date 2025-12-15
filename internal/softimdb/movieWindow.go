@@ -4,12 +4,16 @@ import (
 	"fmt"
 	_ "image/jpeg"
 	"log"
+	"math"
 	"os"
 	"path"
 	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
+
+	"golang.org/x/text/language"
+	"golang.org/x/text/message"
 
 	"github.com/gotk3/gotk3/gdk"
 	"github.com/gotk3/gotk3/gtk"
@@ -41,6 +45,7 @@ type movieWindow struct {
 	deleteButton             *gtk.Button
 	castAndCrewList          *gtk.ListBox
 	movieStack               *gtk.Stack
+	bitrateLabel             *gtk.Label
 
 	guiMovie  *Movie
 	dataMovie *data.Movie
@@ -113,6 +118,7 @@ func newMovieWindow(builder *builder.Builder, parent gtk.IWindow, db *data.Datab
 	m.runtimeEntry = builder.GetObject("runtimeEntry").(*gtk.Entry)
 	m.castAndCrewList = builder.GetObject("castAndCrewList").(*gtk.ListBox)
 	m.movieStack = builder.GetObject("movieStack").(*gtk.Stack)
+	m.bitrateLabel = builder.GetObject("bitrateLabel").(*gtk.Label)
 
 	eventBox := builder.GetObject("imageEventBox").(*gtk.EventBox)
 	eventBox.Connect("button-press-event", m.onImageClick)
@@ -188,6 +194,14 @@ func (m *movieWindow) fillForm() {
 	m.packEntry.SetText(m.guiMovie.pack)
 	m.runtimeEntry.SetText(strconv.Itoa(m.guiMovie.runtime))
 
+	// New movies will have size = 0, so fix that
+	if m.guiMovie.size == 0 {
+		m.guiMovie.size = m.getMovieSize(m.guiMovie)
+		m.dataMovie.Size = m.guiMovie.size
+		_ = m.db.UpdateMovie(m.dataMovie)
+	}
+	m.bitrateLabel.SetMarkup(calculateBitrateString(m.guiMovie))
+
 	if m.guiMovie.image == nil {
 		m.posterImage.Clear()
 	} else {
@@ -198,6 +212,46 @@ func (m *movieWindow) fillForm() {
 		m.fillCastAndCrewPage()
 	}
 	m.movieStack.SetVisibleChildName("MoviePage")
+}
+
+func (m *movieWindow) getMovieSize(movie *Movie) int {
+	dir := path.Join(m.config.RootDir, movie.moviePath)
+	file, err := findMovieFile(dir)
+	if err != nil {
+		return 0
+	}
+	info, err := os.Stat(path.Join(dir, file))
+	if err != nil {
+		return 0
+	}
+
+	return int(info.Size())
+}
+
+func calculateBitrate(movie *Movie) int {
+	if movie.runtime <= 0 {
+		return 0 // avoid division by zero
+	}
+
+	// Convert everything to float64 to keep fractional precision.
+	sizeBits := float64(movie.size) * 8        // bits
+	durationSec := float64(movie.runtime) * 60 // seconds
+	bitrateBps := sizeBits / durationSec       // bits per second
+	bitrateKbps := bitrateBps / 1000           // kilobits per second
+
+	return int(math.Round(bitrateKbps))
+}
+
+func calculateBitrateString(movie *Movie) string {
+	p := message.NewPrinter(language.Swedish)
+	size := calculateBitrate(movie)
+	var format string
+	if size > 5000 {
+		format = "Bitrate (est): <span foreground=\"red\">%d kbps</span>"
+	} else {
+		format = "Bitrate (est): %d kbps"
+	}
+	return p.Sprintf(format, size)
 }
 
 func (m *movieWindow) saveMovie() bool {

@@ -18,6 +18,7 @@ type Movie struct {
 	runtime   int
 	genres    string // Info field only
 	persons   []data.Person
+	size      int
 
 	imdbRating string
 	imdbUrl    string
@@ -39,6 +40,7 @@ func (m *Movie) fromDatabase(movie *data.Movie) {
 	m.myRating = movie.MyRating
 	m.moviePath = movie.MoviePath
 	m.runtime = movie.Runtime
+	m.size = movie.Size
 	m.toWatch = movie.ToWatch
 	m.needsSubtitle = movie.NeedsSubtitle
 	m.pack = movie.Pack

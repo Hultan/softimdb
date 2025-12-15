@@ -20,6 +20,7 @@ type Movie struct {
 	MyRating  int      `gorm:"column:my_rating;"`
 	MoviePath string   `gorm:"column:path;size:1024"`
 	Runtime   int      `gorm:"column:length"`
+	Size      int      `gorm:"column:size"`
 	Genres    []Genre  `gorm:"-"`
 	Persons   []Person `gorm:"-"`
 
