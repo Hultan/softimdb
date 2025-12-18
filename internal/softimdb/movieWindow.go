@@ -197,8 +197,6 @@ func (m *movieWindow) fillForm() {
 	// New movies will have size = 0, so fix that
 	if m.guiMovie.size == 0 {
 		m.guiMovie.size = m.getMovieSize(m.guiMovie)
-		m.dataMovie.Size = m.guiMovie.size
-		_ = m.db.UpdateMovie(m.dataMovie)
 	}
 	m.bitrateLabel.SetMarkup(calculateBitrateString(m.guiMovie))
 

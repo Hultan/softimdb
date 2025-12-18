@@ -65,6 +65,7 @@ func (m *Movie) toDatabase(movie *data.Movie) {
 	movie.NeedsSubtitle = m.needsSubtitle
 	movie.ImdbID = m.imdbId
 	movie.ImdbUrl = m.imdbUrl
+	movie.Size = m.size
 	movie.ImdbRating = m.getImdbRating()
 	movie.Genres = m.getGenres(m.genres)
 	for _, person := range m.persons {
