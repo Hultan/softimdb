@@ -4,7 +4,6 @@ import (
 	"fmt"
 	_ "image/jpeg"
 	"log"
-	"math"
 	"os"
 	"path"
 	"path/filepath"
@@ -63,6 +62,8 @@ type similarMovie struct {
 
 var scrapeImdbOnce bool
 var showSimilarOnce bool
+
+const bitRateWarning = 8000
 
 func newMovieWindow(builder *builder.Builder, parent gtk.IWindow, db *data.Database,
 	config *config.Config) *movieWindow {
@@ -226,25 +227,11 @@ func (m *movieWindow) getMovieSize(movie *Movie) int {
 	return int(info.Size())
 }
 
-func calculateBitrate(movie *Movie) int {
-	if movie.runtime <= 0 {
-		return 0 // avoid division by zero
-	}
-
-	// Convert everything to float64 to keep fractional precision.
-	sizeBits := float64(movie.size) * 8        // bits
-	durationSec := float64(movie.runtime) * 60 // seconds
-	bitrateBps := sizeBits / durationSec       // bits per second
-	bitrateKbps := bitrateBps / 1000           // kilobits per second
-
-	return int(math.Round(bitrateKbps))
-}
-
 func calculateBitrateString(movie *Movie) string {
 	p := message.NewPrinter(language.Swedish)
 	size := calculateBitrate(movie)
 	var format string
-	if size > 5000 {
+	if size > bitRateWarning {
 		format = "Bitrate (est): <span foreground=\"red\">%d kbps</span>"
 	} else {
 		format = "Bitrate (est): %d kbps"

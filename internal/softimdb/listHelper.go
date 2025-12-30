@@ -3,6 +3,7 @@ package softimdb
 import (
 	"fmt"
 	"log"
+	"math"
 	"strings"
 
 	"github.com/gotk3/gotk3/gdk"
@@ -128,8 +129,15 @@ func getMovieInfoMarkup(movie *data.Movie) string {
 	var s strings.Builder
 
 	// Title & Year
-	s.WriteString(fmt.Sprintf(`<span font="Sans Regular 13" foreground="#f1e3ae"><b>%s</b></span>`, cleanString(movie.Title)))
-	s.WriteString(fmt.Sprintf(`<span font="Sans Regular 13" foreground="#f1e3ae"> (%d)</span>`, movie.Year))
+	mov := &Movie{}
+	mov.fromDatabase(movie)
+	if calculateBitrate(mov) > bitRateWarning {
+		s.WriteString(fmt.Sprintf(`<span font="Sans Regular 13" foreground="#ff7f7f"><b>%s</b></span>`, cleanString(movie.Title)))
+		s.WriteString(fmt.Sprintf(`<span font="Sans Regular 13" foreground="#ff7f7f"> (%d)</span>`, movie.Year))
+	} else {
+		s.WriteString(fmt.Sprintf(`<span font="Sans Regular 13" foreground="#f1e3ae"><b>%s</b></span>`, cleanString(movie.Title)))
+		s.WriteString(fmt.Sprintf(`<span font="Sans Regular 13" foreground="#f1e3ae"> (%d)</span>`, movie.Year))
+	}
 
 	// Subtitle
 	if movie.SubTitle != "" {
@@ -369,4 +377,18 @@ func getPackMarkup(movie *data.Movie) string {
 	b.WriteString(`</span>`)
 
 	return b.String()
+}
+
+func calculateBitrate(movie *Movie) int {
+	if movie.runtime <= 0 {
+		return 0 // avoid division by zero
+	}
+
+	// Convert everything to float64 to keep fractional precision.
+	sizeBits := float64(movie.size) * 8        // bits
+	durationSec := float64(movie.runtime) * 60 // seconds
+	bitrateBps := sizeBits / durationSec       // bits per second
+	bitrateKbps := bitrateBps / 1000           // kilobits per second
+
+	return int(math.Round(bitrateKbps))
 }

@@ -1276,6 +1276,14 @@ Show all movies that needs subtitles.</property>
       </object>
     </child>
     <child>
+      <object class="GtkMenuItem" id="popupSetToWatch">
+        <property name="visible">True</property>
+        <property name="can-focus">False</property>
+        <property name="label" translatable="yes">Set as To Watch</property>
+        <property name="use-underline">True</property>
+      </object>
+    </child>
+    <child>
       <object class="GtkSeparatorMenuItem">
         <property name="visible">True</property>
         <property name="can-focus">False</property>
@@ -1304,7 +1312,7 @@ Show all movies that needs subtitles.</property>
         <property name="visible">True</property>
         <property name="can-focus">False</property>
         <property name="tooltip-text" translatable="yes">CTRL + p</property>
-        <property name="label" translatable="yes">Open pack...</property>
+        <property name="label" translatable="yes">Open pack</property>
         <property name="use-underline">True</property>
       </object>
     </child>

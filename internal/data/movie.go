@@ -1,10 +1,12 @@
 package data
 
 import (
+	"database/sql"
 	"fmt"
 	"os"
 	"path"
 	"strings"
+	"time"
 
 	"gorm.io/gorm"
 )
@@ -32,9 +34,10 @@ type Movie struct {
 	Image    []byte `gorm:"-"`
 	ImageId  int    `gorm:"column:image_id;"`
 
-	ToWatch       bool   `gorm:"column:to_watch"`
-	Pack          string `gorm:"column:pack"`
-	NeedsSubtitle bool   `gorm:"column:needsSubtitle"`
+	ToWatch       bool         `gorm:"column:to_watch"`
+	Pack          string       `gorm:"column:pack"`
+	NeedsSubtitle bool         `gorm:"column:needsSubtitle"`
+	WatchedAt     sql.NullTime `gorm:"column:watched_at;type=date"`
 }
 
 var personType = map[string]int{
@@ -259,6 +262,9 @@ func (d *Database) UpdateMovie(movie *Movie) error {
 			updates["pack"] = movie.Pack
 			updates["needsSubtitle"] = movie.NeedsSubtitle
 			updates["length"] = movie.Runtime
+			if movie.WatchedAt.Valid {
+				updates["watched_at"] = movie.WatchedAt.Time
+			}
 
 			if err := db.Model(&movie).Updates(updates).Error; err != nil {
 				return fmt.Errorf("failed to update movie: %w", err)
@@ -284,6 +290,20 @@ func (d *Database) UpdateMovie(movie *Movie) error {
 	// Check transaction error
 	if err != nil {
 		return err
+	}
+
+	return nil
+}
+
+func (d *Database) UpdateWatchedAt(movie *Movie) error {
+	movie.WatchedAt = sql.NullTime{
+		Time:  time.Now(),
+		Valid: true,
+	}
+
+	err := d.UpdateMovie(movie)
+	if err != nil {
+		return fmt.Errorf("failed to update watched_at : %w", err)
 	}
 
 	return nil

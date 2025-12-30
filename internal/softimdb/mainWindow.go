@@ -501,6 +501,36 @@ func (m *MainWindow) onPlayMovieClicked() {
 		moviePath = path.Join(moviePath, movieName)
 		openProcess("smplayer", moviePath)
 	}()
+
+	// Set watched_at
+	go func() {
+		movie := m.getSelectedMovie()
+		if movie == nil {
+			return
+		}
+
+		err := m.database.UpdateWatchedAt(movie)
+		if err != nil {
+			reportError(fmt.Errorf("UpdateWatchedAt failed: %w", err))
+			return
+		}
+	}()
+}
+
+func (m *MainWindow) onSetAsToWatchClicked() {
+	go func() {
+		movie := m.getSelectedMovie()
+		if movie == nil {
+			return
+		}
+
+		movie.ToWatch = !movie.ToWatch
+
+		err := m.database.UpdateMovie(movie)
+		if err != nil {
+			reportError(fmt.Errorf("failed to set To Watch flag : %w", err))
+		}
+	}()
 }
 
 func (m *MainWindow) onEditMovieInfoClicked() {
