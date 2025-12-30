@@ -21,6 +21,24 @@ import (
 	"github.com/hultan/softimdb/internal/data"
 )
 
+//go:embed assets/play.png
+var playIcon []byte
+
+//go:embed assets/refresh.png
+var refreshIcon []byte
+
+//go:embed assets/quit.png
+var quitIcon []byte
+
+//go:embed assets/add.png
+var addIcon []byte
+
+//go:embed assets/delete.png
+var deleteIcon []byte
+
+//go:embed assets/search.png
+var searchIcon []byte
+
 //go:embed assets/application.png
 var applicationIcon []byte
 
@@ -264,6 +282,8 @@ func (m *MainWindow) setupSortOrderMenuItem(name string, order string) {
 }
 
 func (m *MainWindow) setupToolBar() {
+	m.setupToolBarIcons()
+
 	m.connectToolButton("quitButton", m.gtk.window.Close)
 	m.connectToolButton("refreshButton", m.onRefreshButtonClicked)
 	m.connectToolButton("playMovieButton", m.onPlayMovieClicked)
@@ -274,6 +294,21 @@ func (m *MainWindow) setupToolBar() {
 	// Search entry
 	m.gtk.searchEntry = m.builder.GetObject("searchEntry").(*gtk.Entry)
 	_ = m.gtk.searchEntry.Connect("activate", m.onSearchButtonClicked)
+}
+
+func (m *MainWindow) setupToolBarIcons() {
+	m.setupToolBarIcon("searchButton", searchIcon)
+	m.setupToolBarIcon("clearSearchButton", deleteIcon)
+	m.setupToolBarIcon("addButton", addIcon)
+	m.setupToolBarIcon("playMovieButton", playIcon)
+	m.setupToolBarIcon("refreshButton", refreshIcon)
+	m.setupToolBarIcon("quitButton", quitIcon)
+}
+
+func (m *MainWindow) setupToolBarIcon(buttonName string, iconData []byte) {
+	button := m.builder.GetObject(buttonName).(*gtk.ToolButton)
+	icon, _ := m.getIcon(iconData)
+	button.SetIconWidget(icon)
 }
 
 func (m *MainWindow) connectToolButton(name string, handler func()) {
@@ -721,4 +756,36 @@ func (m *MainWindow) onShowHidePrivateClicked() {
 	m.gtk.genresSubMenu = nil
 	m.fillGenresMenu()
 	m.gtk.genresSubMenu.ShowAll()
+}
+
+func (m *MainWindow) getIcon(icon []byte) (*gtk.Image, error) {
+	loader, err := gdk.PixbufLoaderNew()
+	if err != nil {
+		fmt.Errorf("failed to create PixbufLoader: %v", err)
+	}
+	// Feed the raw PNG bytes to the loader.
+	if _, err = loader.Write(icon); err != nil {
+		fmt.Errorf("failed to write PNG data to loader: %v", err)
+	}
+	// Close the loader to finalize the pixbuf.
+	if err = loader.Close(); err != nil {
+		fmt.Errorf("failed to close loader: %v", err)
+	}
+	pixbuf, err := loader.GetPixbuf()
+	if err != nil {
+		fmt.Errorf("failed to get pixbuf: %v", err)
+	}
+	// (Optional) Scale the pixbuf to a size that looks good on a toolbar.
+	const iconSize = 24 // pixels – adjust as you wish
+	scaled, err := pixbuf.ScaleSimple(iconSize, iconSize, gdk.INTERP_BILINEAR)
+	if err != nil {
+		fmt.Errorf("failed to scale pixbuf: %v", err)
+	}
+	image, err := gtk.ImageNewFromPixbuf(scaled)
+	if err != nil {
+		log.Fatalf("Unable to create GtkImage: %v", err)
+	}
+	image.Show()
+
+	return image, nil
 }
