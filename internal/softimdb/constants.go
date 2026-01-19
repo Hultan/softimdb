@@ -2,7 +2,7 @@ package softimdb
 
 const (
 	applicationTitle     = "SoftImdb"
-	applicationVersion   = "v 2.9.5"
+	applicationVersion   = "v 2.9.6"
 	applicationCopyRight = "©SoftTeam AB, 2025"
 	listMargin           = 3
 	listSpacing          = 0

@@ -45,6 +45,7 @@ type movieWindow struct {
 	castAndCrewList          *gtk.ListBox
 	movieStack               *gtk.Stack
 	bitrateLabel             *gtk.Label
+	watchedAtLabel           *gtk.Label
 
 	guiMovie  *Movie
 	dataMovie *data.Movie
@@ -120,6 +121,7 @@ func newMovieWindow(builder *builder.Builder, parent gtk.IWindow, db *data.Datab
 	m.castAndCrewList = builder.GetObject("castAndCrewList").(*gtk.ListBox)
 	m.movieStack = builder.GetObject("movieStack").(*gtk.Stack)
 	m.bitrateLabel = builder.GetObject("bitrateLabel").(*gtk.Label)
+	m.watchedAtLabel = builder.GetObject("watchedAtLabel").(*gtk.Label)
 
 	eventBox := builder.GetObject("imageEventBox").(*gtk.EventBox)
 	eventBox.Connect("button-press-event", m.onImageClick)
@@ -200,6 +202,11 @@ func (m *movieWindow) fillForm() {
 		m.guiMovie.size = m.getMovieSize(m.guiMovie)
 	}
 	m.bitrateLabel.SetMarkup(calculateBitrateString(m.guiMovie))
+
+	if m.guiMovie.watchedAt != nil {
+		watchedAt := m.guiMovie.watchedAt.Format("2006-01-02")
+		m.watchedAtLabel.SetText("Watched at: " + watchedAt)
+	}
 
 	if m.guiMovie.image == nil {
 		m.posterImage.Clear()

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/hultan/softimdb/internal/data"
 )
@@ -19,6 +20,7 @@ type Movie struct {
 	genres    string // Info field only
 	persons   []data.Person
 	size      int
+	watchedAt *time.Time
 
 	imdbRating string
 	imdbUrl    string
@@ -41,6 +43,9 @@ func (m *Movie) fromDatabase(movie *data.Movie) {
 	m.moviePath = movie.MoviePath
 	m.runtime = movie.Runtime
 	m.size = movie.Size
+	if movie.WatchedAt.Valid {
+		m.watchedAt = &movie.WatchedAt.Time
+	}
 	m.toWatch = movie.ToWatch
 	m.needsSubtitle = movie.NeedsSubtitle
 	m.pack = movie.Pack
@@ -66,6 +71,13 @@ func (m *Movie) toDatabase(movie *data.Movie) {
 	movie.ImdbID = m.imdbId
 	movie.ImdbUrl = m.imdbUrl
 	movie.Size = m.size
+	if m.watchedAt != nil {
+		movie.WatchedAt.Time = *m.watchedAt
+		movie.WatchedAt.Valid = true
+	} else {
+		movie.WatchedAt.Valid = false
+	}
+
 	movie.ImdbRating = m.getImdbRating()
 	movie.Genres = m.getGenres(m.genres)
 	for _, person := range m.persons {

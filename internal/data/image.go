@@ -36,16 +36,16 @@ func (d *Database) createImage(image *image) error {
 }
 
 // readImage returns an image from the database.
-func (d *Database) readImage(id int) (*image, error) {
-	image := image{}
+func (d *Database) readImage(imageId int) (*image, error) {
+	img := image{}
 
 	// Load from cache
-	cachePath := path.Join(imageCachePath, "softimdb", fmt.Sprintf("%d.jpg", id))
+	cachePath := path.Join(imageCachePath, "softimdb", fmt.Sprintf("%d.jpg", imageId))
 	if d.existCachedImage(cachePath) {
-		image.Id = id
-		err := d.getCachedImage(&image, cachePath)
+		img.Id = imageId
+		err := d.getCachedImage(&img, cachePath)
 		if err == nil {
-			return &image, nil
+			return &img, nil
 		}
 	}
 
@@ -54,16 +54,16 @@ func (d *Database) readImage(id int) (*image, error) {
 		return nil, fmt.Errorf("failed to get database: %w", err)
 	}
 
-	if err := db.Where("Id=?", id).First(&image).Error; err != nil {
+	if err := db.Where("Id=?", imageId).First(&img).Error; err != nil {
 		return nil, fmt.Errorf("failed to get image: %w", err)
 	}
 
 	// Store in cache
 	if !d.existCachedImage(cachePath) {
-		d.storeCachedImage(&image, cachePath)
+		d.storeCachedImage(&img, cachePath)
 	}
 
-	return &image, nil
+	return &img, nil
 }
 
 // UpdateImage replaces an image in the database.
@@ -79,12 +79,12 @@ func (d *Database) UpdateImage(movie *Movie, imageData []byte) error {
 				return fmt.Errorf("failed to delete old image: %w", err)
 			}
 
-			image := &image{Data: imageData}
-			if err := db.Create(image).Error; err != nil {
+			img := &image{Data: imageData}
+			if err := db.Create(img).Error; err != nil {
 				return fmt.Errorf("failed to insert new image: %w", err)
 			}
 
-			if err := db.Model(&movie).Update("image_id", image.Id).Error; err != nil {
+			if err := db.Model(&movie).Update("image_id", img.Id).Error; err != nil {
 				return fmt.Errorf("failed to update image_id on movie: %w", err)
 			}
 
