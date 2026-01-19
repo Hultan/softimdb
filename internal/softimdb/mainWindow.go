@@ -82,6 +82,7 @@ type GTK struct {
 	menuSortByName, menuSortByRating      *gtk.RadioMenuItem
 	menuSortByMyRating, menuSortByLength  *gtk.RadioMenuItem
 	menuSortByYear, menuSortById          *gtk.RadioMenuItem
+	menuSortByWatchedAt                   *gtk.RadioMenuItem
 	menuSortAscending, menuSortDescending *gtk.RadioMenuItem
 	genresSubMenu                         *gtk.Menu
 	genresMenu                            *gtk.MenuItem
@@ -211,6 +212,7 @@ func (m *MainWindow) setupMenu(window *gtk.ApplicationWindow) {
 	m.setupSortMenuItem("menuSortByMyRating", sortByMyRating, sortDescending)
 	m.setupSortMenuItem("menuSortByLength", sortByLength, sortDescending)
 	m.setupSortMenuItem("menuSortByYear", sortByYear, sortDescending)
+	m.setupSortMenuItem("menuSortByWatchedAt", sortByWatchedAt, sortAscending)
 	m.setupSortMenuItem("menuSortById", sortById, sortAscending)
 
 	// Sorting order radio items
@@ -257,6 +259,8 @@ func (m *MainWindow) setupSortMenuItem(name string, sortBy string, defaultOrder 
 		m.gtk.menuSortByLength = menuItem
 	case "menuSortByYear":
 		m.gtk.menuSortByYear = menuItem
+	case "menuSortByWatchedAt":
+		m.gtk.menuSortByWatchedAt = menuItem
 	case "menuSortById":
 		m.gtk.menuSortById = menuItem
 	}
