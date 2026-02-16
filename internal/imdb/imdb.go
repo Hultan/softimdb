@@ -123,7 +123,7 @@ func (m *Manager) scrapeUrl(url string, ctx context.Context) (string, error) {
 
 		// Scroll the page smaller increments to trigger content loading
 		chromedp.ActionFunc(func(ctx context.Context) error {
-			for i := 0; i < 20; i++ { // Try up to 20 scrolls
+			for i := range 20 { // Try up to 20 scrolls
 				err := chromedp.Evaluate(`window.scrollBy(0, 1200);`, nil).Do(ctx)
 				if err != nil {
 					log.Printf("Scroll attempt %d failed: %v\n", i+1, err)

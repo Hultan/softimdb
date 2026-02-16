@@ -57,7 +57,7 @@ func (d *Database) SearchMovies(currentView string, searchFor string, genreId in
 	var (
 		movies                        []*Movie
 		sqlJoin, sqlWhere, sqlOrderBy string
-		sqlArgs                       map[string]interface{}
+		sqlArgs                       map[string]any
 	)
 
 	if currentView == "packs" && orderBy == "title asc" {
@@ -101,7 +101,7 @@ func (d *Database) SearchMovies(currentView string, searchFor string, genreId in
 	return movies, nil
 }
 
-func (d *Database) getQuery(sqlJoin string, sqlWhere string, sqlArgs map[string]interface{}, sqlOrderBy string) (*gorm.DB, error) {
+func (d *Database) getQuery(sqlJoin string, sqlWhere string, sqlArgs map[string]any, sqlOrderBy string) (*gorm.DB, error) {
 	db, err := d.getDatabase()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get database: %w", err)
@@ -248,7 +248,7 @@ func (d *Database) UpdateMovie(movie *Movie) error {
 
 	err = db.Transaction(
 		func(tx *gorm.DB) error {
-			updates := make(map[string]interface{}, 12)
+			updates := make(map[string]any, 12)
 
 			updates["title"] = movie.Title
 			updates["sub_title"] = movie.SubTitle
@@ -419,9 +419,9 @@ func addViewSQL(view, baseWhere string) string {
 	return strings.Join(clauses, " AND ")
 }
 
-func getGenreSearch(searchFor string, genreId int) (join string, where string, args map[string]interface{}) {
+func getGenreSearch(searchFor string, genreId int) (join string, where string, args map[string]any) {
 	join = "JOIN movie_genre ON movies.id = movie_genre.movie_id"
-	args = map[string]interface{}{
+	args = map[string]any{
 		"genre": genreId,
 	}
 
@@ -436,14 +436,14 @@ func getGenreSearch(searchFor string, genreId int) (join string, where string, a
 	return
 }
 
-func getPersonSearch(searchFor string, typ int) (join string, where string, args map[string]interface{}) {
+func getPersonSearch(searchFor string, typ int) (join string, where string, args map[string]any) {
 	join = `
 		JOIN movie_person ON movies.id = movie_person.movie_id
 		JOIN person ON person.id = movie_person.person_id
 	`
 
 	where = "person.name LIKE @search"
-	args = map[string]interface{}{
+	args = map[string]any{
 		"search": "%" + searchFor + "%",
 	}
 
@@ -455,8 +455,8 @@ func getPersonSearch(searchFor string, typ int) (join string, where string, args
 	return
 }
 
-func getStandardSearch(searchFor string) (string, map[string]interface{}) {
-	sqlArgs := make(map[string]interface{})
+func getStandardSearch(searchFor string) (string, map[string]any) {
+	sqlArgs := make(map[string]any)
 	var conditions []string
 
 	if searchFor != "" {
@@ -572,7 +572,7 @@ func (d *Database) SetProcessed(movie *Movie) error {
 		return fmt.Errorf("failed to get database: %w", err)
 	}
 
-	updates := make(map[string]interface{}, 1)
+	updates := make(map[string]any, 1)
 
 	updates["processed"] = true
 

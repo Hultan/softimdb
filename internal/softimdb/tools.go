@@ -152,7 +152,7 @@ func clearListBox(list *gtk.ListBox) {
 		return
 	}
 
-	children.Foreach(func(item interface{}) {
+	children.Foreach(func(item any) {
 		if widget, ok := item.(gtk.IWidget); ok {
 			list.Remove(widget)
 			if w, ok := widget.(*gtk.Widget); ok {
@@ -169,7 +169,7 @@ func clearFlowBox(list *gtk.FlowBox) {
 		return
 	}
 
-	children.Foreach(func(item interface{}) {
+	children.Foreach(func(item any) {
 		if widget, ok := item.(gtk.IWidget); ok {
 			list.Remove(widget)
 			if w, ok := widget.(*gtk.Widget); ok {

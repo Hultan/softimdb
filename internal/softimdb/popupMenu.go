@@ -117,7 +117,7 @@ func (p *popupMenu) showPopup(event *gdk.Event) {
 }
 
 func (p *popupMenu) createGenreMenu(genres []data.Genre, movie *data.Movie, menu *gtk.Menu) {
-	for i := 0; i < len(genres); i++ {
+	for i := range genres {
 		genre := genres[i]
 
 		if showPrivateGenres || !genre.IsPrivate {

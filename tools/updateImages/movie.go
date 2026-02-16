@@ -24,7 +24,7 @@ func (d *Database) SearchMovies(currentView string, searchFor string, genreId in
 	var (
 		movies                        []*Movie
 		sqlJoin, sqlWhere, sqlOrderBy string
-		sqlArgs                       map[string]interface{}
+		sqlArgs                       map[string]any
 	)
 
 	if currentView == "packs" && orderBy == "title asc" {

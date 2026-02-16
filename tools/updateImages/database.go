@@ -102,7 +102,8 @@ func (d *Database) isOpen() error {
 	return nil
 }
 
-func (d *Database) getQuery(sqlJoin string, sqlWhere string, sqlArgs map[string]interface{}, sqlOrderBy string) (*gorm.DB, error) {
+func (d *Database) getQuery(sqlJoin string, sqlWhere string, sqlArgs map[string]any, sqlOrderBy string) (*gorm.DB,
+	error) {
 	db, err := d.getDatabase()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get database: %w", err)

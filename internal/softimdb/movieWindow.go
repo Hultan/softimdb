@@ -491,7 +491,7 @@ func (m *movieWindow) hasSubtitles(dir string) bool {
 
 func (m *movieWindow) fillCastAndCrewPage() {
 	// Clear the list before refreshing the list
-	m.castAndCrewList.GetChildren().Foreach(func(item interface{}) {
+	m.castAndCrewList.GetChildren().Foreach(func(item any) {
 		m.castAndCrewList.Remove(item.(gtk.IWidget))
 	})
 
@@ -627,12 +627,14 @@ func (m *movieWindow) onIMDBEntryFocusOut() {
 	movieImdb, err := manager.GetMovie(url)
 
 	if err != nil {
-		txt := ""
+		var txt strings.Builder
 		for _, err := range manager.Errors {
-			txt += err.Error() + "\n"
+			txt.WriteString(err.Error())
+			txt.WriteString("\n\n")
+			//txt += err.Error() + "\n"
 		}
 		_, _ = dialog.Title("Errors while retrieving IMDB data...").
-			Text(txt).WarningIcon().OkButton().Show()
+			Text(txt.String()).WarningIcon().OkButton().Show()
 	}
 
 	if m.createMovieInfo(movieImdb) {
