@@ -175,16 +175,21 @@ func createMovieImage(movie *data.Movie) *gtk.Image {
 
 // createRuntimeLabel creates a gtk.Label containing the runtime in hours and minutes
 func createRuntimeLabel(movie *data.Movie) *gtk.Label {
-	var s string
+	var s, w string
 	var b strings.Builder
 
 	if movie.Runtime == -1 {
-		s = "Runtime : unknown"
+		s = fmt.Sprintf("Runtime : unknown")
 	} else {
 		t := movie.Runtime
 		h, m := t/60, t%60
 		s = fmt.Sprintf("Runtime : %dh %dm", h, m)
 	}
+
+	if movie.WatchedAt.Valid && movie.WatchedAt.Time.Format("2006-01-02") != "2025-12-30" {
+		w = fmt.Sprintf(" (Watched At: %s)", movie.WatchedAt.Time.Format("2006-01-02"))
+	}
+
 	label, err := gtk.LabelNew("")
 	if err != nil {
 		reportError(err)
@@ -193,6 +198,9 @@ func createRuntimeLabel(movie *data.Movie) *gtk.Label {
 
 	b.WriteString(`<span font="Sans Regular 10" foreground="#AAAAAA">`)
 	b.WriteString(s)
+	b.WriteString(`</span>`)
+	b.WriteString(`<span font="Sans Regular 10" foreground="#AAFFAA">`)
+	b.WriteString(w)
 	b.WriteString(`</span>`)
 
 	label.SetMarkup(b.String())
